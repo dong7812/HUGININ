@@ -2,6 +2,38 @@
 
 ---
 
+## [2026-06-15] 핵심 방향: AI 협업 가시화 + Frame A/B/C/D 팀 스케일 확장
+
+**Context**: "MD 파일과 뭐가 달라?"라는 외부 피드백과, Frame A/B/C/D가 서버에 구현돼 있지 않다는 사실 확인. 제품의 핵심을 재정의할 필요가 생김.
+
+**Decision**:
+- 핵심 문제: 팀 AI 협업의 블랙박스 (프롬프트 미공유 + AI 기여 불명확 + 결정 맥락 소멸)
+- 해결 방향: AI 협업 가시화 — 단순 저장이 아닌 결정 단위 AI 기여도 분석
+- 북극성 기능: collab-proof Frame A/B/C/D를 서버에 이식해 팀 스케일로 자동 실행
+- Phase 1(완료): 자동 수집 + 팀 타임라인. Phase 2: Frame 분석 서버 이식
+
+**Alternatives considered**:
+- "Claude Code × Team Memory" 포지셔닝 유지 — MCP recall 루프가 핵심
+- "LLMOps" 포지셔닝 — LangSmith와 정면 경쟁
+
+**Reasoning**:
+- 실제 출발점이 "팀에서 프롬프트 공유가 안 돼서 병목" 이었음 — 가장 솔직한 문제 정의
+- Frame D(AI 기여도)가 기존 서비스들이 아무도 건드리지 않는 영역 — 코드 라인 귀속(Git AI)과 다름
+- collab-proof가 이미 개인 단위로 이 분석을 하고 있음 — 팀 스케일 확장이 자연스러운 다음 단계
+- Phase 1에서 수집된 raw_prompt + response + diff가 Frame 분석의 완벽한 입력
+
+**AI contribution**:
+- Identified: Frame A/B/C/D가 서버에 구현돼 있지 않음을 코드 검색으로 확인
+- Identified: "AI 기여도 분석 — 구조 제안 / 구현 생성" 표현이 미구현 기능을 구현된 것처럼 표현하고 있음
+- Suggested: 현재 구현 vs Phase 2 목표를 명확히 분리하는 문서 구조
+- Developer-driven: 핵심 방향을 "가시화"로 정의하는 결정
+
+**Intent class**: EXPLORING
+**Signal score**: HIGH
+**Outcome**: implemented (README, PLANS, AGENTS 업데이트)
+
+---
+
 ## [2026-06-14] MCP Recall Tool: `/memory/recall` 설계
 
 **Context**: Claude Code가 팀 이력을 "능동적으로" 참조하게 하려면 MCP 도구가 필요. 단순 수집(collect_event)에서 역방향 조회 도구를 추가하는 구조 결정.
