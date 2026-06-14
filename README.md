@@ -1,40 +1,40 @@
-# HUGININ — Claude Code × Team Memory
+# HUGININ — AI 협업 가시화
 
-Claude Code가 구현을 시작하기 전, 팀이 같은 문제를 어떻게 풀었는지 자동으로 확인한다.
-`.mcp.json` 한 줄로 연결 — Git hook으로 자동 수집 — 시맨틱 검색으로 팀 전체 조회.
-
----
-
-## 한 줄 요약
-
-> **Claude Code가 구현 전 자동으로 `recall_decisions`를 호출해 팀 이력을 참조한다.**
+팀이 AI로 개발할 때 서로 뭘 하는지 보이지 않는다.
+누가 어떤 결정을 AI와 함께 내렸는지, AI가 어디서 어떻게 기여했는지 — HUGININ이 보여준다.
 
 ---
 
-## 작동 방식
+## 왜 만들었나
+
+팀에서 AI 도구를 각자 쓰기 시작하면 세 가지 문제가 생긴다.
+
+1. **프롬프트는 공유되지 않는다** — 팀원이 비슷한 시도를 중복으로 하고 있어도 서로 모른다
+2. **AI 기여가 불명확하다** — 이 결정이 개발자 판단인지 Claude 판단인지 팀이 모른다
+3. **결정 맥락이 사라진다** — 코드는 남지만 왜 그렇게 됐는지는 남지 않는다
+
+MD 파일로 정리해서 공유하는 방식은 "의식적으로 쓰는 사람"이 있어야 작동한다.
+HUGININ은 Git hook이 자동으로 수집하고, 팀 타임라인이 자동으로 만들어진다.
+
+---
+
+## 무엇을 보여주나
 
 ```
-[개발자 A]                          [개발자 B / 팀 전체]
-  Claude Code 세션 시작
-    │
-    ▼
-  [huginin.recall_decisions]        ← MCP 자동 호출
-    │ "rate limiting API" 검색
-    │ → 3주 전 token bucket 시도 → Redis 비용으로 반려
-    │ → in-memory sliding window로 최종 결정
-    ▼
-  팀 이력 기반으로 구현...
-    │
-    ▼
-  git commit -m "feat: rate limiting"
-    │
-    ├─ [huginin git hook]            ← post-commit 자동 실행
-    │   prompt + response + diff + branch 수집
-    │   임베딩 생성 → 팀 메모리 인덱싱
-    │
-    ▼
-  워크스페이스 KB 업데이트            → B도 다음 세션에 참조 가능
+팀원 A  feat/notification  14:32
+  └ WebSocket → SSE 전환 결정
+    AI: 구조 제안  |  개발자: 방향 결정  |  AI: 연결 관리 복잡성 발견
+
+팀원 B  feat/auth  11:15
+  └ JWT refresh token 전략
+    개발자: 주도  |  AI: 구현 생성
+
+팀원 C  fix/query-perf  09:40
+  └ N+1 쿼리 최적화
+    AI: 문제 발견  |  개발자: 해결책 결정
 ```
+
+누가, 어떤 결정에서, AI를 어떻게 활용했는지 팀 단위로 가시화한다.
 
 ---
 
@@ -122,26 +122,24 @@ curl -s https://api.huginin.dev/install | bash
 
 ---
 
+## 기존 방식과의 차이
+
+| | MD 파일 공유 | Git AI | LangSmith | **HUGININ** |
+|---|---|---|---|---|
+| 수집 방식 | 직접 작성 | 코드 라인 귀속 | SDK 설치 | Git hook 자동 수집 |
+| 무엇을 저장 | 정리된 요약 | AI 생성 코드 라인 | LLM 요청/응답 | 프롬프트 + 응답 + diff + 맥락 |
+| AI 기여도 | 없음 | 라인 수준 귀속 | 없음 | **결정 단위 역할 분석** |
+| 팀 가시화 | 수동 공유 | 불가 (로컬) | 없음 | **실시간 팀 타임라인** |
+| AI 능동 참조 | 없음 | 없음 | 없음 | MCP로 구현 전 자동 확인 |
+
 ## MCP 도구
 
-Claude Code에 노출되는 두 가지 도구:
+Git hook 외에 Claude Code에 직접 연결할 수 있다.
 
 | 도구 | 설명 | 호출 시점 |
 |---|---|---|
 | `recall_decisions` | 팀 이력 시맨틱 검색 (cross-workspace) | 구현 시작 전 자동 |
 | `collect_event` | AI 결정 수집 | Git hook에서 자동 |
-
----
-
-## 경쟁 서비스 비교
-
-| | Git AI | LangSmith / Langfuse | **HUGININ** |
-|---|---|---|---|
-| 주요 질문 | 이 코드 누가 만들었나? | LLM 호출 비용/성능? | 왜 이 결정을 내렸나? |
-| 저장 위치 | Git Notes (로컬) | 중앙 DB | 중앙 DB + pgvector |
-| AI 참조 | 없음 | 없음 | **Claude가 구현 전 자동 참조** |
-| 팀 검색 | 불가 | 불가 | 시맨틱 검색 (cross-workspace) |
-| 수집 방식 | 라인 귀속 | SDK 설치 | MCP + Git hook |
 
 ---
 
@@ -186,8 +184,8 @@ Claude Code에 노출되는 두 가지 도구:
 
 ## 핵심 설계 원칙
 
-- **MCP-First**: 개발자가 직접 호출하지 않아도 Claude가 자동으로 팀 이력을 참조
-- **Zero-Config Collection**: Git hook이 자동 수집 — 코딩 습관 변경 없음
-- **Team Memory**: Claude Memory는 나만 안다, HUGININ은 팀 전체가 공유한다
-- **Decision Context**: 단순 코드 귀속이 아닌 "왜 이 결정을 내렸나"를 저장
-- **Async Everything**: 임베딩 생성, 수집 모두 백그라운드 — 사용자 워크플로우 블로킹 없음
+- **Visibility-First**: 팀의 AI 협업 패턴을 가시화하는 것이 핵심 — 저장이 목적이 아니다
+- **Zero-Config Collection**: Git hook이 자동 수집 — 프롬프트를 따로 공유하거나 정리할 필요 없음
+- **Decision-Level Attribution**: 코드 라인 귀속이 아닌 결정 단위 AI 기여도 분석
+- **Team Scope**: 개인 도구가 아닌 팀 단위 — 워크스페이스 전체에서 패턴을 본다
+- **Async Everything**: 임베딩 생성, 수집 모두 백그라운드 — 개발 흐름을 끊지 않는다
