@@ -38,7 +38,58 @@ Claude Code가 구현을 시작하기 전, 팀이 같은 문제를 어떻게 풀
 
 ---
 
-## 시작하기
+## 로컬 개발 환경
+
+### 사전 요구사항
+
+- Docker & Docker Compose
+- Python 3.12+
+- Node.js 20+
+
+### 1. 서버 실행
+
+```bash
+# 환경변수 설정
+cp server/.env.example server/.env
+# JWT_SECRET은 실제 값으로 교체 권장
+
+# PostgreSQL + Kafka 시작
+docker-compose up -d postgres kafka
+
+# 의존성 설치 및 서버 실행
+cd server
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+```
+
+마이그레이션은 docker-compose에서 `postgres` 컨테이너 시작 시 자동 적용된다
+(`server/infrastructure/persistence/migrations/`가 init 디렉토리로 마운트됨).
+
+### 2. 대시보드 실행
+
+```bash
+cd dashboard
+npm install
+npm run dev   # http://localhost:3000
+```
+
+### 3. MCP 로컬 연결 (선택)
+
+```json
+// 테스트할 프로젝트의 .mcp.json
+{
+  "mcpServers": {
+    "huginin": {
+      "url": "http://localhost:8000/mcp",
+      "type": "sse"
+    }
+  }
+}
+```
+
+---
+
+## 프로덕션 시작하기
 
 ### 1. Claude Code에 연결
 
