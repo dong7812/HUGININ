@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>HUGININ Session 2026-06-15</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #1a1a2e; color: #e2e8f0; font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 13px; line-height: 1.6; padding: 32px; }
+.container { max-width: 900px; margin: 0 auto; }
+h1 { font-size: 18px; color: #a78bfa; margin-bottom: 4px; }
+.meta { color: #64748b; font-size: 12px; margin-bottom: 32px; }
+.section { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+.section-title { color: #7c3aed; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; }
+.frames { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.frame { background: #1e293b; border-radius: 6px; padding: 12px; text-align: center; }
+.frame-label { color: #64748b; font-size: 10px; text-transform: uppercase; margin-bottom: 6px; }
+.frame-score { font-size: 22px; font-weight: bold; }
+.score-high { color: #a78bfa; }
+.score-mid { color: #60a5fa; }
+.score-low { color: #374151; }
+.pruned { opacity: 0.35; }
+.intent-badge { display: inline-block; background: #4c1d95; color: #c4b5fd; border: 1px solid #6d28d9; border-radius: 4px; padding: 3px 10px; font-size: 11px; margin-right: 8px; }
+.signal-badge { display: inline-block; background: #14532d; color: #86efac; border: 1px solid #16a34a; border-radius: 4px; padding: 3px 10px; font-size: 11px; }
+.shipped-item { padding: 6px 0; border-bottom: 1px solid #1e293b; color: #94a3b8; }
+.shipped-item:last-child { border-bottom: none; }
+.shipped-item::before { content: "+ "; color: #4ade80; }
+.decision-card { background: #1e293b; border-left: 3px solid #7c3aed; border-radius: 0 6px 6px 0; padding: 12px 16px; margin-bottom: 10px; }
+.decision-title { color: #e2e8f0; margin-bottom: 4px; }
+.decision-meta { color: #64748b; font-size: 11px; }
+.bar-container { background: #1e293b; border-radius: 4px; height: 18px; display: flex; overflow: hidden; margin-bottom: 8px; }
+.bar-segment { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #0f172a; font-weight: bold; }
+.bar-input { background: #3b82f6; }
+.bar-cache-read { background: #10b981; }
+.bar-cache-create { background: #f59e0b; }
+.bar-output { background: #8b5cf6; }
+.tok-legend { display: flex; gap: 16px; margin-top: 6px; flex-wrap: wrap; }
+.tok-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94a3b8; }
+.tok-dot { width: 10px; height: 10px; border-radius: 2px; }
+.cache-label { font-size: 16px; font-weight: bold; color: #10b981; margin: 10px 0 4px; }
+.note { color: #64748b; font-size: 11px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>HUGININ — Session 2026-06-15 02:12</h1>
+<div class="meta">Intent: EXPLORING &nbsp;|&nbsp; Signal: HIGH &nbsp;|&nbsp; Runner-up: FEATURE_BUILDING &nbsp;|&nbsp; repo: dong7812/HUGININ</div>
+
+<div class="section">
+  <div class="section-title">Frame Analysis</div>
+  <div class="frames">
+    <div class="frame pruned">
+      <div class="frame-label">A — Technical</div>
+      <div class="frame-score score-low">0.3</div>
+      <div style="color:#374151;font-size:10px;margin-top:4px">pruned</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">B — Uncertainty</div>
+      <div class="frame-score score-high">0.8</div>
+      <div style="color:#a78bfa;font-size:10px;margin-top:4px">active</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">C — Fork</div>
+      <div class="frame-score score-high">1.0</div>
+      <div style="color:#a78bfa;font-size:10px;margin-top:4px">dominant</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">D — AI Contrib</div>
+      <div class="frame-score score-mid">0.7</div>
+      <div style="color:#60a5fa;font-size:10px;margin-top:4px">active</div>
+    </div>
+  </div>
+  <div style="margin-top:14px">
+    <span class="intent-badge">EXPLORING</span>
+    <span class="signal-badge">HIGH</span>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">What Shipped</div>
+  <div class="shipped-item">전체 md 파일 12개 재작성 (README, PLANS, AGENTS, DECISIONS, RESEARCH, WORKLOG, dashboard/*)</div>
+  <div class="shipped-item">GitHub private repo 생성 + 169 files 초기 커밋 (dong7812/HUGININ)</div>
+  <div class="shipped-item">server/.env.example + README local dev 섹션 추가</div>
+  <div class="shipped-item">랜딩페이지 전면 재작성 — before/after 데모, 비교 테이블 4열</div>
+  <div class="shipped-item">README 방향성 섹션 — Frame A/B/C/D 북극성, Phase 1 vs Phase 2 명확 분리</div>
+  <div class="shipped-item">PLANS.md Phase 2 Frame 분석 구현 명세 (스코어 기준표 포함)</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Decisions</div>
+  <div class="decision-card">
+    <div class="decision-title">[2026-06-15] 핵심 방향: AI 협업 가시화 + Frame A/B/C/D 팀 스케일</div>
+    <div class="decision-meta">Fork: "Claude Code x Team Memory" vs "AI 협업 가시화" — 후자 채택. 출발 경험(프롬프트 미공유 병목)이 근거.</div>
+  </div>
+  <div class="decision-card">
+    <div class="decision-title">Frame A/B/C/D 서버 미구현 확인 → Phase 2 first task로 명세</div>
+    <div class="decision-meta">허위 클레임 제거. FrameAnalysisService + decision_events 컬럼 추가 + 타임라인 배지 표시.</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">AI Contribution Summary — Frame D: 0.7</div>
+  <div style="color:#94a3b8;line-height:1.7">
+    두 가지 실질적 기여. 첫째, README와 랜딩페이지에서 Frame A/B/C/D를 구현된 기능처럼
+    서술한 허위 클레임을 코드 검색으로 확인하고 지적했다 — 개발자가 인식하지 못하던 불일치.
+    둘째, "방향성이 흔들리지 않는 기준"을 질문-답변 테이블로 구조화하는 포맷을 제안했다.
+    포지셔닝 선택 자체는 개발자가 출발 경험을 명확히 했을 때 자연 수렴됐고,
+    Claude는 그 결정을 문서로 구현하는 역할을 했다.
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Token Usage</div>
+  <div class="bar-container">
+    <div class="bar-segment bar-input" style="width:0.1%"></div>
+    <div class="bar-segment bar-cache-read" style="width:93%">93%</div>
+    <div class="bar-segment bar-cache-create" style="width:6.9%"></div>
+  </div>
+  <div class="tok-legend">
+    <div class="tok-item"><div class="tok-dot" style="background:#3b82f6"></div>input 19K</div>
+    <div class="tok-item"><div class="tok-dot" style="background:#10b981"></div>cache_read 89,235K</div>
+    <div class="tok-item"><div class="tok-dot" style="background:#f59e0b"></div>cache_create 6,656K</div>
+    <div class="tok-item"><div class="tok-dot" style="background:#8b5cf6"></div>output 1,213K</div>
+  </div>
+  <div class="cache-label">93% cache hit — EFFICIENT</div>
+  <div style="color:#10b981;font-size:12px">누적 세션 컨텍스트 재사용율 높음</div>
+  <div class="note">* 전체 수치는 컴팩션 이전 세션 포함 누적값.</div>
+  <div class="note">최적화 제안: 세션이 길어질수록 cache_create 증가 — 주제 전환 시 /clear로 컨텍스트 분리 권장.</div>
+</div>
+
+</div>
+</body>
+</html>
