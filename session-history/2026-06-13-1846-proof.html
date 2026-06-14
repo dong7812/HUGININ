@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>collab-proof | 2026-06-13 18:46</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d0d1a; color: #c9d1d9; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 13px; line-height: 1.6; padding: 32px; }
+  h1 { color: #58a6ff; font-size: 18px; margin-bottom: 4px; }
+  h2 { color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin: 28px 0 12px; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  h3 { color: #79c0ff; font-size: 13px; margin: 16px 0 8px; }
+  .meta { color: #8b949e; font-size: 12px; margin-bottom: 24px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-right: 6px; }
+  .badge-high { background: #1f4a1f; color: #56d364; border: 1px solid #2ea043; }
+  .badge-exploring { background: #1a2f4a; color: #58a6ff; border: 1px solid #1f6feb; }
+  .badge-d { background: #2d1f4a; color: #d2a8ff; border: 1px solid #6e40c9; }
+  .section { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+  .frames { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 0; }
+  .frame { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 12px; text-align: center; }
+  .frame-label { color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  .frame-score { font-size: 22px; font-weight: bold; }
+  .score-high { color: #56d364; }
+  .score-mid { color: #e3b341; }
+  .score-low { color: #f85149; }
+  .shipped-item { padding: 6px 0; border-bottom: 1px solid #21262d; color: #c9d1d9; }
+  .shipped-item:last-child { border-bottom: none; }
+  .shipped-item code { color: #79c0ff; background: #1a2332; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+  .decision-card { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 14px; margin-bottom: 12px; }
+  .decision-card:last-child { margin-bottom: 0; }
+  .decision-title { color: #f0f6fc; font-weight: bold; margin-bottom: 8px; font-size: 13px; }
+  .decision-row { display: flex; gap: 8px; margin-bottom: 4px; }
+  .decision-key { color: #8b949e; min-width: 120px; flex-shrink: 0; }
+  .decision-val { color: #c9d1d9; }
+  .outcome { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; background: #1f4a1f; color: #56d364; border: 1px solid #2ea043; }
+  .token-bar-wrap { margin: 12px 0; }
+  .token-bar { display: flex; height: 20px; border-radius: 4px; overflow: hidden; width: 100%; }
+  .bar-input { background: #1f6feb; }
+  .bar-cache-read { background: #2ea043; }
+  .bar-cache-create { background: #e3b341; }
+  .bar-output { background: #8957e5; }
+  .token-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 11px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .cache-hit { font-size: 28px; font-weight: bold; color: #56d364; }
+  .cache-label { color: #8b949e; font-size: 11px; margin-top: 2px; }
+  .token-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
+  .token-stat { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 12px; }
+  .token-stat-val { font-size: 20px; font-weight: bold; color: #f0f6fc; }
+  .token-stat-label { color: #8b949e; font-size: 11px; margin-top: 2px; }
+  .top-turn { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #21262d; font-size: 12px; }
+  .top-turn:last-child { border-bottom: none; }
+  .top-turn-label { color: #8b949e; }
+  .top-turn-tok { color: #e3b341; font-weight: bold; }
+  .suggestion { background: #1a2332; border-left: 3px solid #1f6feb; padding: 10px 14px; border-radius: 0 4px 4px 0; color: #79c0ff; font-size: 12px; margin-top: 12px; }
+  .ai-summary { color: #c9d1d9; line-height: 1.7; }
+  .next-step { padding: 6px 0; border-bottom: 1px solid #21262d; color: #c9d1d9; }
+  .next-step:last-child { border-bottom: none; }
+  .next-step::before { content: "→ "; color: #58a6ff; }
+</style>
+</head>
+<body>
+
+<h1>collab-proof session</h1>
+<div class="meta">
+  2026-06-13 18:46 &nbsp;·&nbsp;
+  <span class="badge badge-high">HIGH</span>
+  <span class="badge badge-exploring">EXPLORING</span>
+  <span class="badge badge-d">D: 0.8</span>
+</div>
+
+<h2>Frame Scores</h2>
+<div class="section">
+  <div class="frames">
+    <div class="frame">
+      <div class="frame-label">Technical</div>
+      <div class="frame-score score-mid">0.7</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">Uncertainty</div>
+      <div class="frame-score score-mid">0.6</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">Fork</div>
+      <div class="frame-score score-high">1.0</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">AI Contribution</div>
+      <div class="frame-score score-high">0.8</div>
+    </div>
+  </div>
+</div>
+
+<h2>What Shipped</h2>
+<div class="section">
+  <div class="shipped-item"><code>README.md</code> — 플랫폼 개요, 시장 포지셔닝, 아키텍처 다이어그램, 공유 흐름</div>
+  <div class="shipped-item"><code>AGENTS.md</code> — 4개 에이전트 구조, RBAC 2레벨 설계 (Notion 벤치마크)</div>
+  <div class="shipped-item"><code>PLANS.md</code> — 3단계 로드맵, collab-proof git 훅 고도화 항목 포함</div>
+  <div class="shipped-item"><code>evals/README.md</code> — Hermes 벤치마크 구조, 평가→공유 파이프라인</div>
+  <div class="shipped-item"><code>RESEARCH.md</code> — 2026년 6월 기준 시장 조사, 경쟁 지형도, 기능 비교표</div>
+  <div class="shipped-item"><code>DECISIONS.md</code> — 이번 세션 의사결정 기록 (3건)</div>
+</div>
+
+<h2>AI Contribution Summary</h2>
+<div class="section">
+  <div class="ai-summary">
+    WebSearch로 Git AI, cursor/agent-trace, Lore Protocol 등 실제 경쟁 서비스를 식별하고, HUGININ의 차별화 포지션을 &ldquo;LLMOps + Code Provenance 교차점&rdquo;으로 구체화했다. RBAC 설계에서 Notion 벤치마크를 제안하고 comment 권한의 PM/디자이너 활용 시나리오를 추가했다. 문서 완성도 점검에서 &lsquo;공유&rsquo; 메커니즘 누락을 독립적으로 식별했다. 핵심 방향(collab-proof 활용, CLI-First)은 개발자 주도였다.
+  </div>
+</div>
+
+<h2>Decisions</h2>
+<div class="section">
+  <div class="decision-card">
+    <div class="decision-title">수집 레이어: CLI Interception vs MCP Server</div>
+    <div class="decision-row"><span class="decision-key">Decision</span><span class="decision-val">하이브리드 (MCP 1순위 → CLI Wrapper → Git Hook)</span></div>
+    <div class="decision-row"><span class="decision-key">Road not taken</span><span class="decision-val">CLI Interception only, MCP only</span></div>
+    <div class="decision-row"><span class="decision-key">Key reason</span><span class="decision-val">TUI 환경·오프라인 환경 각각의 실패 케이스를 단일 방식으로 커버 불가</span></div>
+    <div class="decision-row"><span class="decision-key">Outcome</span><span class="outcome">implemented</span></div>
+  </div>
+  <div class="decision-card">
+    <div class="decision-title">RBAC 벤치마크: Slack vs Notion</div>
+    <div class="decision-row"><span class="decision-key">Decision</span><span class="decision-val">Notion — 워크스페이스 + 프로젝트 2레벨, comment 역할 신설</span></div>
+    <div class="decision-row"><span class="decision-key">Road not taken</span><span class="decision-val">Slack — 채널 기반, 커뮤니케이션 흐름 제어에 최적화</span></div>
+    <div class="decision-row"><span class="decision-key">Key reason</span><span class="decision-val">Notion Teamspace = 프로젝트, 페이지 권한 = 의사결정 항목 접근으로 자연 매핑</span></div>
+    <div class="decision-row"><span class="decision-key">Outcome</span><span class="outcome">implemented</span></div>
+  </div>
+  <div class="decision-card">
+    <div class="decision-title">git 엣지케이스: 서버 로직 vs collab-proof shell</div>
+    <div class="decision-row"><span class="decision-key">Decision</span><span class="decision-val">collab-proof shell 고도화 (hash-map, session.lock, projects.json)</span></div>
+    <div class="decision-row"><span class="decision-key">Road not taken</span><span class="decision-val">서버 측 reconciliation 서비스 신설</span></div>
+    <div class="decision-row"><span class="decision-key">Key reason</span><span class="decision-val">이미 git 훅 레이어에 있는 collab-proof가 처리 위치 일치, 오프라인 의존성 없음</span></div>
+    <div class="decision-row"><span class="decision-key">Outcome</span><span class="outcome">implemented</span></div>
+  </div>
+</div>
+
+<h2>Token Usage</h2>
+<div class="section">
+  <div class="token-grid">
+    <div class="token-stat">
+      <div class="cache-hit">96%</div>
+      <div class="cache-label">🟢 Cache hit rate — efficient</div>
+    </div>
+    <div class="token-stat">
+      <div class="token-stat-val">5,213K</div>
+      <div class="token-stat-label">Total tokens (input + cache + output)</div>
+    </div>
+  </div>
+  <div class="token-bar-wrap">
+    <div class="token-bar">
+      <div class="bar-input" style="width:0.3%"></div>
+      <div class="bar-cache-read" style="width:94.3%"></div>
+      <div class="bar-cache-create" style="width:3.8%"></div>
+      <div class="bar-output" style="width:1.7%"></div>
+    </div>
+    <div class="token-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#1f6feb"></div> Input 13.7K</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#2ea043"></div> Cache read 4,915K</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#e3b341"></div> Cache create 196K</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#8957e5"></div> Output 88.7K</div>
+    </div>
+  </div>
+  <h3>Top expensive turns</h3>
+  <div class="top-turn"><span class="top-turn-label">#1 — skill/system context load</span><span class="top-turn-tok">3,595 tok</span></div>
+  <div class="top-turn"><span class="top-turn-label">#2 — skill/system context load</span><span class="top-turn-tok">3,595 tok</span></div>
+  <div class="top-turn"><span class="top-turn-label">#3 — skill/system context load</span><span class="top-turn-tok">3,595 tok</span></div>
+  <div class="suggestion">💡 96% cache hit은 매우 효율적. 가장 비용이 높은 턴이 모두 skill/system context 로드 — 향후 세션에서 skill을 세션 초반에 한 번만 로드하도록 유지하면 추가 최적화 가능.</div>
+</div>
+
+<h2>Next Steps</h2>
+<div class="section">
+  <div class="next-step">collab-proof shell 고도화 구현 (hash-map.json, session.lock, projects.json)</div>
+  <div class="next-step">MCP 서버 모드 프로토타입 (@modelcontextprotocol/sdk 기반)</div>
+  <div class="next-step">RBAC 미들웨어 2단계 설계 (워크스페이스 → 프로젝트 순차 검증)</div>
+  <div class="next-step">Context Distillation 프롬프트 초안 작성</div>
+</div>
+
+</body>
+</html>

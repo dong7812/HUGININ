@@ -1,0 +1,120 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getDashboardOverview } from "@/application/use-cases/getDashboardOverview";
+import { getEventFeed } from "@/application/use-cases/getEventFeed";
+import { getActivity } from "@/application/use-cases/getActivity";
+import { getTokenStats } from "@/application/use-cases/getTokenStats";
+import { createDashboardRepository } from "@/infrastructure/http/dashboardRepository";
+import { createCommentRepository } from "@/infrastructure/http/commentRepository";
+import { useAuthStore } from "@/application/stores/authStore";
+
+import { apiFetch } from "@/infrastructure/http/apiClient";
+
+// TanStack Query: 서버 상태 전담 — 캐싱·refetch·loading 상태 관리
+// ISP: 각 훅은 필요한 데이터만 노출
+
+interface WorkspaceSummary {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export function useWorkspacesQuery() {
+  const token = useAuthStore((s) => s.token) ?? "";
+  return useQuery({
+    queryKey: ["workspaces"],
+    queryFn: () => apiFetch<WorkspaceSummary[]>("/workspace", token),
+    enabled: !!token,
+    staleTime: 60_000,
+  });
+}
+
+export function useOverviewQuery(workspaceId: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["overview", workspaceId],
+    queryFn: () => getDashboardOverview(repo, workspaceId),
+    enabled: !!token && !!workspaceId,
+    staleTime: 30_000,
+  });
+}
+
+export function useFeedQuery(workspaceId: string, page = 0, limit = 15, branch?: string, dateFrom?: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["feed", workspaceId, page, branch, dateFrom],
+    queryFn: () => getEventFeed(repo, workspaceId, limit, page * limit, branch, dateFrom),
+    enabled: !!token && !!workspaceId,
+    staleTime: 15_000,
+  });
+}
+
+export function useSearchQuery(workspaceId: string, query: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["search", workspaceId, query],
+    queryFn: () => repo.searchEvents(workspaceId, query),
+    enabled: !!token && !!workspaceId && query.trim().length >= 2,
+    staleTime: 30_000,
+  });
+}
+
+export function useActivityQuery(workspaceId: string, days = 30) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["activity", workspaceId, days],
+    queryFn: () => getActivity(repo, workspaceId, days),
+    enabled: !!token && !!workspaceId,
+    staleTime: 60_000,
+  });
+}
+
+export function useBranchesQuery(workspaceId: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["branches", workspaceId],
+    queryFn: () => repo.getBranches(workspaceId),
+    enabled: !!token && !!workspaceId,
+    staleTime: 30_000,
+  });
+}
+
+export function useTokenStatsQuery(workspaceId: string, days = 30, branch?: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["tokenStats", workspaceId, days, branch],
+    queryFn: () => getTokenStats(repo, workspaceId, days, branch),
+    enabled: !!token && !!workspaceId,
+    staleTime: 60_000,
+  });
+}
+
+export function useCommentsQuery(eventId: string, workspaceId: string, enabled = false) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createCommentRepository(token);
+  return useQuery({
+    queryKey: ["comments", eventId],
+    queryFn: () => repo.listComments(eventId, workspaceId),
+    enabled: !!token && enabled,
+    staleTime: 10_000,
+  });
+}
+
+export function useAddCommentMutation(eventId: string, workspaceId: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createCommentRepository(token);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (content: string) => repo.addComment(eventId, workspaceId, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", eventId] });
+    },
+  });
+}

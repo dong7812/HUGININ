@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-06-14 18:16:05",
+  "trigger": "pre-compact",
+  "signal": "LOW",
+  "frames": {
+    "technical": null,
+    "uncertainty": null,
+    "fork": null,
+    "ai_contribution": null
+  },
+  "intent": null,
+  "key_moments": []
+}

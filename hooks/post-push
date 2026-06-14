@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# HUGININ post-push hook — force push 감지 및 reconcile 플래그
+
+set -euo pipefail
+
+HUGININ_DIR=".huginin"
+HASH_MAP="$HUGININ_DIR/hash-map.json"
+
+[ "${CI:-false}" = "true" ] && exit 0
+! command -v huginin &>/dev/null && exit 0
+
+while read local_ref local_sha remote_ref remote_sha; do
+  # force push 감지: 원격 SHA가 로컬 히스토리에 없으면 force push
+  if [ "$remote_sha" != "0000000000000000000000000000000000000000" ]; then
+    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+      echo "[huginin] force push detected on $remote_ref — flagging reconcile"
+
+      # hash-map.json에 force-push 플래그 기록
+      if [ -f "$HASH_MAP" ]; then
+        python3 -c "
+import json, datetime
+d = json.load(open('$HASH_MAP'))
+d['_force_push'] = {'ref': '$remote_ref', 'old': '$remote_sha', 'new': '$local_sha', 'at': datetime.datetime.utcnow().isoformat()}
+json.dump(d, open('$HASH_MAP', 'w'), indent=2)
+" 2>/dev/null || true
+      fi
+    fi
+  fi
+done
+
+exit 0

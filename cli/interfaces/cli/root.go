@@ -1,0 +1,44 @@
+package cli
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/spf13/cobra"
+
+	"huginin/application"
+	httpinfra "huginin/infrastructure/http"
+	"huginin/infrastructure/keystore"
+	"huginin/infrastructure/config"
+)
+
+var root = &cobra.Command{
+	Use:   "huginin",
+	Short: "CLI-First LLMOps — AI 의사결정을 팀 지식베이스로",
+}
+
+func Execute() {
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "config error:", err)
+		os.Exit(1)
+	}
+
+	api := httpinfra.New(cfg.BaseURL)
+	ks := keystore.New()
+
+	loginUC := application.NewLoginUseCase(api, ks)
+	wsUC := application.NewWorkspaceUseCase(api, ks)
+	projUC := application.NewProjectUseCase(api, ks)
+
+	root.AddCommand(newLoginCmd(loginUC))
+	root.AddCommand(newWorkspaceCmd(wsUC))
+	root.AddCommand(newProjectCmd(projUC))
+	for _, cmd := range newInternalCmds(projUC, ks) {
+		root.AddCommand(cmd)
+	}
+
+	if err := root.Execute(); err != nil {
+		os.Exit(1)
+	}
+}
