@@ -14,7 +14,7 @@ import (
 
 var root = &cobra.Command{
 	Use:   "huginin",
-	Short: "CLI-First LLMOps — AI 의사결정을 팀 지식베이스로",
+	Short: "HUGININ — 팀 AI 협업 가시화",
 }
 
 func Execute() {

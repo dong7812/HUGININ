@@ -12,3 +12,4 @@
 2026-06-14 22:51 | commit | 355f3f6 | branch:main | Add local dev setup to README and server/.env.example
 2026-06-15 02:05 | commit | 98ecb0e | branch:main | Reframe core value: AI collaboration visibility over team memory
 2026-06-15 02:12 | commit | 8b018a1 | branch:main | Clarify direction: AI collaboration visibility, Frame A/B/C/D as north star
+2026-06-15 02:19 | commit | 6ccc32f | branch:main | collab-proof: session 2026-06-15 — EXPLORING HIGH, direction reframe
