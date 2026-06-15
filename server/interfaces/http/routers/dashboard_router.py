@@ -43,6 +43,11 @@ class FeedItemResponse(BaseModel):
     what_was_built: str | None = None
     problem_solved: str | None = None
     ai_role: str | None = None
+    # GitHub PR 이벤트
+    event_type: str = "commit"
+    pr_number: int | None = None
+    pr_url: str | None = None
+    github_author: str | None = None
 
 
 class FeedResponse(BaseModel):
@@ -125,6 +130,10 @@ async def get_feed(
                 what_was_built=item.what_was_built,
                 problem_solved=item.problem_solved,
                 ai_role=item.ai_role,
+                event_type=item.event_type,
+                pr_number=item.pr_number,
+                pr_url=item.pr_url,
+                github_author=item.github_author,
             )
             for item in result.items
         ],
@@ -203,6 +212,10 @@ async def search_events(
                 what_was_built=item.what_was_built,
                 problem_solved=item.problem_solved,
                 ai_role=item.ai_role,
+                event_type=item.event_type,
+                pr_number=item.pr_number,
+                pr_url=item.pr_url,
+                github_author=item.github_author,
             )
             for item in items
         ],

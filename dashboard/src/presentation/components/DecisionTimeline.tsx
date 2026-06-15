@@ -6,6 +6,8 @@ import {
   ChevronUp,
   GitCommit,
   GitBranch,
+  GitPullRequest,
+  GitMerge,
   User,
   Folder,
   Clock,
@@ -18,6 +20,7 @@ import {
   Code2,
   Search,
   X,
+  ExternalLink,
 } from "lucide-react";
 import { useFeedQuery, useBranchesQuery, useSearchQuery } from "@/application/queries/dashboardQueries";
 import { CommentSection } from "./CommentSection";
@@ -390,6 +393,116 @@ export function DecisionTimeline({ workspaceId, dateFrom, searchQuery = "", onSe
   );
 }
 
+function PrCard({ item, graphMeta, isLast }: { item: FeedItem; graphMeta: GraphRowMeta; isLast: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const date = new Date(item.createdAt);
+  const dateStr = date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+  const timeStr = date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
+  const laneColor = LANE_COLORS[graphMeta.lane % LANE_COLORS.length];
+
+  const isMerged = item.eventType === "pr_merged";
+  const isClosed = item.eventType === "pr_closed";
+  const PrIcon = isMerged ? GitMerge : GitPullRequest;
+  const prColor = isMerged ? "text-violet-400" : isClosed ? "text-red-400" : "text-emerald-400";
+  const prBg = isMerged ? "bg-violet-900/20 border-violet-700/30" : isClosed ? "bg-red-900/20 border-red-700/30" : "bg-emerald-900/20 border-emerald-700/30";
+  const prLabel = isMerged ? "merged" : isClosed ? "closed" : "opened";
+
+  const author = item.githubAuthor || item.userName || item.userEmail.split("@")[0];
+
+  return (
+    <div className="flex group hover:bg-zinc-900/50 transition-colors">
+      <GraphCell meta={graphMeta} isLastOverall={isLast} />
+      <div className={`flex-1 py-3 pr-4 ${!isLast ? "border-b border-zinc-800/50" : ""}`}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0 flex items-start gap-2">
+            <PrIcon size={14} className={`${prColor} shrink-0 mt-0.5`} />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono font-medium ${prBg} ${prColor}`}>
+                  PR #{item.prNumber} · {prLabel}
+                </span>
+                <span className="text-[10px] text-zinc-600 font-mono">@{author}</span>
+              </div>
+              <p className="text-sm text-zinc-200 leading-snug mt-1 font-medium line-clamp-2">
+                {item.whatWasBuilt || item.promptPreview.replace(/^#\d+:\s*/, "")}
+              </p>
+              {item.problemSolved && (
+                <p className="text-xs text-zinc-500 mt-0.5 line-clamp-1">{item.problemSolved}</p>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="shrink-0 p-0.5 text-zinc-600 hover:text-zinc-300 transition-colors mt-0.5"
+          >
+            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
+
+        {item.frame && (
+          <div className="flex items-center gap-2 mt-1.5 ml-6">
+            <span className={`text-[10px] px-1.5 py-0.5 rounded border font-mono font-medium ${FRAME_COLOR[item.frame]}`}>
+              {item.frame} · {FRAME_LABEL[item.frame]}
+            </span>
+            {item.aiContribution !== null && (
+              <div className="flex items-center gap-1.5 flex-1 max-w-[140px]">
+                <div className="flex-1 h-1 rounded-full bg-zinc-800 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${FRAME_BAR[item.frame]}`}
+                    style={{ width: `${Math.round((item.aiContribution ?? 0) * 100)}%` }}
+                  />
+                </div>
+                <span className="text-[10px] text-zinc-500 font-mono shrink-0">
+                  AI {Math.round((item.aiContribution ?? 0) * 100)}%
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2.5 mt-1.5 ml-6 flex-wrap">
+          {item.branch && (
+            <span
+              className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-mono"
+              style={{ backgroundColor: `${laneColor}18`, color: laneColor, border: `1px solid ${laneColor}40` }}
+            >
+              <GitBranch size={9} />
+              {item.branch}
+            </span>
+          )}
+          {item.prUrl && (
+            <a
+              href={item.prUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              <ExternalLink size={9} />
+              GitHub
+            </a>
+          )}
+          <span className="flex items-center gap-1 text-[11px] text-zinc-600 ml-auto">
+            <Clock size={10} />
+            {dateStr} {timeStr}
+          </span>
+        </div>
+
+        {expanded && item.aiRole && (
+          <div className="mt-3 ml-6 bg-violet-950/30 border border-violet-800/40 rounded-md overflow-hidden">
+            <div className="flex items-center gap-1.5 px-3 py-2 border-b border-violet-800/30">
+              <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+              <span className="text-[10px] text-violet-400 font-medium uppercase tracking-wider">PR 분석</span>
+            </div>
+            <div className="px-3 py-2.5">
+              <p className="text-xs text-zinc-300 leading-relaxed">{item.aiRole}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TimelineEntry({
   item,
   workspaceId,
@@ -401,6 +514,11 @@ function TimelineEntry({
   graphMeta: GraphRowMeta;
   isLast: boolean;
 }) {
+  const isPr = item.eventType?.startsWith("pr_");
+  if (isPr) {
+    return <PrCard item={item} graphMeta={graphMeta} isLast={isLast} />;
+  }
+
   const [expanded, setExpanded] = useState(false);
   const [responseExpanded, setResponseExpanded] = useState(false);
   const [diffExpanded, setDiffExpanded] = useState(false);

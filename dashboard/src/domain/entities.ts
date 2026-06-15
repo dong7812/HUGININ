@@ -30,6 +30,11 @@ export interface FeedItem {
   whatWasBuilt: string | null;
   problemSolved: string | null;
   aiRole: string | null;
+  // GitHub PR 이벤트
+  eventType: string;
+  prNumber: number | null;
+  prUrl: string | null;
+  githubAuthor: string | null;
 }
 
 export interface Comment {

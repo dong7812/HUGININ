@@ -19,13 +19,15 @@ class PgEventRepository(EventRepository):
             INSERT INTO decision_events
                 (id, workspace_id, project_id, user_id, commit_hash,
                  raw_prompt, raw_response, diff, status, created_at,
-                 branch, prompt_tokens, response_tokens)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+                 branch, prompt_tokens, response_tokens,
+                 event_type, pr_number, pr_url, github_author)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
             """,
             event.id, event.workspace_id, event.project_id, event.user_id,
             event.commit_hash, event.raw_prompt, event.raw_response,
             event.diff, event.status.value, event.created_at,
             event.branch, event.prompt_tokens, event.response_tokens,
+            event.event_type, event.pr_number, event.pr_url, event.github_author,
         )
 
     async def find_by_id(self, id: UUID) -> DecisionEvent | None:
@@ -101,6 +103,10 @@ class PgEventRepository(EventRepository):
                 e.what_was_built,
                 e.problem_solved,
                 e.ai_role,
+                e.event_type,
+                e.pr_number,
+                e.pr_url,
+                e.github_author,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
@@ -139,6 +145,7 @@ class PgEventRepository(EventRepository):
                 e.branch, e.prompt_tokens, e.response_tokens,
                 e.frame, e.ai_contribution, e.decision_summary, e.decision_type,
                 e.what_was_built, e.problem_solved, e.ai_role,
+                e.event_type, e.pr_number, e.pr_url, e.github_author,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
@@ -178,6 +185,7 @@ class PgEventRepository(EventRepository):
                 e.branch, e.prompt_tokens, e.response_tokens,
                 e.frame, e.ai_contribution, e.decision_summary, e.decision_type,
                 e.what_was_built, e.problem_solved, e.ai_role,
+                e.event_type, e.pr_number, e.pr_url, e.github_author,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
@@ -326,4 +334,8 @@ def _to_feed_item(r: asyncpg.Record) -> "FeedItem":
         what_was_built=r["what_was_built"],
         problem_solved=r["problem_solved"],
         ai_role=r["ai_role"],
+        event_type=r["event_type"] or "commit",
+        pr_number=r["pr_number"],
+        pr_url=r["pr_url"],
+        github_author=r["github_author"],
     )
