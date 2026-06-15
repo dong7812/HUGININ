@@ -111,22 +111,19 @@ export default function LandingPage() {
 
         {/* Before / After */}
         <div className="grid sm:grid-cols-2 gap-3 mt-16 max-w-2xl">
-          {/* Before — 비어있음 */}
+          {/* Before — 공허함 */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 flex flex-col justify-between min-h-[180px]">
             <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Without</span>
-            <div className="flex-1 flex flex-col items-center justify-center gap-2 py-6">
-              <div className="w-8 h-8 rounded-full border border-zinc-700 flex items-center justify-center">
-                <span className="text-zinc-700 text-lg">?</span>
-              </div>
-              <p className="text-xs text-zinc-700 text-center font-mono leading-relaxed">
-                no session data detected
-              </p>
-            </div>
-            <div className="font-mono text-[10px] text-zinc-700 space-y-0.5">
+            <div className="flex-1 flex flex-col justify-center gap-2 py-4 font-mono text-[11px] text-zinc-800 space-y-1.5">
               <div>a3f2c1d  feat: notification</div>
-              <div>b9e4f2a  fix: auth</div>
-              <div className="text-zinc-800">— that's all you know</div>
+              <div>b9e4f2a  fix: auth token</div>
+              <div>c7d3a1e  refactor: cleanup</div>
+              <div>d2e1f0b  feat: notification</div>
             </div>
+            <div className="h-px bg-zinc-800 my-1" />
+            <p className="font-mono text-[10px] text-zinc-800">
+              4 commits · 0 context
+            </p>
           </div>
 
           {/* After — 실제 카드 UI 미리보기 */}
