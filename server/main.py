@@ -132,11 +132,11 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
 
     try:
         rows = await event_repo._pool.fetch(
-            "SELECT id, raw_prompt, raw_response, diff FROM decision_events WHERE frame IS NULL ORDER BY created_at DESC"
+            "SELECT id, raw_prompt, raw_response, diff FROM decision_events WHERE what_was_built IS NULL ORDER BY created_at DESC"
         )
         if not rows:
             return
-        logger.info("Backfill: %d unrefined events found", len(rows))
+        logger.info("Backfill: %d events need rich ETL", len(rows))
         for row in rows:
             result = await refine_event(row["raw_prompt"], row["raw_response"] or "", row["diff"], api_key)
             if result:
@@ -146,6 +146,9 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
                     ai_contribution=float(result.get("ai_contribution", 0.5)),
                     decision_summary=result.get("decision_summary", ""),
                     decision_type=result.get("decision_type", "other"),
+                    what_was_built=result.get("what_was_built", ""),
+                    problem_solved=result.get("problem_solved", ""),
+                    ai_role=result.get("ai_role", ""),
                 )
             await asyncio.sleep(0.5)  # API 레이트 리밋 여유
         logger.info("Backfill complete")

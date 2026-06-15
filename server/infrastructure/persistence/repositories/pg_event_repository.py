@@ -97,6 +97,9 @@ class PgEventRepository(EventRepository):
                 e.ai_contribution,
                 e.decision_summary,
                 e.decision_type,
+                e.what_was_built,
+                e.problem_solved,
+                e.ai_role,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
@@ -134,6 +137,7 @@ class PgEventRepository(EventRepository):
                 u.email AS user_email, p.name AS project_name,
                 e.branch, e.prompt_tokens, e.response_tokens,
                 e.frame, e.ai_contribution, e.decision_summary, e.decision_type,
+                e.what_was_built, e.problem_solved, e.ai_role,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
@@ -172,6 +176,7 @@ class PgEventRepository(EventRepository):
                 u.email AS user_email, p.name AS project_name,
                 e.branch, e.prompt_tokens, e.response_tokens,
                 e.frame, e.ai_contribution, e.decision_summary, e.decision_type,
+                e.what_was_built, e.problem_solved, e.ai_role,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
@@ -255,6 +260,9 @@ class PgEventRepository(EventRepository):
         ai_contribution: float,
         decision_summary: str,
         decision_type: str,
+        what_was_built: str = "",
+        problem_solved: str = "",
+        ai_role: str = "",
     ) -> None:
         await self._pool.execute(
             """
@@ -263,10 +271,14 @@ class PgEventRepository(EventRepository):
                 frame = $2,
                 ai_contribution = $3,
                 decision_summary = $4,
-                decision_type = $5
+                decision_type = $5,
+                what_was_built = $6,
+                problem_solved = $7,
+                ai_role = $8
             WHERE id = $1
             """,
             id, frame, ai_contribution, decision_summary, decision_type,
+            what_was_built, problem_solved, ai_role,
         )
 
     @staticmethod
@@ -309,4 +321,7 @@ def _to_feed_item(r: asyncpg.Record) -> "FeedItem":
         ai_contribution=r["ai_contribution"],
         decision_summary=r["decision_summary"],
         decision_type=r["decision_type"],
+        what_was_built=r["what_was_built"],
+        problem_solved=r["problem_solved"],
+        ai_role=r["ai_role"],
     )

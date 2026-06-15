@@ -20,6 +20,9 @@ interface RawFeedItem {
   ai_contribution: number | null;
   decision_summary: string | null;
   decision_type: string | null;
+  what_was_built: string | null;
+  problem_solved: string | null;
+  ai_role: string | null;
 }
 
 function mapFeedItem(i: RawFeedItem): FeedItem {
@@ -41,6 +44,9 @@ function mapFeedItem(i: RawFeedItem): FeedItem {
     aiContribution: i.ai_contribution,
     decisionSummary: i.decision_summary,
     decisionType: i.decision_type,
+    whatWasBuilt: i.what_was_built,
+    problemSolved: i.problem_solved,
+    aiRole: i.ai_role,
   };
 }
 

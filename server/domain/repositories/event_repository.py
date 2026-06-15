@@ -30,4 +30,7 @@ class EventRepository(ABC):
         ai_contribution: float,
         decision_summary: str,
         decision_type: str,
+        what_was_built: str = "",
+        problem_solved: str = "",
+        ai_role: str = "",
     ) -> None: ...

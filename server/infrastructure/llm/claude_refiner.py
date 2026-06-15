@@ -14,36 +14,49 @@ import logging
 logger = logging.getLogger(__name__)
 
 _SYSTEM = """\
-You are an expert analyst of AI-assisted software development sessions.
-Given a coding session (user prompt, AI response, and optional diff), \
-extract structured metadata. Respond with valid JSON only — no explanation, no markdown.
+You are an expert analyst of AI-assisted software development sessions, \
+specializing in extracting meaningful collaboration insights.
+
+Given a coding session (developer prompt, AI response, code diff), \
+extract structured metadata that reveals WHAT was built, WHY it was built, \
+and HOW AI specifically contributed. Be concrete and specific — avoid generic phrases.
+
+Respond with valid JSON only — no explanation, no markdown fences.
 """
 
 _USER_TEMPLATE = """\
-## User prompt:
+## Developer prompt:
 {prompt}
 
 ## AI response:
 {response}
 
-## Code diff (stat):
+## Code diff:
 {diff}
 
-Return JSON:
+Extract the following and return as JSON:
+
 {{
   "frame": "A" | "B" | "C" | "D",
   "ai_contribution": <float 0.0–1.0>,
-  "decision_summary": "<1–2 sentences in Korean>",
-  "decision_type": "feature" | "bugfix" | "refactor" | "config" | "docs" | "test" | "other"
+  "decision_type": "feature" | "bugfix" | "refactor" | "config" | "docs" | "test" | "other",
+  "what_was_built": "<구체적 기술 결과물. 예: 'FastAPI ETL 파이프라인 + asyncpg 마이그레이션 + claude-haiku 기반 이벤트 분석기'. 단순 반복 금지>",
+  "problem_solved": "<해결한 문제/맥락. 예: '대시보드가 raw prompt만 보여줘 AI 협업 가치가 보이지 않았음 → 의미있는 분석 데이터로 전환 필요'. 왜 이 작업이 필요했는지>",
+  "ai_role": "<AI가 실제로 한 것. 예: 'claude_refiner.py 전체 설계 및 구현, ETL 프롬프트 템플릿 작성, SQL 마이그레이션 생성 — 인간은 API 키 설정 및 서버 재시작 담당'>"
 }}
 
-Frame:
-A = AI advised, human coded/decided
-B = Human directed, AI implemented significant portion
-C = AI proposed+implemented, human approved
-D = AI fully automated with minimal human direction
+Frame definitions:
+  A = AI advised/reviewed, human wrote the code and made decisions
+  B = Human gave direction, AI implemented 30-70%% of the actual code
+  C = AI proposed the approach AND implemented it, human reviewed/approved
+  D = AI executed with minimal human direction (automated pipeline, script)
 
-ai_contribution = estimated fraction of actual code/decision made by AI (0=none, 1=all)
+ai_contribution = fraction of actual code/decisions made by AI (0.0=none, 1.0=all)
+
+IMPORTANT: All three narrative fields (what_was_built, problem_solved, ai_role) MUST be \
+specific to THIS session. Never write generic text like "AI가 구현했습니다" or \
+"코드를 작성했습니다". Extract actual technical details from the prompt and response above.
+Write in Korean.
 """
 
 
@@ -60,21 +73,20 @@ async def refine_event(
         client = anthropic.AsyncAnthropic(api_key=api_key)
         msg = await client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=256,
+            max_tokens=512,
             system=_SYSTEM,
             messages=[
                 {
                     "role": "user",
                     "content": _USER_TEMPLATE.format(
-                        prompt=prompt[:1200],
-                        response=response[:1200],
-                        diff=(diff or "N/A")[:400],
+                        prompt=prompt[:2000],
+                        response=response[:2000],
+                        diff=(diff or "N/A")[:600],
                     ),
                 }
             ],
         )
         raw = msg.content[0].text.strip()
-        # JSON 블록 제거 (모델이 ```json 으로 감쌀 경우 대비)
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):

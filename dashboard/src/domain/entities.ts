@@ -25,6 +25,10 @@ export interface FeedItem {
   aiContribution: number | null;  // 0.0–1.0
   decisionSummary: string | null;
   decisionType: string | null;
+  // 풍부한 서사 필드
+  whatWasBuilt: string | null;
+  problemSolved: string | null;
+  aiRole: string | null;
 }
 
 export interface Comment {

@@ -23,6 +23,10 @@ class FeedItem:
     ai_contribution: float | None = None
     decision_summary: str | None = None
     decision_type: str | None = None
+    # 풍부한 서사 필드
+    what_was_built: str | None = None
+    problem_solved: str | None = None
+    ai_role: str | None = None
 
 
 @dataclass

@@ -428,14 +428,23 @@ function TimelineEntry({
         {/* Top row */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            {/* decision_summary가 있으면 우선 표시, 없으면 raw prompt preview */}
-            {item.decisionSummary ? (
+            {item.whatWasBuilt ? (
+              <p className="text-sm text-zinc-100 leading-snug font-medium line-clamp-2">
+                {item.whatWasBuilt}
+              </p>
+            ) : item.decisionSummary ? (
               <p className="text-sm text-zinc-100 leading-snug line-clamp-2">
                 {item.decisionSummary}
               </p>
             ) : (
               <p className="text-sm text-zinc-400 leading-snug line-clamp-2 font-mono">
                 {item.promptPreview}
+              </p>
+            )}
+            {/* 문제/맥락 */}
+            {item.problemSolved && (
+              <p className="text-xs text-zinc-500 mt-0.5 line-clamp-1 leading-snug">
+                {item.problemSolved}
               </p>
             )}
           </div>
@@ -548,6 +557,18 @@ function TimelineEntry({
         {/* Expanded detail */}
         {expanded && (
           <div className="mt-3 flex flex-col gap-2">
+            {/* AI 역할 서사 — 핵심 인사이트 */}
+            {item.aiRole && (
+              <div className="bg-violet-950/30 border border-violet-800/40 rounded-md px-3 py-2.5">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                  <span className="text-[10px] text-violet-400 font-medium uppercase tracking-wider">AI 기여</span>
+                </div>
+                <p className="text-xs text-zinc-200 leading-relaxed">{item.aiRole}</p>
+              </div>
+            )}
+
+            {/* 원시 prompt */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-md overflow-hidden">
               <div className="flex items-center gap-2 px-3 py-2 border-b border-zinc-800 bg-zinc-800/40">
                 <Terminal size={11} className="text-violet-400" />
