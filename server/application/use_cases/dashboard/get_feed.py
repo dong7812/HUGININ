@@ -7,11 +7,11 @@ from uuid import UUID
 class FeedItem:
     event_id: UUID
     user_email: str
-    user_name: str = ""
-    project_name: str | None = None
-    prompt_preview: str = ""
+    project_name: str | None
+    prompt_preview: str
     status: str
     created_at: datetime
+    user_name: str = ""
     branch: str | None = None
     prompt_tokens: int | None = None
     response_tokens: int | None = None
