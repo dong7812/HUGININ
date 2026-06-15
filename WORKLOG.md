@@ -24,3 +24,12 @@
 2026-06-15 17:35 | commit | a52239d | branch:feature/interactive-login | Fix Ctrl+C handling in login prompt + add ETL backfill on server start
 2026-06-15 17:43 | session-end | files_changed:17 | branch:feature/interactive-login | a52239d Fix Ctrl+C handling in login prompt + add ETL backfill on server start
 2026-06-15 17:48 | commit | 5968260 | branch:feature/interactive-login | Add rich ETL narrative fields: what_was_built, problem_solved, ai_role
+2026-06-15 18:30 | commit | 217d83b | branch:feature/interactive-login | Show committer name instead of '인간' in AI contribution card
+2026-06-15 18:31 | commit | 39db4ca | branch:feature/interactive-login | Fix dataclass field ordering: non-default 'status' must precede default 'user_name'
+2026-06-15 18:34 | commit | 79129d5 | branch:feature/interactive-login | Expand AI contribution card into 3-part narrative: 무엇 → 왜 → AI
+2026-06-15 19:02 | commit | 711482c | branch:feature/interactive-login | Add ETL pipeline visualization: abstract (landing) + concrete (README)
+2026-06-15 19:45 | commit | 6100644 | branch:feature/interactive-login | Add favicon + Huginn brand concept to landing page
+2026-06-15 19:47 | commit | edbe23b | branch:feature/interactive-login | Fix favicon: replace app/favicon.ico (Next.js App Router priority override)
+2026-06-15 19:57 | commit | dfe1486 | branch:feature/interactive-login | Redesign timeline card preview: visual UI mockup + minimal empty state
+2026-06-15 20:01 | commit | e4edb7e | branch:feature/interactive-login | Remove 'no session data detected' — show raw git log + '0 context' instead
+2026-06-15 20:10 | FEATURE_BUILDING | HIGH | D:0.8 | cache:98% | tok:18760K | user_name DB 조회 전파 + ETL 3-part 서사 카드 + Huginn 브랜드 랜딩 + favicon 수정(app/ 우선순위 버그) + Before 패널 공허함 시각화
