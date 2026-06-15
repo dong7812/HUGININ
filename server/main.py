@@ -38,6 +38,7 @@ from interfaces.http.routers.comment_router import router as comment_router
 from interfaces.http.routers.dashboard_router import router as dashboard_router
 from interfaces.http.routers.memory_router import router as memory_router
 from interfaces.http.routers.workspace_router import router as workspace_router
+from interfaces.http.routers.webhook_router import router as webhook_router
 from interfaces.mcp.mcp_adapter import mount_mcp
 
 settings = Settings()
@@ -84,6 +85,8 @@ async def lifespan(app: FastAPI):
         anthropic_api_key=settings.anthropic_api_key,
     )
     app.state.event_repo = event_repo  # branches 직접 조회용
+    app.state.anthropic_api_key = settings.anthropic_api_key
+    app.state.github_webhook_secret = settings.github_webhook_secret
     app.state.get_overview_uc = GetOverviewUseCase(workspace_repo, project_repo, event_repo)
     app.state.get_feed_uc = GetFeedUseCase(event_repo)
     app.state.get_activity_uc = GetActivityUseCase(event_repo)
@@ -119,6 +122,7 @@ app.include_router(collect_router)
 app.include_router(comment_router)
 app.include_router(dashboard_router)
 app.include_router(memory_router)
+app.include_router(webhook_router)
 
 mount_mcp(app)
 
