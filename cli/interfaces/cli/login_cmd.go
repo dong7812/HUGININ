@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 
 	"huginin/application"
@@ -19,8 +20,28 @@ func newLoginCmd(uc *application.LoginUseCase, wsUC *application.WorkspaceUseCas
 			email, _ := cmd.Flags().GetString("email")
 			password, _ := cmd.Flags().GetString("password")
 
+			var err error
+			if email == "" {
+				email, err = prompt("이메일", false)
+				if err != nil {
+					return err
+				}
+			}
+			if password == "" {
+				password, err = prompt("비밀번호", true)
+				if err != nil {
+					return err
+				}
+			}
+
 			if register {
 				name, _ := cmd.Flags().GetString("name")
+				if name == "" {
+					name, err = prompt("이름", false)
+					if err != nil {
+						return err
+					}
+				}
 				if err := uc.Register(email, name, password); err != nil {
 					return fmt.Errorf("register failed: %w", err)
 				}
@@ -40,16 +61,26 @@ func newLoginCmd(uc *application.LoginUseCase, wsUC *application.WorkspaceUseCas
 		},
 	}
 
-	cmd.Flags().String("email", "", "이메일 주소")
-	cmd.Flags().String("password", "", "비밀번호")
-	cmd.Flags().String("name", "", "이름 (신규 가입 시)")
+	cmd.Flags().String("email", "", "이메일 주소 (생략 시 대화형 입력)")
+	cmd.Flags().String("password", "", "비밀번호 (생략 시 대화형 입력)")
+	cmd.Flags().String("name", "", "이름 (신규 가입 시, 생략 시 대화형 입력)")
 	cmd.Flags().BoolVar(&register, "register", false, "신규 가입")
-	cmd.MarkFlagRequired("email")
-	cmd.MarkFlagRequired("password")
 
 	cmd.AddCommand(newMcpTokenCmd(uc))
 
 	return cmd
+}
+
+func prompt(label string, mask bool) (string, error) {
+	p := promptui.Prompt{Label: label}
+	if mask {
+		p.Mask = '*'
+	}
+	val, err := p.Run()
+	if err == promptui.ErrInterrupt || err == promptui.ErrEOF {
+		return "", fmt.Errorf("취소됨")
+	}
+	return val, err
 }
 
 func newMcpTokenCmd(uc *application.LoginUseCase) *cobra.Command {
