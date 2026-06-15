@@ -349,3 +349,45 @@
 **Intent class**: EXPLORING
 **Signal score**: HIGH
 **Outcome**: implemented
+
+## [2026-06-15] user_name을 JWT 대신 DB 조회로 가져오는 방식
+
+**Context**: claude_refiner.py가 "인간" 대신 실제 커미터 이름을 aiRole 텍스트에 넣어야 했음. JWT payload에는 user_id만 있고 name이 없어서 조회 방법이 필요했음.
+**Decision**: collect_router에서 `user_repo.find_by_id(user_id)` 직접 호출 → user.name 획득 후 CollectEventInput에 주입
+**Alternatives considered**: JWT payload에 name 추가, get_current_user 미들웨어 의존성 생성
+**Reasoning**: inferred: JWT 재발급 없이 즉시 동작, 미들웨어 패턴보다 코드 변경 범위 최소화. `app.state.user_repo` 노출 1줄 추가로 해결.
+**AI contribution**:
+  - Identified: JWT에 name 필드 없음을 확인 후 DB 조회 경로 제안
+  - Suggested: `app.state.user_repo = user_repo` 노출 + collect_router에서 직접 fetch
+  - Developer-driven: user_name 표시 요구사항 자체 제시
+**Intent class**: FEATURE_BUILDING
+**Signal score**: HIGH
+**Outcome**: implemented
+
+## [2026-06-15] ETL 파이프라인 시각화 — 랜딩(추상) vs README(구체) 이중 전략
+
+**Context**: ETL 파이프라인을 시각적으로 보여달라는 요청. 대상 독자가 둘(신규 방문자 vs 개발자 기여자)로 나뉨.
+**Decision**: 랜딩 페이지는 추상(신뢰도 목적, 구현 숨김), README는 구체(파일경로·SQL·필드명 포함)
+**Alternatives considered**: 단일 파이프라인 다이어그램 컴포넌트, 전용 /pipeline 페이지
+**Reasoning**: 랜딩 방문자는 "작동하는구나"만 알면 됨. 기여자는 "어디를 보면 되는지" 알아야 함. 목적이 달라서 같은 표현이 둘 다에 최적일 수 없음.
+**AI contribution**:
+  - Identified: 독자 분리 필요성 제안 (추상 vs 구체 이중화)
+  - Suggested: README에 실제 컴포넌트명·SQL·frame 정의표 포함하는 4단계 구조
+  - Developer-driven: "신뢰성 올리고 싶다"는 목표 제시
+**Intent class**: FEATURE_BUILDING
+**Signal score**: HIGH
+**Outcome**: implemented
+
+## [2026-06-15] 랜딩 Before 패널 — 텍스트 설명 vs 시각적 공허함
+
+**Context**: Before/After 섹션 Before 패널이 텍스트로 문제를 설명하고 있어서 오히려 임팩트가 약했음.
+**Decision**: "no session data detected" 같은 설명 텍스트 제거 → raw git log 4줄(극도로 희미한 색)만 + "4 commits · 0 context" 한 줄
+**Alternatives considered**: "no session data detected" 레이블, 빈 화면 + ? 아이콘, 설명 텍스트 유지
+**Reasoning**: 텍스트로 "아무것도 모른다"를 설명하면 그 공허함이 사라짐. 숫자 대비(4 commits / 0 context)가 설명 없이 문제를 전달함.
+**AI contribution**:
+  - Identified: "no session data detected"가 에러 메시지처럼 읽힌다는 지적에 동의, 텍스트 없는 방향 제안
+  - Suggested: git log 4줄 + "0 context" 대비 구조
+  - Developer-driven: "너무 별로같지 않나" 판단 및 제거 결정
+**Intent class**: FEATURE_BUILDING
+**Signal score**: HIGH
+**Outcome**: implemented

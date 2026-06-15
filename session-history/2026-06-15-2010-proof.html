@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>collab-proof · 2026-06-15 20:10</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d0d1a; color: #c9d1d9; font-family: "SF Mono", "Fira Code", monospace; font-size: 13px; line-height: 1.6; padding: 32px; }
+  .header { border-bottom: 1px solid #21262d; padding-bottom: 20px; margin-bottom: 28px; }
+  .header h1 { font-size: 18px; color: #e6edf3; margin-bottom: 6px; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .badge { padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; border: 1px solid; }
+  .badge-high { background: #1f2d1f; color: #56d364; border-color: #238636; }
+  .badge-intent { background: #1f1b2d; color: #a78bfa; border-color: #6d28d9; }
+  .badge-cache { background: #1a2233; color: #58a6ff; border-color: #1f6feb; }
+  section { margin-bottom: 28px; }
+  h2 { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; border-bottom: 1px solid #21262d; padding-bottom: 6px; }
+  .card { background: #161b22; border: 1px solid #21262d; border-radius: 8px; padding: 16px; margin-bottom: 10px; }
+  .frames { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .frame { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 12px; text-align: center; }
+  .frame-label { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+  .frame-score { font-size: 22px; color: #e6edf3; font-weight: 700; }
+  .frame-score.high { color: #a78bfa; }
+  .frame-score.mid { color: #58a6ff; }
+  .frame-score.low { color: #30363d; }
+  .frame-note { font-size: 10px; color: #484f58; margin-top: 4px; }
+  .token-bar { height: 10px; border-radius: 5px; background: #21262d; overflow: hidden; display: flex; margin: 10px 0; }
+  .tok-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 6px; }
+  .tok-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #8b949e; }
+  .tok-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+  .cache-rate { font-size: 24px; font-weight: 700; color: #56d364; }
+  .shipped-item { padding: 6px 0; border-bottom: 1px solid #21262d; color: #c9d1d9; }
+  .shipped-item:last-child { border-bottom: none; }
+  .shipped-item::before { content: "+ "; color: #56d364; }
+  .decision { background: #0d1117; border-left: 3px solid #a78bfa; border-radius: 0 6px 6px 0; padding: 12px 14px; margin-bottom: 10px; }
+  .decision-title { color: #e6edf3; font-weight: 600; margin-bottom: 6px; }
+  .decision-meta { font-size: 11px; color: #8b949e; }
+  .next-item { padding: 5px 0; color: #8b949e; border-bottom: 1px solid #161b22; }
+  .next-item::before { content: "-> "; color: #e3b341; }
+  .bug-badge { display: inline-block; background: #2d1b1b; color: #f85149; border: 1px solid #6e1d1d; border-radius: 4px; padding: 1px 6px; font-size: 10px; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>collab-proof · 2026-06-15 20:10</h1>
+  <div style="color: #8b949e; font-size: 12px; margin-top: 4px;">feature/interactive-login · 8 commits · 23 files · +478 -72</div>
+  <div class="badges">
+    <span class="badge badge-high">HIGH signal</span>
+    <span class="badge badge-intent">FEATURE_BUILDING</span>
+    <span class="badge badge-cache">cache 98%</span>
+    <span class="badge" style="background:#1a1a2e;color:#8b949e;border-color:#30363d;">18,760K tokens</span>
+  </div>
+</div>
+
+<section>
+  <h2>Frame Scores</h2>
+  <div class="frames">
+    <div class="frame">
+      <div class="frame-label">Technical</div>
+      <div class="frame-score high">0.9</div>
+      <div class="frame-note">8 new files, full-stack propagation</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">Uncertainty</div>
+      <div class="frame-score low">0.3</div>
+      <div class="frame-note">pruned (&lt;0.4)</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">Fork</div>
+      <div class="frame-score mid">0.6</div>
+      <div class="frame-note">3 explicit forks</div>
+    </div>
+    <div class="frame">
+      <div class="frame-label">AI Contribution</div>
+      <div class="frame-score high">0.8</div>
+      <div class="frame-note">design + full impl</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>What Shipped</h2>
+  <div class="card">
+    <div class="shipped-item">user_name 전 스택 전파 (8 files): JWT→DB 조회→refiner 프롬프트→피드 API→프론트엔드</div>
+    <div class="shipped-item">DecisionTimeline AI 기여 카드 → 3-part 서사 (무엇 / 왜 / AI)</div>
+    <div class="shipped-item">ETL 파이프라인 시각화: 랜딩 추상 3-패널 + README 4단계 구체 다이어그램</div>
+    <div class="shipped-item">Huginn 브랜드 랜딩: 까마귀 로고 + Norse mythology 컨셉 + 2-column hero</div>
+    <div class="shipped-item">Favicon 전체 교체 + app/favicon.ico 우선순위 버그 수정 <span class="bug-badge">BUG</span></div>
+    <div class="shipped-item">Before/After 카드 재설계: After = 실제 UI 목업, Before = raw git log + "0 context"</div>
+    <div class="shipped-item">FeedItem dataclass 필드 순서 TypeError 수정 <span class="bug-badge">BUG</span></div>
+    <div class="shipped-item">PR #1 생성 (feature/interactive-login)</div>
+  </div>
+</section>
+
+<section>
+  <h2>Decisions</h2>
+  <div class="decision">
+    <div class="decision-title">user_name — JWT 대신 DB 조회</div>
+    <div class="decision-meta">app.state.user_repo 노출 1줄 + collect_router fetch. JWT 재발급 없이 즉시 동작, 변경 범위 최소.</div>
+  </div>
+  <div class="decision">
+    <div class="decision-title">ETL 시각화 — 랜딩(추상) vs README(구체) 이중화</div>
+    <div class="decision-meta">신규 방문자와 기여 개발자는 같은 다이어그램으로 충족 불가. 목적 분리.</div>
+  </div>
+  <div class="decision">
+    <div class="decision-title">Before 패널 — 텍스트 제거, 숫자 대비로</div>
+    <div class="decision-meta">"no session data detected" 레이블이 공허함을 희석. git log 4줄 + "0 context" 대비가 더 직접적.</div>
+  </div>
+</section>
+
+<section>
+  <h2>AI Contribution Summary</h2>
+  <div class="card" style="border-color: #6d28d9;">
+    사용자 방향 제시 + AI 구현 비율이 높은 세션. user_name 전파는 8개 파일 수직 관통 — 경로 설계와 전 레이어 구현 모두 AI 담당. favicon 우선순위 버그(app/ vs public/)는 AI가 디렉토리 구조 확인 중 발견. Huginn 컨셉화 및 Before 패널 개선은 사용자 미적 판단 + AI 구현의 전형적 C/D 조합. FeedItem dataclass 순서 버그는 AI 코드 실수를 서버 에러 로그로 즉시 확인·수정.
+  </div>
+</section>
+
+<section>
+  <h2>Token Usage</h2>
+  <div class="card">
+    <div class="cache-rate">98% <span style="font-size:14px;color:#56d364;">cache hit</span></div>
+    <div class="token-bar">
+      <div style="width:1%;background:#1f6feb;"></div>
+      <div style="width:97%;background:#56d364;"></div>
+      <div style="width:1.6%;background:#e3b341;"></div>
+      <div style="width:0.4%;background:#a78bfa;"></div>
+    </div>
+    <div class="tok-legend">
+      <div class="tok-item"><div class="tok-dot" style="background:#1f6feb"></div>input 2K</div>
+      <div class="tok-item"><div class="tok-dot" style="background:#56d364"></div>cache_read 18,412K</div>
+      <div class="tok-item"><div class="tok-dot" style="background:#e3b341"></div>cache_create 310K</div>
+      <div class="tok-item"><div class="tok-dot" style="background:#a78bfa"></div>output 138K</div>
+    </div>
+    <div style="margin-top: 12px; font-size: 11px; color: #56d364;">
+      캐시 효율 최상 — 긴 세션이지만 컨텍스트 재사용률 98%. 현재 패턴 유지 권장.
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Next Steps</h2>
+  <div class="card">
+    <div class="next-item">DB 마이그레이션 005 적용 (what_was_built 컬럼 — 서버 재시작만으론 미적용)</div>
+    <div class="next-item">PR #1 머지 검토</div>
+    <div class="next-item">GitHub Webhook → PR 이벤트 대시보드 수집 (현재 미지원)</div>
+  </div>
+</section>
+
+</body>
+</html>
