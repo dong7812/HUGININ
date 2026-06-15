@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { OverviewCards } from "./OverviewCards";
 import { TokenChart } from "./TokenChart";
 import { DecisionTimeline } from "./DecisionTimeline";
+import { FrameStats } from "./FrameStats";
 
 interface Props {
   workspaceId: string;
@@ -53,7 +54,8 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
           />
         </div>
 
-        <div>
+        <div className="flex flex-col gap-4">
+          <FrameStats workspaceId={workspaceId} />
           <TokenChart workspaceId={workspaceId} days={timeRange === "today" ? 1 : timeRange === "week" ? 7 : 30} />
         </div>
       </div>

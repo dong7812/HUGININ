@@ -240,6 +240,27 @@ class PgEventRepository(EventRepository):
             for r in rows
         ]
 
+    async def get_frame_stats(self, workspace_id: UUID, days: int) -> list:
+        rows = await self._pool.fetch(
+            """
+            SELECT
+                e.frame,
+                COUNT(*)::int AS count,
+                AVG(e.ai_contribution) AS avg_ai,
+                u.name AS user_name,
+                u.email AS user_email
+            FROM decision_events e
+            JOIN users u ON u.id = e.user_id
+            WHERE e.workspace_id = $1
+              AND e.frame IS NOT NULL
+              AND e.created_at >= NOW() - ($2 || ' days')::INTERVAL
+            GROUP BY e.frame, u.name, u.email
+            ORDER BY e.frame, u.email
+            """,
+            workspace_id, str(days),
+        )
+        return rows
+
     async def get_daily_counts(self, workspace_id: UUID, days: int) -> list[DayCount]:
         rows = await self._pool.fetch(
             """

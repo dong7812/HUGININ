@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from application.use_cases.dashboard.get_feed import FeedInput
 from application.use_cases.dashboard.get_overview import OverviewInput
 from application.use_cases.dashboard.get_token_stats import TokenStatsInput
+from application.use_cases.dashboard.get_frame_stats import FrameStatsInput
 from interfaces.http.middleware.rbac_middleware import get_current_user_id
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -53,6 +54,24 @@ class FeedItemResponse(BaseModel):
 class FeedResponse(BaseModel):
     items: list[FeedItemResponse]
     total: int
+
+
+class MemberFrameStatsResponse(BaseModel):
+    user_name: str
+    user_email: str
+    A: int = 0
+    B: int = 0
+    C: int = 0
+    D: int = 0
+    avg_ai: float = 0.0
+    total: int = 0
+
+
+class FrameStatsResponse(BaseModel):
+    distribution: dict[str, int]
+    total: int
+    avg_ai_contribution: float
+    by_member: list[MemberFrameStatsResponse]
 
 
 class TokenDayResponse(BaseModel):
@@ -174,6 +193,36 @@ async def get_token_stats(
         ],
         total_prompt=result.total_prompt,
         total_response=result.total_response,
+    )
+
+
+@router.get("/{workspace_id}/frame-stats", response_model=FrameStatsResponse)
+async def get_frame_stats(
+    workspace_id: UUID,
+    request: Request,
+    days: int = 30,
+    user_id: UUID = Depends(get_current_user_id),
+):
+    result = await request.app.state.get_frame_stats_uc.execute(
+        FrameStatsInput(workspace_id=workspace_id, user_id=user_id, days=days)
+    )
+    return FrameStatsResponse(
+        distribution=result.distribution,
+        total=result.total,
+        avg_ai_contribution=result.avg_ai_contribution,
+        by_member=[
+            MemberFrameStatsResponse(
+                user_name=m.user_name,
+                user_email=m.user_email,
+                A=m.A,
+                B=m.B,
+                C=m.C,
+                D=m.D,
+                avg_ai=m.avg_ai,
+                total=m.total,
+            )
+            for m in result.by_member
+        ],
     )
 
 

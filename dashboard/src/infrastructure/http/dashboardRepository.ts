@@ -1,5 +1,5 @@
 import type { IDashboardRepository } from "@/domain/ports";
-import type { ActivityDay, FeedItem, FeedPage, TokenStats, WorkspaceOverview } from "@/domain/entities";
+import type { ActivityDay, FeedItem, FeedPage, FrameStats, MemberFrameStats, TokenStats, WorkspaceOverview } from "@/domain/entities";
 import { apiFetch } from "./apiClient";
 
 interface RawFeedItem {
@@ -116,6 +116,33 @@ class DashboardApiRepository implements IDashboardRepository {
       this.token
     );
     return data.branches;
+  }
+
+  async getFrameStats(workspaceId: string, days: number): Promise<FrameStats> {
+    const data = await apiFetch<{
+      distribution: Record<string, number>;
+      total: number;
+      avg_ai_contribution: number;
+      by_member: Array<{
+        user_name: string;
+        user_email: string;
+        A: number; B: number; C: number; D: number;
+        avg_ai: number; total: number;
+      }>;
+    }>(`/dashboard/${workspaceId}/frame-stats?days=${days}`, this.token);
+
+    return {
+      distribution: data.distribution,
+      total: data.total,
+      avgAiContribution: data.avg_ai_contribution,
+      byMember: data.by_member.map((m): MemberFrameStats => ({
+        userName: m.user_name,
+        userEmail: m.user_email,
+        A: m.A, B: m.B, C: m.C, D: m.D,
+        avgAi: m.avg_ai,
+        total: m.total,
+      })),
+    };
   }
 
   async getTokenStats(workspaceId: string, days: number, branch?: string): Promise<TokenStats> {

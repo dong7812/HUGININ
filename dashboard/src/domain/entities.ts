@@ -67,6 +67,24 @@ export interface ActivityDay {
   count: number;
 }
 
+export interface MemberFrameStats {
+  userName: string;
+  userEmail: string;
+  A: number;
+  B: number;
+  C: number;
+  D: number;
+  avgAi: number;
+  total: number;
+}
+
+export interface FrameStats {
+  distribution: Record<string, number>;
+  total: number;
+  avgAiContribution: number;
+  byMember: MemberFrameStats[];
+}
+
 export interface User {
   email: string;
   token: string;
