@@ -90,6 +90,11 @@ async def lifespan(app: FastAPI):
     app.state.add_comment_uc = AddCommentUseCase(comment_repo, event_repo, workspace_repo)
     app.state.list_comments_uc = ListCommentsUseCase(comment_repo, event_repo, workspace_repo)
 
+    # 서버 시작 시 미분석 이벤트 백필 (백그라운드)
+    if settings.anthropic_api_key:
+        import asyncio
+        asyncio.create_task(_backfill_refinement(event_repo, settings.anthropic_api_key))
+
     yield
 
     await kafka.stop()
@@ -115,3 +120,34 @@ app.include_router(dashboard_router)
 app.include_router(memory_router)
 
 mount_mcp(app)
+
+
+async def _backfill_refinement(event_repo, api_key: str) -> None:
+    """서버 시작 시 frame IS NULL인 이벤트를 순차적으로 ETL 분석."""
+    import asyncio
+    import logging
+    from infrastructure.llm.claude_refiner import refine_event
+
+    logger = logging.getLogger("huginin.backfill")
+
+    try:
+        rows = await event_repo._pool.fetch(
+            "SELECT id, raw_prompt, raw_response, diff FROM decision_events WHERE frame IS NULL ORDER BY created_at DESC"
+        )
+        if not rows:
+            return
+        logger.info("Backfill: %d unrefined events found", len(rows))
+        for row in rows:
+            result = await refine_event(row["raw_prompt"], row["raw_response"] or "", row["diff"], api_key)
+            if result:
+                await event_repo.update_refined(
+                    id=row["id"],
+                    frame=result.get("frame", "B"),
+                    ai_contribution=float(result.get("ai_contribution", 0.5)),
+                    decision_summary=result.get("decision_summary", ""),
+                    decision_type=result.get("decision_type", "other"),
+                )
+            await asyncio.sleep(0.5)  # API 레이트 리밋 여유
+        logger.info("Backfill complete")
+    except Exception as e:
+        logging.getLogger("huginin.backfill").warning("Backfill error: %s", e)

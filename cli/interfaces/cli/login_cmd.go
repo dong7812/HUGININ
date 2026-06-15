@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -78,7 +79,8 @@ func prompt(label string, mask bool) (string, error) {
 	}
 	val, err := p.Run()
 	if err == promptui.ErrInterrupt || err == promptui.ErrEOF {
-		return "", fmt.Errorf("취소됨")
+		fmt.Println()
+		os.Exit(0)
 	}
 	return val, err
 }

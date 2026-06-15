@@ -19,3 +19,5 @@
 2026-06-15 16:08 | commit | 8f26533 | branch:main | Add service-token command for MCP/Git hook automation
 2026-06-15 16:25 | commit | a5263eb | branch:main | Add interactive workspace picker on login
 2026-06-15 16:29 | commit | 782d9d9 | branch:feature/interactive-login | Make login interactive: prompt for email/password when flags omitted
+2026-06-15 17:16 | commit | f12a5a1 | branch:feature/interactive-login | Add ETL pipeline + git hook embed + git branch graph
+2026-06-15 17:33 | session-end | files_changed:8 | branch:feature/interactive-login | f12a5a1 Add ETL pipeline + git hook embed + git branch graph
