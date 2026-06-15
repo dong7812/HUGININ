@@ -1,11 +1,13 @@
 """Composition Root — 모든 의존성을 조립하는 진입점."""
+import logging
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import Settings
-from infrastructure.messaging.kafka_producer import KafkaProducer
 from infrastructure.persistence.database import Database
 from infrastructure.persistence.repositories.pg_event_repository import PgEventRepository
 from infrastructure.persistence.repositories.pg_project_repository import PgProjectRepository
@@ -42,7 +44,30 @@ from interfaces.http.routers.workspace_router import router as workspace_router
 from interfaces.http.routers.webhook_router import router as webhook_router
 from interfaces.mcp.mcp_adapter import mount_mcp
 
+logger = logging.getLogger("huginin")
 settings = Settings()
+
+
+async def _run_migrations(pool) -> None:
+    migrations_dir = Path(__file__).parent / "infrastructure" / "persistence" / "migrations"
+    sql_files = sorted(migrations_dir.glob("*.sql"))
+    async with pool.acquire() as conn:
+        await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        for f in sql_files:
+            sql = f.read_text()
+            try:
+                await conn.execute(sql)
+                logger.info("Migration applied: %s", f.name)
+            except Exception as e:
+                logger.warning("Migration %s skipped: %s", f.name, e)
+
+
+def _build_queue(brokers: str):
+    if not brokers:
+        from infrastructure.messaging.null_queue import NullQueuePort
+        return NullQueuePort()
+    from infrastructure.messaging.kafka_producer import KafkaProducer
+    return KafkaProducer(brokers)
 
 
 @asynccontextmanager
@@ -50,8 +75,10 @@ async def lifespan(app: FastAPI):
     db = Database(settings.database_url)
     await db.connect()
 
-    kafka = KafkaProducer(settings.kafka_brokers)
-    await kafka.start()
+    await _run_migrations(db.pool)
+
+    queue = _build_queue(settings.kafka_brokers)
+    await queue.start()
 
     # Repositories
     user_repo = PgUserRepository(db.pool)
@@ -82,10 +109,10 @@ async def lifespan(app: FastAPI):
     app.state.link_project_uc = LinkProjectUseCase(project_repo, workspace_repo)
     app.state.set_permission_uc = SetPermissionUseCase(project_repo, workspace_repo)
     app.state.collect_event_uc = CollectEventUseCase(
-        event_repo, workspace_repo, project_repo, pii, kafka,
+        event_repo, workspace_repo, project_repo, pii, queue,
         anthropic_api_key=settings.anthropic_api_key,
     )
-    app.state.event_repo = event_repo  # branches 직접 조회용
+    app.state.event_repo = event_repo
     app.state.anthropic_api_key = settings.anthropic_api_key
     app.state.github_webhook_secret = settings.github_webhook_secret
     app.state.get_overview_uc = GetOverviewUseCase(workspace_repo, project_repo, event_repo)
@@ -96,22 +123,22 @@ async def lifespan(app: FastAPI):
     app.state.add_comment_uc = AddCommentUseCase(comment_repo, event_repo, workspace_repo)
     app.state.list_comments_uc = ListCommentsUseCase(comment_repo, event_repo, workspace_repo)
 
-    # 서버 시작 시 미분석 이벤트 백필 (백그라운드)
     if settings.anthropic_api_key:
         import asyncio
         asyncio.create_task(_backfill_refinement(event_repo, settings.anthropic_api_key))
 
     yield
 
-    await kafka.stop()
+    await queue.stop()
     await db.disconnect()
 
 
 app = FastAPI(title="HUGININ", version="0.1.0", lifespan=lifespan)
 
+_origins = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -130,12 +157,8 @@ mount_mcp(app)
 
 
 async def _backfill_refinement(event_repo, api_key: str) -> None:
-    """서버 시작 시 frame IS NULL인 이벤트를 순차적으로 ETL 분석."""
     import asyncio
-    import logging
     from infrastructure.llm.claude_refiner import refine_event
-
-    logger = logging.getLogger("huginin.backfill")
 
     try:
         rows = await event_repo._pool.fetch(
@@ -149,9 +172,11 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
         )
         if not rows:
             return
-        logger.info("Backfill: %d events need rich ETL", len(rows))
+        logger.info("Backfill: %d events", len(rows))
         for row in rows:
-            result = await refine_event(row["raw_prompt"], row["raw_response"] or "", row["diff"], api_key, row["user_name"])
+            result = await refine_event(
+                row["raw_prompt"], row["raw_response"] or "", row["diff"], api_key, row["user_name"]
+            )
             if result:
                 await event_repo.update_refined(
                     id=row["id"],
@@ -163,7 +188,7 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
                     problem_solved=result.get("problem_solved", ""),
                     ai_role=result.get("ai_role", ""),
                 )
-            await asyncio.sleep(0.5)  # API 레이트 리밋 여유
+            await asyncio.sleep(0.5)
         logger.info("Backfill complete")
     except Exception as e:
-        logging.getLogger("huginin.backfill").warning("Backfill error: %s", e)
+        logger.warning("Backfill error: %s", e)
