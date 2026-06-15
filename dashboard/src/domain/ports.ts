@@ -1,4 +1,4 @@
-import type { ActivityDay, Comment, FeedPage, TokenStats, WorkspaceOverview } from "./entities";
+import type { ActivityDay, Comment, FeedPage, FrameStats, TokenStats, WorkspaceOverview } from "./entities";
 
 export interface IDashboardRepository {
   getOverview(workspaceId: string): Promise<WorkspaceOverview>;
@@ -6,6 +6,7 @@ export interface IDashboardRepository {
   getActivity(workspaceId: string, days: number): Promise<ActivityDay[]>;
   getBranches(workspaceId: string): Promise<string[]>;
   getTokenStats(workspaceId: string, days: number, branch?: string): Promise<TokenStats>;
+  getFrameStats(workspaceId: string, days: number): Promise<FrameStats>;
   searchEvents(workspaceId: string, query: string, limit?: number): Promise<FeedPage>;
 }
 

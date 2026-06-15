@@ -85,6 +85,17 @@ export function useBranchesQuery(workspaceId: string) {
   });
 }
 
+export function useFrameStatsQuery(workspaceId: string, days = 30) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["frameStats", workspaceId, days],
+    queryFn: () => repo.getFrameStats(workspaceId, days),
+    enabled: !!token && !!workspaceId,
+    staleTime: 60_000,
+  });
+}
+
 export function useTokenStatsQuery(workspaceId: string, days = 30, branch?: string) {
   const token = useAuthStore((s) => s.token) ?? "";
   const repo = createDashboardRepository(token);
