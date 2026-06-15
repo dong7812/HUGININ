@@ -1,0 +1,23 @@
+{
+  "name": "HUGININ — AI Decision Workspace",
+  "short_name": "HUGININ",
+  "description": "팀 AI 협업 가시화 플랫폼",
+  "icons": [
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "theme_color": "#09090b",
+  "background_color": "#09090b",
+  "display": "standalone",
+  "start_url": "/"
+}

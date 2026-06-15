@@ -8,7 +8,25 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: "HUGININ — AI Decision Workspace",
-  description: "팀 AI 의사결정 관찰성 대시보드",
+  description: "팀 AI 협업 가시화 플랫폼. 개발자의 Huginn — 팀의 AI 협업을 관찰하고 인사이트를 가져온다.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon-96x96.png", sizes: "96x96", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png" },
+    ],
+    other: [
+      { rel: "msapplication-TileImage", url: "/web-app-manifest-192x192.png" },
+    ],
+  },
+  other: {
+    "msapplication-TileColor": "#09090b",
+    "theme-color": "#09090b",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
