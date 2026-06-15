@@ -7,9 +7,11 @@ import (
 )
 
 type Config struct {
-	Token   string `json:"token"`
-	UserID  string `json:"user_id"`
-	BaseURL string `json:"base_url"`
+	Token         string `json:"token"`
+	UserID        string `json:"user_id"`
+	BaseURL       string `json:"base_url"`
+	WorkspaceID   string `json:"workspace_id,omitempty"`
+	WorkspaceName string `json:"workspace_name,omitempty"`
 }
 
 func configPath() (string, error) {

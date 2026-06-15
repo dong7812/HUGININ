@@ -65,6 +65,7 @@ async def lifespan(app: FastAPI):
 
     # 라우터 의존성 조회용 state 등록
     app.state.token_port = jwt
+    app.state.user_repo = user_repo
     app.state.workspace_repo = workspace_repo
     app.state.project_repo = project_repo
 
@@ -79,7 +80,8 @@ async def lifespan(app: FastAPI):
     app.state.link_project_uc = LinkProjectUseCase(project_repo, workspace_repo)
     app.state.set_permission_uc = SetPermissionUseCase(project_repo, workspace_repo)
     app.state.collect_event_uc = CollectEventUseCase(
-        event_repo, workspace_repo, project_repo, pii, kafka
+        event_repo, workspace_repo, project_repo, pii, kafka,
+        anthropic_api_key=settings.anthropic_api_key,
     )
     app.state.event_repo = event_repo  # branches 직접 조회용
     app.state.get_overview_uc = GetOverviewUseCase(workspace_repo, project_repo, event_repo)
@@ -88,6 +90,11 @@ async def lifespan(app: FastAPI):
     app.state.get_token_stats_uc = GetTokenStatsUseCase(event_repo)
     app.state.add_comment_uc = AddCommentUseCase(comment_repo, event_repo, workspace_repo)
     app.state.list_comments_uc = ListCommentsUseCase(comment_repo, event_repo, workspace_repo)
+
+    # 서버 시작 시 미분석 이벤트 백필 (백그라운드)
+    if settings.anthropic_api_key:
+        import asyncio
+        asyncio.create_task(_backfill_refinement(event_repo, settings.anthropic_api_key))
 
     yield
 
@@ -114,3 +121,43 @@ app.include_router(dashboard_router)
 app.include_router(memory_router)
 
 mount_mcp(app)
+
+
+async def _backfill_refinement(event_repo, api_key: str) -> None:
+    """서버 시작 시 frame IS NULL인 이벤트를 순차적으로 ETL 분석."""
+    import asyncio
+    import logging
+    from infrastructure.llm.claude_refiner import refine_event
+
+    logger = logging.getLogger("huginin.backfill")
+
+    try:
+        rows = await event_repo._pool.fetch(
+            """
+            SELECT e.id, e.raw_prompt, e.raw_response, e.diff, u.name AS user_name
+            FROM decision_events e
+            JOIN users u ON u.id = e.user_id
+            WHERE e.what_was_built IS NULL
+            ORDER BY e.created_at DESC
+            """
+        )
+        if not rows:
+            return
+        logger.info("Backfill: %d events need rich ETL", len(rows))
+        for row in rows:
+            result = await refine_event(row["raw_prompt"], row["raw_response"] or "", row["diff"], api_key, row["user_name"])
+            if result:
+                await event_repo.update_refined(
+                    id=row["id"],
+                    frame=result.get("frame", "B"),
+                    ai_contribution=float(result.get("ai_contribution", 0.5)),
+                    decision_summary=result.get("decision_summary", ""),
+                    decision_type=result.get("decision_type", "other"),
+                    what_was_built=result.get("what_was_built", ""),
+                    problem_solved=result.get("problem_solved", ""),
+                    ai_role=result.get("ai_role", ""),
+                )
+            await asyncio.sleep(0.5)  # API 레이트 리밋 여유
+        logger.info("Backfill complete")
+    except Exception as e:
+        logging.getLogger("huginin.backfill").warning("Backfill error: %s", e)

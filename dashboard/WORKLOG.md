@@ -7,3 +7,4 @@
 2026-06-14 | FEATURE_BUILDING | 검색 + 필터 — useSearchQuery (ILIKE, 2자 트리거), OverviewCards 시간 범위 필터 버튼 (오늘/이번 주/전체), WorkspaceDashboard 클라이언트 wrapper
 2026-06-14 | BUG_FIXING | button 중첩 hydration 오류 수정 — diff 헤더 button → div[role="button"]로 변경
 2026-06-14 19:00 | commit | 2c37b20 | branch:main | Initial commit from Create Next App
+2026-06-15 16:42 | commit | 782d9d9 | branch:feature/interactive-login | Make login interactive: prompt for email/password when flags omitted

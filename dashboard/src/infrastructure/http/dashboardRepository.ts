@@ -1,6 +1,56 @@
 import type { IDashboardRepository } from "@/domain/ports";
-import type { ActivityDay, FeedPage, TokenStats, WorkspaceOverview } from "@/domain/entities";
+import type { ActivityDay, FeedItem, FeedPage, TokenStats, WorkspaceOverview } from "@/domain/entities";
 import { apiFetch } from "./apiClient";
+
+interface RawFeedItem {
+  event_id: string;
+  user_email: string;
+  user_name: string;
+  project_name: string | null;
+  prompt_preview: string;
+  status: string;
+  created_at: string;
+  branch: string | null;
+  prompt_tokens: number | null;
+  response_tokens: number | null;
+  raw_response: string | null;
+  diff: string | null;
+  commit_hash: string | null;
+  comment_count: number;
+  frame: "A" | "B" | "C" | "D" | null;
+  ai_contribution: number | null;
+  decision_summary: string | null;
+  decision_type: string | null;
+  what_was_built: string | null;
+  problem_solved: string | null;
+  ai_role: string | null;
+}
+
+function mapFeedItem(i: RawFeedItem): FeedItem {
+  return {
+    eventId: i.event_id,
+    userEmail: i.user_email,
+    userName: i.user_name ?? "",
+    projectName: i.project_name,
+    promptPreview: i.prompt_preview,
+    status: i.status as FeedItem["status"],
+    createdAt: i.created_at,
+    branch: i.branch,
+    promptTokens: i.prompt_tokens,
+    responseTokens: i.response_tokens,
+    rawResponse: i.raw_response,
+    diff: i.diff,
+    commitHash: i.commit_hash,
+    commentCount: i.comment_count,
+    frame: i.frame,
+    aiContribution: i.ai_contribution,
+    decisionSummary: i.decision_summary,
+    decisionType: i.decision_type,
+    whatWasBuilt: i.what_was_built,
+    problemSolved: i.problem_solved,
+    aiRole: i.ai_role,
+  };
+}
 
 // LSP: IDashboardRepository의 완전한 구현체 — 인터페이스와 동일한 계약 보장
 class DashboardApiRepository implements IDashboardRepository {
@@ -28,42 +78,11 @@ class DashboardApiRepository implements IDashboardRepository {
     const branchParam = branch ? `&branch=${encodeURIComponent(branch)}` : "";
     const dateParam = dateFrom ? `&date_from=${encodeURIComponent(dateFrom)}` : "";
     const data = await apiFetch<{
-      items: Array<{
-        event_id: string;
-        user_email: string;
-        project_name: string | null;
-        prompt_preview: string;
-        status: string;
-        created_at: string;
-        branch: string | null;
-        prompt_tokens: number | null;
-        response_tokens: number | null;
-        raw_response: string | null;
-        diff: string | null;
-        commit_hash: string | null;
-        comment_count: number;
-      }>;
+      items: Array<RawFeedItem>;
       total: number;
     }>(`/dashboard/${workspaceId}/feed?limit=${limit}&offset=${offset}${branchParam}${dateParam}`, this.token);
 
-    return {
-      items: data.items.map((i) => ({
-        eventId: i.event_id,
-        userEmail: i.user_email,
-        projectName: i.project_name,
-        promptPreview: i.prompt_preview,
-        status: i.status as FeedPage["items"][number]["status"],
-        createdAt: i.created_at,
-        branch: i.branch,
-        promptTokens: i.prompt_tokens,
-        responseTokens: i.response_tokens,
-        rawResponse: i.raw_response,
-        diff: i.diff,
-        commitHash: i.commit_hash,
-        commentCount: i.comment_count,
-      })),
-      total: data.total,
-    };
+    return { items: data.items.map(mapFeedItem), total: data.total };
   }
 
   async getActivity(workspaceId: string, days: number): Promise<ActivityDay[]> {
@@ -76,42 +95,11 @@ class DashboardApiRepository implements IDashboardRepository {
 
   async searchEvents(workspaceId: string, query: string, limit = 20): Promise<FeedPage> {
     const data = await apiFetch<{
-      items: Array<{
-        event_id: string;
-        user_email: string;
-        project_name: string | null;
-        prompt_preview: string;
-        status: string;
-        created_at: string;
-        branch: string | null;
-        prompt_tokens: number | null;
-        response_tokens: number | null;
-        raw_response: string | null;
-        diff: string | null;
-        commit_hash: string | null;
-        comment_count: number;
-      }>;
+      items: Array<RawFeedItem>;
       total: number;
     }>(`/dashboard/${workspaceId}/search?q=${encodeURIComponent(query)}&limit=${limit}`, this.token);
 
-    return {
-      items: data.items.map((i) => ({
-        eventId: i.event_id,
-        userEmail: i.user_email,
-        projectName: i.project_name,
-        promptPreview: i.prompt_preview,
-        status: i.status as FeedPage["items"][number]["status"],
-        createdAt: i.created_at,
-        branch: i.branch,
-        promptTokens: i.prompt_tokens,
-        responseTokens: i.response_tokens,
-        rawResponse: i.raw_response,
-        diff: i.diff,
-        commitHash: i.commit_hash,
-        commentCount: i.comment_count,
-      })),
-      total: data.total,
-    };
+    return { items: data.items.map(mapFeedItem), total: data.total };
   }
 
   async getBranches(workspaceId: string): Promise<string[]> {

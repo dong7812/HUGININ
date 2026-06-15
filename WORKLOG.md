@@ -13,3 +13,14 @@
 2026-06-15 02:05 | commit | 98ecb0e | branch:main | Reframe core value: AI collaboration visibility over team memory
 2026-06-15 02:12 | commit | 8b018a1 | branch:main | Clarify direction: AI collaboration visibility, Frame A/B/C/D as north star
 2026-06-15 02:19 | commit | 6ccc32f | branch:main | collab-proof: session 2026-06-15 — EXPLORING HIGH, direction reframe
+2026-06-15 02:39 | commit | 533846f | branch:main | Add CLI installation: Makefile + hooks/install.sh auto-build + README guide
+2026-06-15 10:54 | session-end | files_changed:2 | branch:main | 533846f Add CLI installation: Makefile + hooks/install.sh auto-build + README guide
+2026-06-15 15:57 | session-end | files_changed:3 | branch:main | 533846f Add CLI installation: Makefile + hooks/install.sh auto-build + README guide
+2026-06-15 16:08 | commit | 8f26533 | branch:main | Add service-token command for MCP/Git hook automation
+2026-06-15 16:25 | commit | a5263eb | branch:main | Add interactive workspace picker on login
+2026-06-15 16:29 | commit | 782d9d9 | branch:feature/interactive-login | Make login interactive: prompt for email/password when flags omitted
+2026-06-15 17:16 | commit | f12a5a1 | branch:feature/interactive-login | Add ETL pipeline + git hook embed + git branch graph
+2026-06-15 17:33 | session-end | files_changed:8 | branch:feature/interactive-login | f12a5a1 Add ETL pipeline + git hook embed + git branch graph
+2026-06-15 17:35 | commit | a52239d | branch:feature/interactive-login | Fix Ctrl+C handling in login prompt + add ETL backfill on server start
+2026-06-15 17:43 | session-end | files_changed:17 | branch:feature/interactive-login | a52239d Fix Ctrl+C handling in login prompt + add ETL backfill on server start
+2026-06-15 17:48 | commit | 5968260 | branch:feature/interactive-login | Add rich ETL narrative fields: what_was_built, problem_solved, ai_role

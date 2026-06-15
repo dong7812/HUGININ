@@ -9,6 +9,7 @@ export interface WorkspaceOverview {
 export interface FeedItem {
   eventId: string;
   userEmail: string;
+  userName: string;
   projectName: string | null;
   promptPreview: string;
   status: "pending" | "refined" | "failed";
@@ -20,6 +21,15 @@ export interface FeedItem {
   diff: string | null;
   commitHash: string | null;
   commentCount: number;
+  // ETL 분석 결과
+  frame: "A" | "B" | "C" | "D" | null;
+  aiContribution: number | null;  // 0.0–1.0
+  decisionSummary: string | null;
+  decisionType: string | null;
+  // 풍부한 서사 필드
+  whatWasBuilt: string | null;
+  problemSolved: string | null;
+  aiRole: string | null;
 }
 
 export interface Comment {

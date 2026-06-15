@@ -8,3 +8,6 @@ class TokenPort(ABC):
 
     @abstractmethod
     def decode_user_id(self, token: str) -> UUID: ...
+
+    @abstractmethod
+    def create_service_token(self, user_id: UUID) -> str: ...

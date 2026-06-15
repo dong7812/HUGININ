@@ -6,6 +6,7 @@ from application.exceptions import DuplicateEventError, NotFoundError, Permissio
 from application.use_cases.collect.collect_event import CollectEventInput
 from interfaces.http.middleware.rbac_middleware import get_current_user_id
 from interfaces.http.schemas.event_schema import CollectEventRequest, CollectEventResponse
+from domain.repositories.user_repository import UserRepository
 
 router = APIRouter(prefix="/collect", tags=["collect"])
 
@@ -20,11 +21,16 @@ async def collect_event(
     MCP 툴 및 CLI/Git Hook에서 호출하는 수집 엔드포인트.
     fastapi-mcp가 이 엔드포인트를 MCP tool로 자동 노출한다.
     """
+    user_repo: UserRepository = request.app.state.user_repo
+    user = await user_repo.find_by_id(user_id)
+    user_name = user.name if user else ""
+
     try:
         result = await request.app.state.collect_event_uc.execute(
             CollectEventInput(
                 workspace_id=body.workspace_id,
                 user_id=user_id,
+                user_name=user_name,
                 raw_prompt=body.raw_prompt,
                 raw_response=body.raw_response,
                 project_id=body.project_id,

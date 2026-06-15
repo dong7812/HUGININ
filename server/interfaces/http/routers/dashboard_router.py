@@ -23,7 +23,8 @@ class OverviewResponse(BaseModel):
 class FeedItemResponse(BaseModel):
     event_id: UUID
     user_email: str
-    project_name: str | None
+    user_name: str = ""
+    project_name: str | None = None
     prompt_preview: str
     status: str
     created_at: str
@@ -34,6 +35,14 @@ class FeedItemResponse(BaseModel):
     diff: str | None = None
     commit_hash: str | None = None
     comment_count: int = 0
+    # ETL 분석 결과
+    frame: str | None = None
+    ai_contribution: float | None = None
+    decision_summary: str | None = None
+    decision_type: str | None = None
+    what_was_built: str | None = None
+    problem_solved: str | None = None
+    ai_role: str | None = None
 
 
 class FeedResponse(BaseModel):
@@ -97,6 +106,7 @@ async def get_feed(
             FeedItemResponse(
                 event_id=item.event_id,
                 user_email=item.user_email,
+                user_name=item.user_name,
                 project_name=item.project_name,
                 prompt_preview=item.prompt_preview,
                 status=item.status,
@@ -108,6 +118,13 @@ async def get_feed(
                 diff=item.diff,
                 commit_hash=item.commit_hash,
                 comment_count=item.comment_count,
+                frame=item.frame,
+                ai_contribution=item.ai_contribution,
+                decision_summary=item.decision_summary,
+                decision_type=item.decision_type,
+                what_was_built=item.what_was_built,
+                problem_solved=item.problem_solved,
+                ai_role=item.ai_role,
             )
             for item in result.items
         ],
@@ -167,6 +184,7 @@ async def search_events(
             FeedItemResponse(
                 event_id=item.event_id,
                 user_email=item.user_email,
+                user_name=item.user_name,
                 project_name=item.project_name,
                 prompt_preview=item.prompt_preview,
                 status=item.status,
@@ -178,6 +196,13 @@ async def search_events(
                 diff=item.diff,
                 commit_hash=item.commit_hash,
                 comment_count=item.comment_count,
+                frame=item.frame,
+                ai_contribution=item.ai_contribution,
+                decision_summary=item.decision_summary,
+                decision_type=item.decision_type,
+                what_was_built=item.what_was_built,
+                problem_solved=item.problem_solved,
+                ai_role=item.ai_role,
             )
             for item in items
         ],

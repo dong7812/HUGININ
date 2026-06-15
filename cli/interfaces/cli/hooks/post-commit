@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# HUGININ post-commit hook — collab-proof 기반 고도화
+# CI 환경, session.lock, hash-map.json 관리
+
+set -euo pipefail
+
+HUGININ_DIR=".huginin"
+LOCK_FILE="$HUGININ_DIR/session.lock"
+HASH_MAP="$HUGININ_DIR/hash-map.json"
+
+# CI/CD 환경 자동 스킵
+if [ "${CI:-false}" = "true" ] || [ "${GITHUB_ACTIONS:-false}" = "true" ]; then
+  exit 0
+fi
+
+# huginin CLI 미설치 시 스킵
+if ! command -v huginin &>/dev/null; then
+  exit 0
+fi
+
+# 토큰 미설정 시 스킵
+TOKEN=$(huginin __token 2>/dev/null || true)
+if [ -z "$TOKEN" ]; then
+  exit 0
+fi
+
+mkdir -p "$HUGININ_DIR"
+
+# 동시 실행 방지 (session.lock)
+if [ -f "$LOCK_FILE" ]; then
+  LOCK_PID=$(cat "$LOCK_FILE" 2>/dev/null || echo "")
+  if [ -n "$LOCK_PID" ] && kill -0 "$LOCK_PID" 2>/dev/null; then
+    echo "[huginin] another session running (pid $LOCK_PID), skipping"
+    exit 0
+  fi
+fi
+echo $$ > "$LOCK_FILE"
+trap 'rm -f "$LOCK_FILE"' EXIT
+
+# 커밋 정보 수집
+COMMIT_HASH=$(git rev-parse HEAD)
+COMMIT_MSG=$(git log -1 --pretty=%B)
+DIFF=$(git diff HEAD~1 HEAD --stat 2>/dev/null | head -50 || git diff --cached --stat | head -50)
+
+# hash-map.json: rebase/amend 시 원본 해시 보존
+if [ -f "$HASH_MAP" ]; then
+  ORIG_HASH=$(python3 -c "
+import json, sys
+d = json.load(open('$HASH_MAP'))
+print(d.get('$COMMIT_HASH', '$COMMIT_HASH'))
+" 2>/dev/null || echo "$COMMIT_HASH")
+else
+  echo '{}' > "$HASH_MAP"
+  ORIG_HASH="$COMMIT_HASH"
+fi
+
+# .huginin/projects.json 에서 workspace/project 설정 읽기
+PROJECTS_FILE="$HUGININ_DIR/projects.json"
+if [ ! -f "$PROJECTS_FILE" ]; then
+  echo "[huginin] not linked — run: huginin project link"
+  exit 0
+fi
+
+WORKSPACE_ID=$(python3 -c "import json; d=json.load(open('$PROJECTS_FILE')); print(d.get('workspace_id',''))" 2>/dev/null || true)
+PROJECT_ID=$(python3 -c "import json; d=json.load(open('$PROJECTS_FILE')); print(d.get('project_id',''))" 2>/dev/null || true)
+
+if [ -z "$WORKSPACE_ID" ]; then
+  echo "[huginin] workspace_id not set in $PROJECTS_FILE"
+  exit 0
+fi
+
+# Claude Code 세션 로그에서 마지막 프롬프트/응답 추출 (best-effort)
+CLAUDE_LOG_DIR="$HOME/.claude/projects"
+PROMPT=""
+RESPONSE=""
+if [ -d "$CLAUDE_LOG_DIR" ]; then
+  LATEST=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -newer "$HUGININ_DIR/session.lock" 2>/dev/null | head -1 || true)
+  if [ -n "$LATEST" ]; then
+    PROMPT=$(python3 -c "
+import json, sys
+lines = [json.loads(l) for l in open('$LATEST') if l.strip()]
+for l in reversed(lines):
+    if l.get('type') == 'user':
+        c = l.get('message', {}).get('content', '')
+        if isinstance(c, str): print(c[:2000]); break
+        for x in c:
+            if isinstance(x, dict) and x.get('type') == 'text':
+                print(x['text'][:2000]); break
+        break
+" 2>/dev/null || true)
+    RESPONSE=$(python3 -c "
+import json, sys
+lines = [json.loads(l) for l in open('$LATEST') if l.strip()]
+for l in reversed(lines):
+    if l.get('type') == 'assistant':
+        c = l.get('message', {}).get('content', [])
+        for x in (c if isinstance(c, list) else []):
+            if isinstance(x, dict) and x.get('type') == 'text':
+                print(x['text'][:2000]); break
+        break
+" 2>/dev/null || true)
+  fi
+fi
+
+# 프롬프트가 없으면 커밋 메시지로 대체
+if [ -z "$PROMPT" ]; then
+  PROMPT="[git commit] $COMMIT_MSG"
+fi
+if [ -z "$RESPONSE" ]; then
+  RESPONSE="[no AI session detected]"
+fi
+
+# 비동기 업로드 (CLI 블로킹 없이)
+(huginin __collect \
+  --workspace "$WORKSPACE_ID" \
+  --project "$PROJECT_ID" \
+  --commit "$ORIG_HASH" \
+  --prompt "$PROMPT" \
+  --response "$RESPONSE" \
+  --diff "$DIFF" \
+  2>>"$HUGININ_DIR/collect.log" || true) &
+
+echo "[huginin] event queued for commit $COMMIT_HASH"

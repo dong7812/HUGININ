@@ -19,6 +19,7 @@ class CollectEventInput:
     user_id: UUID
     raw_prompt: str
     raw_response: str
+    user_name: str = ""
     project_id: UUID | None = None
     commit_hash: str | None = None
     diff: str | None = None
@@ -41,12 +42,14 @@ class CollectEventUseCase:
         project_repo: ProjectRepository,
         pii_port: PiiPort,
         queue_port: QueuePort,
+        anthropic_api_key: str = "",
     ) -> None:
         self._event_repo = event_repo
         self._workspace_repo = workspace_repo
         self._project_repo = project_repo
         self._pii_port = pii_port
         self._queue_port = queue_port
+        self._anthropic_api_key = anthropic_api_key
 
     async def execute(self, input: CollectEventInput) -> CollectEventOutput:
         member = await self._workspace_repo.get_member(input.workspace_id, input.user_id)
@@ -85,8 +88,12 @@ class CollectEventUseCase:
         await self._event_repo.save(event)
         await self._queue_port.publish_event(event.id, input.workspace_id)
 
-        # 백그라운드 임베딩 — 응답 속도에 영향 없음
+        # 백그라운드 작업 — 응답 속도에 영향 없음
         asyncio.create_task(self._embed_async(event.id, masked_prompt, masked_response))
+        if self._anthropic_api_key:
+            asyncio.create_task(
+                self._refine_async(event.id, masked_prompt, masked_response, masked_diff, input.user_name)
+            )
 
         return CollectEventOutput(event_id=str(event.id), status=event.status.value)
 
@@ -96,4 +103,24 @@ class CollectEventUseCase:
             vec = await EmbeddingService.embed_event(prompt, response)
             await self._event_repo.update_embedding(event_id, vec)
         except Exception:
-            pass  # 임베딩 실패가 수집을 막으면 안 됨
+            pass
+
+    async def _refine_async(
+        self, event_id, prompt: str, response: str, diff: str | None, user_name: str = ""
+    ) -> None:
+        try:
+            from infrastructure.llm.claude_refiner import refine_event
+            result = await refine_event(prompt, response, diff, self._anthropic_api_key, user_name)
+            if result:
+                await self._event_repo.update_refined(
+                    id=event_id,
+                    frame=result.get("frame", "B"),
+                    ai_contribution=float(result.get("ai_contribution", 0.5)),
+                    decision_summary=result.get("decision_summary", ""),
+                    decision_type=result.get("decision_type", "other"),
+                    what_was_built=result.get("what_was_built", ""),
+                    problem_solved=result.get("problem_solved", ""),
+                    ai_role=result.get("ai_role", ""),
+                )
+        except Exception:
+            pass  # 분석 실패가 수집을 막으면 안 됨

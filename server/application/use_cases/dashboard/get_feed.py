@@ -11,6 +11,7 @@ class FeedItem:
     prompt_preview: str
     status: str
     created_at: datetime
+    user_name: str = ""
     branch: str | None = None
     prompt_tokens: int | None = None
     response_tokens: int | None = None
@@ -18,6 +19,15 @@ class FeedItem:
     diff: str | None = None
     commit_hash: str | None = None
     comment_count: int = 0
+    # ETL 분석 결과
+    frame: str | None = None
+    ai_contribution: float | None = None
+    decision_summary: str | None = None
+    decision_type: str | None = None
+    # 풍부한 서사 필드
+    what_was_built: str | None = None
+    problem_solved: str | None = None
+    ai_role: str | None = None
 
 
 @dataclass

@@ -86,6 +86,88 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Pipeline — 추상 플로우 */}
+      <section className="max-w-5xl mx-auto px-6 pb-20">
+        <h2 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-8">
+          Data pipeline
+        </h2>
+
+        {/* 3단 플로우 */}
+        <div className="grid sm:grid-cols-3 gap-0 mb-8">
+          {/* ① Collect */}
+          <div className="relative flex flex-col gap-3 bg-zinc-900 border border-zinc-800 rounded-l-xl p-5 sm:rounded-r-none">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-[10px] font-mono text-blue-400">1</span>
+              <span className="text-[10px] font-mono text-blue-400 uppercase tracking-widest">Collect</span>
+            </div>
+            <p className="text-sm font-medium text-zinc-200">커밋마다 자동 수집</p>
+            <div className="flex flex-col gap-1.5 font-mono text-[11px]">
+              {["prompt", "AI response", "git diff", "branch", "user"].map(f => (
+                <div key={f} className="flex items-center gap-1.5 text-zinc-500">
+                  <span className="w-1 h-1 rounded-full bg-zinc-700 shrink-0" />
+                  {f}
+                </div>
+              ))}
+            </div>
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 hidden sm:flex w-6 h-6 rounded-full bg-zinc-950 border border-zinc-700 items-center justify-center text-zinc-500">
+              <ArrowRight size={12} />
+            </div>
+          </div>
+
+          {/* ② Analyze */}
+          <div className="relative flex flex-col gap-3 bg-violet-950/30 border-y border-violet-900/50 p-5 sm:border-x-0 border sm:border-t border-b border-zinc-800 sm:rounded-none rounded-none">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-violet-500/20 border border-violet-500/40 flex items-center justify-center text-[10px] font-mono text-violet-400">2</span>
+              <span className="text-[10px] font-mono text-violet-400 uppercase tracking-widest">Analyze</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium text-zinc-200">AI가 의미를 추출</p>
+              <span className="text-[9px] font-mono text-violet-500 bg-violet-950/60 border border-violet-800/50 px-1.5 py-0.5 rounded">Claude Haiku</span>
+            </div>
+            <div className="flex flex-col gap-1.5 font-mono text-[11px]">
+              {[
+                ["frame",    "A · B · C · D"],
+                ["ai%",      "기여도 0–100"],
+                ["무엇",      "구체 결과물"],
+                ["왜",        "문제·맥락"],
+                ["AI 역할",  "누가 무엇을"],
+              ].map(([k, v]) => (
+                <div key={k} className="flex items-center justify-between gap-2 text-zinc-500">
+                  <span className="text-violet-400/80">{k}</span>
+                  <span className="text-zinc-600">{v}</span>
+                </div>
+              ))}
+            </div>
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 hidden sm:flex w-6 h-6 rounded-full bg-zinc-950 border border-zinc-700 items-center justify-center text-zinc-500">
+              <ArrowRight size={12} />
+            </div>
+          </div>
+
+          {/* ③ Visualize */}
+          <div className="flex flex-col gap-3 bg-zinc-900 border border-zinc-800 rounded-r-xl p-5 sm:rounded-l-none">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-[10px] font-mono text-emerald-400">3</span>
+              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest">Visualize</span>
+            </div>
+            <p className="text-sm font-medium text-zinc-200">팀 타임라인에 게시</p>
+            {/* 미니 카드 미리보기 */}
+            <div className="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2.5 flex flex-col gap-2">
+              <p className="text-[11px] text-zinc-200 font-medium leading-snug">Redis pub/sub → SSE 전환 결정</p>
+              <p className="text-[10px] text-zinc-600 leading-snug">연결 관리 복잡성 → 단방향 알림으로 충분</p>
+              <div className="flex items-center gap-2 pt-0.5">
+                <span className="text-[9px] font-mono text-violet-400 bg-violet-950/40 border border-violet-800/40 px-1.5 py-0.5 rounded">C · AI 주도</span>
+                <span className="text-[9px] font-mono text-zinc-600">AI 82%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 서브텍스트 */}
+        <p className="text-xs text-zinc-600 font-mono text-center">
+          git commit → PII 마스킹 → PostgreSQL + pgvector → Claude Haiku ETL → 팀 피드
+        </p>
+      </section>
+
       {/* How it works */}
       <section id="how" className="max-w-5xl mx-auto px-6 pb-20">
         <h2 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-8">

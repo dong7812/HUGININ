@@ -21,3 +21,16 @@ class EventRepository(ABC):
 
     @abstractmethod
     async def update_status(self, id: UUID, status: EventStatus) -> None: ...
+
+    @abstractmethod
+    async def update_refined(
+        self,
+        id: UUID,
+        frame: str,
+        ai_contribution: float,
+        decision_summary: str,
+        decision_type: str,
+        what_was_built: str = "",
+        problem_solved: str = "",
+        ai_role: str = "",
+    ) -> None: ...

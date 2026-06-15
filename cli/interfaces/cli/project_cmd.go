@@ -40,12 +40,19 @@ func newProjectCmd(uc *application.ProjectUseCase) *cobra.Command {
 				return err
 			}
 
-			// Git Hook이 읽는 .huginin/projects.json 자동 생성
+			// .huginin/projects.json 자동 생성 (Git Hook이 읽음)
 			if err := writeProjectsJSON(wsID, id); err != nil {
 				fmt.Fprintf(os.Stderr, "warning: could not write .huginin/projects.json: %v\n", err)
 			}
 
-			fmt.Printf("✓ Project linked: %s (id: %s, remote: %s)\n", name, id, remote)
+			// Git Hook 자동 설치
+			if err := installHooks("."); err != nil {
+				fmt.Fprintf(os.Stderr, "warning: hook install skipped: %v\n", err)
+			} else {
+				fmt.Println("✓ Git hooks installed (.git/hooks/)")
+			}
+
+			fmt.Printf("✓ Project linked: %s (id: %s)\n", name, id)
 			return nil
 		},
 	}
