@@ -159,6 +159,14 @@ func (c *Client) LinkProject(token, workspaceID, name, gitRemote string) (string
 	return r["project_id"].(string), nil
 }
 
+func (c *Client) CreateServiceToken(token string) (string, error) {
+	r, err := c.post("/auth/service-token", token, map[string]any{})
+	if err != nil {
+		return "", err
+	}
+	return r["access_token"].(string), nil
+}
+
 func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch string) (string, error) {
 	body := map[string]any{
 		"workspace_id": workspaceID,

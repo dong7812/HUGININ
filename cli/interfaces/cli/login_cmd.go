@@ -42,5 +42,35 @@ func newLoginCmd(uc *application.LoginUseCase) *cobra.Command {
 	cmd.MarkFlagRequired("email")
 	cmd.MarkFlagRequired("password")
 
+	cmd.AddCommand(newMcpTokenCmd(uc))
+
 	return cmd
+}
+
+func newMcpTokenCmd(uc *application.LoginUseCase) *cobra.Command {
+	return &cobra.Command{
+		Use:   "mcp-token",
+		Short: "MCP/Git hook용 장기 토큰 발급 (365일)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			token, err := uc.CreateServiceToken()
+			if err != nil {
+				return err
+			}
+			fmt.Println("✓ Service token (365일):")
+			fmt.Println()
+			fmt.Println(token)
+			fmt.Println()
+			fmt.Println(".mcp.json에 아래를 추가하세요:")
+			fmt.Println(`{
+  "mcpServers": {
+    "huginin": {
+      "url": "http://localhost:8000/mcp",
+      "type": "sse",
+      "headers": { "Authorization": "Bearer ` + token + `" }
+    }
+  }
+}`)
+			return nil
+		},
+	}
 }

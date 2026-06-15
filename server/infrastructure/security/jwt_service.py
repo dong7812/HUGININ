@@ -8,6 +8,7 @@ from application.ports.token_port import TokenPort
 
 _ALGORITHM = "HS256"
 _EXPIRE_DAYS = 30
+_SERVICE_TOKEN_DAYS = 365
 
 
 class JwtService(TokenPort):
@@ -18,6 +19,15 @@ class JwtService(TokenPort):
         payload = {
             "sub": str(user_id),
             "exp": datetime.utcnow() + timedelta(days=_EXPIRE_DAYS),
+        }
+        return jwt.encode(payload, self._secret, algorithm=_ALGORITHM)
+
+    def create_service_token(self, user_id: UUID) -> str:
+        """MCP/CLI 자동화용 장기 토큰 (365일)."""
+        payload = {
+            "sub": str(user_id),
+            "exp": datetime.utcnow() + timedelta(days=_SERVICE_TOKEN_DAYS),
+            "type": "service",
         }
         return jwt.encode(payload, self._secret, algorithm=_ALGORITHM)
 

@@ -13,3 +13,6 @@
 2026-06-15 02:05 | commit | 98ecb0e | branch:main | Reframe core value: AI collaboration visibility over team memory
 2026-06-15 02:12 | commit | 8b018a1 | branch:main | Clarify direction: AI collaboration visibility, Frame A/B/C/D as north star
 2026-06-15 02:19 | commit | 6ccc32f | branch:main | collab-proof: session 2026-06-15 — EXPLORING HIGH, direction reframe
+2026-06-15 02:39 | commit | 533846f | branch:main | Add CLI installation: Makefile + hooks/install.sh auto-build + README guide
+2026-06-15 10:54 | session-end | files_changed:2 | branch:main | 533846f Add CLI installation: Makefile + hooks/install.sh auto-build + README guide
+2026-06-15 15:57 | session-end | files_changed:3 | branch:main | 533846f Add CLI installation: Makefile + hooks/install.sh auto-build + README guide
