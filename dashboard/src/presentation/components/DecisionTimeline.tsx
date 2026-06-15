@@ -557,23 +557,49 @@ function TimelineEntry({
         {/* Expanded detail */}
         {expanded && (
           <div className="mt-3 flex flex-col gap-2">
-            {/* AI 역할 서사 — 핵심 인사이트 */}
-            {item.aiRole && (
-              <div className="bg-violet-950/30 border border-violet-800/40 rounded-md px-3 py-2.5">
-                <div className="flex items-center justify-between mb-1.5">
+            {/* 협업 서사 카드: 무엇 → 왜 → AI 기여 */}
+            {(item.whatWasBuilt || item.problemSolved || item.aiRole) && (
+              <div className="bg-violet-950/30 border border-violet-800/40 rounded-md overflow-hidden">
+                {/* 카드 헤더 */}
+                <div className="flex items-center justify-between px-3 py-2 border-b border-violet-800/30">
                   <div className="flex items-center gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-                    <span className="text-[10px] text-violet-400 font-medium uppercase tracking-wider">AI 기여</span>
+                    <span className="text-[10px] text-violet-400 font-medium uppercase tracking-wider">AI 협업 분석</span>
                   </div>
                   {item.userName && (
                     <span className="text-[10px] text-zinc-500 font-mono">{item.userName}</span>
                   )}
                 </div>
-                <p className="text-xs text-zinc-200 leading-relaxed">
-                  {item.userName
-                    ? item.aiRole.replace(/인간/g, item.userName)
-                    : item.aiRole}
-                </p>
+
+                <div className="flex flex-col divide-y divide-violet-800/20">
+                  {/* 무엇을 만들었나 */}
+                  {item.whatWasBuilt && (
+                    <div className="px-3 py-2.5 flex gap-2.5">
+                      <span className="text-[10px] text-violet-400/70 font-medium uppercase tracking-wider shrink-0 w-6 pt-0.5">무엇</span>
+                      <p className="text-xs text-zinc-200 leading-relaxed">{item.whatWasBuilt}</p>
+                    </div>
+                  )}
+
+                  {/* 왜 필요했나 — 추론 맥락 */}
+                  {item.problemSolved && (
+                    <div className="px-3 py-2.5 flex gap-2.5">
+                      <span className="text-[10px] text-amber-400/70 font-medium uppercase tracking-wider shrink-0 w-6 pt-0.5">왜</span>
+                      <p className="text-xs text-zinc-300 leading-relaxed">{item.problemSolved}</p>
+                    </div>
+                  )}
+
+                  {/* AI가 실제로 한 것 */}
+                  {item.aiRole && (
+                    <div className="px-3 py-2.5 flex gap-2.5">
+                      <span className="text-[10px] text-emerald-400/70 font-medium uppercase tracking-wider shrink-0 w-6 pt-0.5">AI</span>
+                      <p className="text-xs text-zinc-300 leading-relaxed">
+                        {item.userName
+                          ? item.aiRole.replace(/인간/g, item.userName)
+                          : item.aiRole}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
