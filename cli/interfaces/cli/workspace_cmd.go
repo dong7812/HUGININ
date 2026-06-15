@@ -6,13 +6,24 @@ import (
 	"github.com/spf13/cobra"
 
 	"huginin/application"
+	"huginin/infrastructure/config"
 )
 
-func newWorkspaceCmd(uc *application.WorkspaceUseCase) *cobra.Command {
+func newWorkspaceCmd(uc *application.WorkspaceUseCase, cfg *config.Config) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "workspace",
 		Short: "워크스페이스 관리",
 	}
+
+	// huginin workspace select
+	selectCmd := &cobra.Command{
+		Use:   "select",
+		Short: "활성 워크스페이스 전환",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runWorkspacePicker(uc, cfg)
+		},
+	}
+	cmd.AddCommand(selectCmd)
 
 	// huginin workspace create --name "My Team"
 	createCmd := &cobra.Command{

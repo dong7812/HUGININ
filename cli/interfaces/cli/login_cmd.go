@@ -6,9 +6,10 @@ import (
 	"github.com/spf13/cobra"
 
 	"huginin/application"
+	"huginin/infrastructure/config"
 )
 
-func newLoginCmd(uc *application.LoginUseCase) *cobra.Command {
+func newLoginCmd(uc *application.LoginUseCase, wsUC *application.WorkspaceUseCase, cfg *config.Config) *cobra.Command {
 	var register bool
 
 	cmd := &cobra.Command{
@@ -23,14 +24,18 @@ func newLoginCmd(uc *application.LoginUseCase) *cobra.Command {
 				if err := uc.Register(email, name, password); err != nil {
 					return fmt.Errorf("register failed: %w", err)
 				}
-				fmt.Println("✓ Registered and logged in")
-				return nil
+				fmt.Println("✓ 가입 완료")
+			} else {
+				if err := uc.Login(email, password); err != nil {
+					return fmt.Errorf("login failed: %w", err)
+				}
+				fmt.Println("✓ 로그인 완료")
 			}
 
-			if err := uc.Login(email, password); err != nil {
-				return fmt.Errorf("login failed: %w", err)
+			fmt.Println()
+			if err := runWorkspacePicker(wsUC, cfg); err != nil {
+				fmt.Println("⚠ 워크스페이스 선택 건너뜀:", err)
 			}
-			fmt.Println("✓ Logged in")
 			return nil
 		},
 	}
