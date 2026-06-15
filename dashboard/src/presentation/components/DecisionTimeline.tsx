@@ -560,11 +560,20 @@ function TimelineEntry({
             {/* AI 역할 서사 — 핵심 인사이트 */}
             {item.aiRole && (
               <div className="bg-violet-950/30 border border-violet-800/40 rounded-md px-3 py-2.5">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-                  <span className="text-[10px] text-violet-400 font-medium uppercase tracking-wider">AI 기여</span>
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                    <span className="text-[10px] text-violet-400 font-medium uppercase tracking-wider">AI 기여</span>
+                  </div>
+                  {item.userName && (
+                    <span className="text-[10px] text-zinc-500 font-mono">{item.userName}</span>
+                  )}
                 </div>
-                <p className="text-xs text-zinc-200 leading-relaxed">{item.aiRole}</p>
+                <p className="text-xs text-zinc-200 leading-relaxed">
+                  {item.userName
+                    ? item.aiRole.replace(/인간/g, item.userName)
+                    : item.aiRole}
+                </p>
               </div>
             )}
 

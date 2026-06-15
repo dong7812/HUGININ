@@ -23,7 +23,8 @@ class OverviewResponse(BaseModel):
 class FeedItemResponse(BaseModel):
     event_id: UUID
     user_email: str
-    project_name: str | None
+    user_name: str = ""
+    project_name: str | None = None
     prompt_preview: str
     status: str
     created_at: str
@@ -105,6 +106,7 @@ async def get_feed(
             FeedItemResponse(
                 event_id=item.event_id,
                 user_email=item.user_email,
+                user_name=item.user_name,
                 project_name=item.project_name,
                 prompt_preview=item.prompt_preview,
                 status=item.status,
@@ -182,6 +184,7 @@ async def search_events(
             FeedItemResponse(
                 event_id=item.event_id,
                 user_email=item.user_email,
+                user_name=item.user_name,
                 project_name=item.project_name,
                 prompt_preview=item.prompt_preview,
                 status=item.status,

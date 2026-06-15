@@ -9,6 +9,7 @@ export interface WorkspaceOverview {
 export interface FeedItem {
   eventId: string;
   userEmail: string;
+  userName: string;
   projectName: string | null;
   promptPreview: string;
   status: "pending" | "refined" | "failed";

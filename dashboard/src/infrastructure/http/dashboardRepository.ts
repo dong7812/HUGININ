@@ -5,6 +5,7 @@ import { apiFetch } from "./apiClient";
 interface RawFeedItem {
   event_id: string;
   user_email: string;
+  user_name: string;
   project_name: string | null;
   prompt_preview: string;
   status: string;
@@ -29,6 +30,7 @@ function mapFeedItem(i: RawFeedItem): FeedItem {
   return {
     eventId: i.event_id,
     userEmail: i.user_email,
+    userName: i.user_name ?? "",
     projectName: i.project_name,
     promptPreview: i.prompt_preview,
     status: i.status as FeedItem["status"],

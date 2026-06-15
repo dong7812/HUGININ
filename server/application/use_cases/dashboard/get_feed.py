@@ -7,8 +7,9 @@ from uuid import UUID
 class FeedItem:
     event_id: UUID
     user_email: str
-    project_name: str | None
-    prompt_preview: str
+    user_name: str = ""
+    project_name: str | None = None
+    prompt_preview: str = ""
     status: str
     created_at: datetime
     branch: str | None = None

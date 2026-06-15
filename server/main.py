@@ -65,6 +65,7 @@ async def lifespan(app: FastAPI):
 
     # 라우터 의존성 조회용 state 등록
     app.state.token_port = jwt
+    app.state.user_repo = user_repo
     app.state.workspace_repo = workspace_repo
     app.state.project_repo = project_repo
 
@@ -132,13 +133,19 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
 
     try:
         rows = await event_repo._pool.fetch(
-            "SELECT id, raw_prompt, raw_response, diff FROM decision_events WHERE what_was_built IS NULL ORDER BY created_at DESC"
+            """
+            SELECT e.id, e.raw_prompt, e.raw_response, e.diff, u.name AS user_name
+            FROM decision_events e
+            JOIN users u ON u.id = e.user_id
+            WHERE e.what_was_built IS NULL
+            ORDER BY e.created_at DESC
+            """
         )
         if not rows:
             return
         logger.info("Backfill: %d events need rich ETL", len(rows))
         for row in rows:
-            result = await refine_event(row["raw_prompt"], row["raw_response"] or "", row["diff"], api_key)
+            result = await refine_event(row["raw_prompt"], row["raw_response"] or "", row["diff"], api_key, row["user_name"])
             if result:
                 await event_repo.update_refined(
                     id=row["id"],

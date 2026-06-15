@@ -25,6 +25,8 @@ Respond with valid JSON only — no explanation, no markdown fences.
 """
 
 _USER_TEMPLATE = """\
+## Developer: {user_name}
+
 ## Developer prompt:
 {prompt}
 
@@ -42,7 +44,7 @@ Extract the following and return as JSON:
   "decision_type": "feature" | "bugfix" | "refactor" | "config" | "docs" | "test" | "other",
   "what_was_built": "<구체적 기술 결과물. 예: 'FastAPI ETL 파이프라인 + asyncpg 마이그레이션 + claude-haiku 기반 이벤트 분석기'. 단순 반복 금지>",
   "problem_solved": "<해결한 문제/맥락. 예: '대시보드가 raw prompt만 보여줘 AI 협업 가치가 보이지 않았음 → 의미있는 분석 데이터로 전환 필요'. 왜 이 작업이 필요했는지>",
-  "ai_role": "<AI가 실제로 한 것. 예: 'claude_refiner.py 전체 설계 및 구현, ETL 프롬프트 템플릿 작성, SQL 마이그레이션 생성 — 인간은 API 키 설정 및 서버 재시작 담당'>"
+  "ai_role": "<AI가 실제로 한 것과 {user_name}이 한 것. 예: 'claude_refiner.py 전체 설계 및 구현, ETL 프롬프트 템플릿 작성, SQL 마이그레이션 생성 — {user_name}: API 키 설정 및 서버 재시작 담당'>"
 }}
 
 Frame definitions:
@@ -54,8 +56,8 @@ Frame definitions:
 ai_contribution = fraction of actual code/decisions made by AI (0.0=none, 1.0=all)
 
 IMPORTANT: All three narrative fields (what_was_built, problem_solved, ai_role) MUST be \
-specific to THIS session. Never write generic text like "AI가 구현했습니다" or \
-"코드를 작성했습니다". Extract actual technical details from the prompt and response above.
+specific to THIS session. In ai_role, always refer to the developer by name ({user_name}), \
+never as "인간" or "개발자". Never write generic text.
 Write in Korean.
 """
 
@@ -65,6 +67,7 @@ async def refine_event(
     response: str,
     diff: str | None,
     api_key: str,
+    user_name: str = "",
 ) -> dict | None:
     """Claude Haiku로 이벤트 분석. 실패 시 None 반환."""
     try:
@@ -79,6 +82,7 @@ async def refine_event(
                 {
                     "role": "user",
                     "content": _USER_TEMPLATE.format(
+                        user_name=user_name or "개발자",
                         prompt=prompt[:2000],
                         response=response[:2000],
                         diff=(diff or "N/A")[:600],

@@ -23,3 +23,4 @@
 2026-06-15 17:33 | session-end | files_changed:8 | branch:feature/interactive-login | f12a5a1 Add ETL pipeline + git hook embed + git branch graph
 2026-06-15 17:35 | commit | a52239d | branch:feature/interactive-login | Fix Ctrl+C handling in login prompt + add ETL backfill on server start
 2026-06-15 17:43 | session-end | files_changed:17 | branch:feature/interactive-login | a52239d Fix Ctrl+C handling in login prompt + add ETL backfill on server start
+2026-06-15 17:48 | commit | 5968260 | branch:feature/interactive-login | Add rich ETL narrative fields: what_was_built, problem_solved, ai_role

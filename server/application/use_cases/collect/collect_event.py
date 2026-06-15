@@ -19,6 +19,7 @@ class CollectEventInput:
     user_id: UUID
     raw_prompt: str
     raw_response: str
+    user_name: str = ""
     project_id: UUID | None = None
     commit_hash: str | None = None
     diff: str | None = None
@@ -91,7 +92,7 @@ class CollectEventUseCase:
         asyncio.create_task(self._embed_async(event.id, masked_prompt, masked_response))
         if self._anthropic_api_key:
             asyncio.create_task(
-                self._refine_async(event.id, masked_prompt, masked_response, masked_diff)
+                self._refine_async(event.id, masked_prompt, masked_response, masked_diff, input.user_name)
             )
 
         return CollectEventOutput(event_id=str(event.id), status=event.status.value)
@@ -105,11 +106,11 @@ class CollectEventUseCase:
             pass
 
     async def _refine_async(
-        self, event_id, prompt: str, response: str, diff: str | None
+        self, event_id, prompt: str, response: str, diff: str | None, user_name: str = ""
     ) -> None:
         try:
             from infrastructure.llm.claude_refiner import refine_event
-            result = await refine_event(prompt, response, diff, self._anthropic_api_key)
+            result = await refine_event(prompt, response, diff, self._anthropic_api_key, user_name)
             if result:
                 await self._event_repo.update_refined(
                     id=event_id,
