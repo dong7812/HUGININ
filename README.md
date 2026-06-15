@@ -224,6 +224,134 @@ bash /path/to/HUGININ/hooks/install.sh .
 
 ---
 
+## ETL 파이프라인
+
+커밋 하나가 팀 타임라인에 게시되기까지의 전체 흐름.
+
+### 1. Extract — 수집
+
+```
+git commit
+   │
+   └─ hooks/post-commit  (huginin hook install로 설치)
+          │  raw_prompt, raw_response, diff, branch, commit_hash
+          ▼
+   POST /collect/event                              collect_router.py
+          │
+          ├─ JWT Bearer → user_id 검증              rbac_middleware.py
+          ├─ user_repo.find_by_id() → user.name     pg_user_repository.py
+          ├─ RegexPiiMasker.mask()                  pii_masker.py
+          │   (이메일, API 키, 토큰 패턴 제거)
+          ├─ DecisionEvent.create() → DB INSERT     pg_event_repository.py
+          │   status = "pending"
+          └─ KafkaProducer.publish_event()          kafka_producer.py
+```
+
+### 2. Transform — 백그라운드 분석 (asyncio.create_task)
+
+두 작업이 응답과 무관하게 병렬 실행됩니다:
+
+```
+event 저장 직후
+   │
+   ├─ _embed_async()
+   │      fastembed BAAI/bge-small-en-v1.5          embedding_service.py
+   │      prompt + response → 384-dim float[]
+   │      UPDATE decision_events SET embedding = $1::vector
+   │
+   └─ _refine_async()
+          claude_refiner.refine_event()              claude_refiner.py
+          모델: claude-haiku-4-5-20251001
+          입력: prompt[:2000] + response[:2000] + diff[:600] + user_name
+          │
+          ▼ structured JSON output
+          {
+            "frame":          "A" | "B" | "C" | "D",
+            "ai_contribution": 0.0–1.0,
+            "decision_type":  "feature" | "bugfix" | ...,
+            "what_was_built": "구체적 기술 결과물",
+            "problem_solved": "해결한 문제/맥락",
+            "ai_role":        "AI vs {user_name} 역할 분담"
+          }
+          │
+          ▼
+          UPDATE decision_events                     pg_event_repository.py
+             SET frame, ai_contribution, decision_type,
+                 what_was_built, problem_solved, ai_role
+           WHERE id = $1
+          status → "refined"
+```
+
+**Frame 정의**
+
+| Frame | 의미 | 예시 |
+|---|---|---|
+| A | AI 조언, 개발자 결정·코딩 | "이 접근이 맞는지 확인해줘" |
+| B | 개발자 방향 지시, AI가 30–70% 구현 | "JWT refresh token 구현해줘" |
+| C | AI가 제안+구현, 개발자 검토·승인 | 전체 모듈 설계를 AI가 제안 |
+| D | AI 전자동, 최소 인간 개입 | 마이그레이션 스크립트 자동 생성 |
+
+### 3. Backfill — 서버 시작 시 재처리
+
+서버 재시작 시 `what_was_built IS NULL`인 이벤트를 순차 재분석합니다:
+
+```python
+# main.py — _backfill_refinement()
+SELECT e.id, e.raw_prompt, e.raw_response, e.diff, u.name AS user_name
+FROM decision_events e
+JOIN users u ON u.id = e.user_id
+WHERE e.what_was_built IS NULL
+ORDER BY e.created_at DESC
+
+# 이벤트마다 refine_event() 호출 후 0.5s 대기 (API 레이트 리밋)
+```
+
+### 4. Load — 서빙
+
+```
+GET /dashboard/{workspace_id}/feed                 dashboard_router.py
+   │
+   └─ SELECT e.*, u.name AS user_name, u.email AS user_email
+      FROM decision_events e
+      JOIN users u ON u.id = e.user_id
+      WHERE workspace_id = $1
+      ORDER BY created_at DESC
+
+      → FeedItemResponse (frame, ai_contribution, what_was_built,
+                          problem_solved, ai_role, user_name, ...)
+   │
+   ▼
+DecisionTimeline.tsx                               dashboard/src/...
+   ├─ whatWasBuilt   → 헤드라인
+   ├─ problemSolved  → 서브텍스트 (왜 필요했나)
+   └─ aiRole         → 펼침 카드 (AI vs {userName} 역할)
+```
+
+### DB 스키마 — decision_events 핵심 컬럼
+
+```sql
+-- 수집 시 기록
+raw_prompt      TEXT        -- PII 마스킹 후 프롬프트
+raw_response    TEXT        -- AI 응답
+diff            TEXT        -- git diff
+commit_hash     VARCHAR     -- 멱등성 키
+branch          VARCHAR
+status          VARCHAR     -- 'pending' → 'refined'
+
+-- ETL 분석 후 기록 (migration 004, 005)
+frame           CHAR(1)     -- A / B / C / D
+ai_contribution FLOAT       -- 0.0–1.0
+decision_type   VARCHAR     -- feature / bugfix / ...
+what_was_built  TEXT        -- 무엇을 만들었나
+problem_solved  TEXT        -- 왜 필요했나
+ai_role         TEXT        -- AI vs 개발자 역할
+
+-- 임베딩 (migration 003)
+embedding       VECTOR(384) -- fastembed HNSW cosine
+```
+
+---
+
 ## 기술 스택
 
 | 레이어 | 선택 | 비고 |
