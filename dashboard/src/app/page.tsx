@@ -111,24 +111,70 @@ export default function LandingPage() {
 
         {/* Before / After */}
         <div className="grid sm:grid-cols-2 gap-3 mt-16 max-w-2xl">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 font-mono text-xs">
-            <div className="text-zinc-600 mb-3">// Huginn 없이</div>
-            <div className="space-y-2 text-zinc-500">
-              <div>팀원 A: <span className="text-zinc-400">git commit "notification"</span></div>
-              <div>팀원 B: <span className="text-zinc-400">git commit "notification"</span></div>
-              <div className="text-zinc-700 pt-1">← 같은 시도, 서로 모름</div>
-              <div className="pt-1">팀원 C: <span className="text-zinc-400">"이거 왜 이렇게 됐어?"</span></div>
-              <div className="text-zinc-700">← 결정 맥락 없음</div>
+          {/* Before — 비어있음 */}
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 flex flex-col justify-between min-h-[180px]">
+            <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Without</span>
+            <div className="flex-1 flex flex-col items-center justify-center gap-2 py-6">
+              <div className="w-8 h-8 rounded-full border border-zinc-700 flex items-center justify-center">
+                <span className="text-zinc-700 text-lg">?</span>
+              </div>
+              <p className="text-xs text-zinc-700 text-center font-mono leading-relaxed">
+                no session data detected
+              </p>
+            </div>
+            <div className="font-mono text-[10px] text-zinc-700 space-y-0.5">
+              <div>a3f2c1d  feat: notification</div>
+              <div>b9e4f2a  fix: auth</div>
+              <div className="text-zinc-800">— that's all you know</div>
             </div>
           </div>
-          <div className="bg-zinc-900 border border-violet-900/50 rounded-lg p-4 font-mono text-xs">
-            <div className="text-violet-600 mb-3">// Huginn이 보고 온 것</div>
-            <div className="space-y-2">
-              <div className="text-zinc-300">팀원 A <span className="text-zinc-600">10:23</span></div>
-              <div className="text-zinc-500 pl-2">WebSocket → SSE 전환</div>
-              <div className="text-zinc-600 pl-2 text-xs">AI가 연결 관리 복잡성 지적</div>
-              <div className="pt-1 text-zinc-300">팀원 B <span className="text-zinc-600">11:45</span></div>
-              <div className="text-emerald-600 pl-2 text-xs">↳ A의 작업 참조 → 중복 방지</div>
+
+          {/* After — 실제 카드 UI 미리보기 */}
+          <div className="bg-zinc-900 border border-violet-800/40 rounded-xl overflow-hidden">
+            {/* 카드 헤더 */}
+            <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-zinc-800 bg-zinc-800/30">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+                <span className="text-[10px] font-mono text-zinc-400">kim</span>
+                <span className="text-[10px] text-zinc-700">/</span>
+                <span className="text-[10px] font-mono text-zinc-600">feat/notification</span>
+              </div>
+              <span className="text-[10px] font-mono text-zinc-700">14:32</span>
+            </div>
+            {/* 카드 본문 */}
+            <div className="px-3.5 py-3 flex flex-col gap-2">
+              <p className="text-xs text-zinc-200 font-medium leading-snug">
+                WebSocket → SSE 전환 결정
+              </p>
+              <p className="text-[11px] text-zinc-500 leading-snug">
+                연결 관리 복잡성 → 단방향 알림으로 충분
+              </p>
+              <div className="flex items-center gap-2 pt-1">
+                <span className="text-[9px] font-mono text-violet-400 bg-violet-950/50 border border-violet-800/50 px-1.5 py-0.5 rounded">C · AI 주도</span>
+                <div className="flex items-center gap-1">
+                  <div className="h-1 w-14 rounded-full bg-zinc-800 overflow-hidden">
+                    <div className="h-full w-[82%] rounded-full bg-violet-500" />
+                  </div>
+                  <span className="text-[9px] font-mono text-zinc-600">82%</span>
+                </div>
+              </div>
+            </div>
+            {/* AI 기여 카드 */}
+            <div className="mx-3.5 mb-3.5 rounded-md bg-violet-950/30 border border-violet-800/30 px-3 py-2">
+              <div className="flex items-center gap-1.5 mb-1">
+                <div className="w-1 h-1 rounded-full bg-violet-400" />
+                <span className="text-[9px] text-violet-400 font-mono uppercase tracking-wider">AI 협업 분석</span>
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex gap-2">
+                  <span className="text-[9px] text-violet-400/60 font-mono w-4 shrink-0">무엇</span>
+                  <span className="text-[9px] text-zinc-400 leading-tight">SSE 기반 알림 파이프라인</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-[9px] text-amber-400/60 font-mono w-4 shrink-0">왜</span>
+                  <span className="text-[9px] text-zinc-500 leading-tight">WS 양방향 불필요, 연결 비용 과다</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -150,7 +196,7 @@ export default function LandingPage() {
             </div>
             <p className="text-sm font-medium text-zinc-200">커밋마다 자동 수집</p>
             <div className="flex flex-col gap-1.5 font-mono text-[11px]">
-              {["prompt", "AI response", "git diff", "branch", "user"].map(f => (
+              {["prompt", "git diff", "branch", "commit hash"].map(f => (
                 <div key={f} className="flex items-center gap-1.5 text-zinc-500">
                   <span className="w-1 h-1 rounded-full bg-zinc-700 shrink-0" />
                   {f}
