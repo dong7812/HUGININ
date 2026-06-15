@@ -34,6 +34,10 @@ install: build
 	  fi; \
 	  echo "  → 현재 쉘에 바로 적용: source $$RC"; \
 	fi
+	@# 현재 디렉토리가 git 레포면 hook 자동 설치
+	@if [ -d ".git" ]; then \
+	  $(INSTALL) hook install . 2>/dev/null && echo "  → git hooks installed (.git/hooks/)" || true; \
+	fi
 
 ## 제거
 uninstall:

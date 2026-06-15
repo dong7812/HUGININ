@@ -18,6 +18,11 @@ class FeedItem:
     diff: str | None = None
     commit_hash: str | None = None
     comment_count: int = 0
+    # ETL 분석 결과
+    frame: str | None = None
+    ai_contribution: float | None = None
+    decision_summary: str | None = None
+    decision_type: str | None = None
 
 
 @dataclass

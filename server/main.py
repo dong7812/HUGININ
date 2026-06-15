@@ -79,7 +79,8 @@ async def lifespan(app: FastAPI):
     app.state.link_project_uc = LinkProjectUseCase(project_repo, workspace_repo)
     app.state.set_permission_uc = SetPermissionUseCase(project_repo, workspace_repo)
     app.state.collect_event_uc = CollectEventUseCase(
-        event_repo, workspace_repo, project_repo, pii, kafka
+        event_repo, workspace_repo, project_repo, pii, kafka,
+        anthropic_api_key=settings.anthropic_api_key,
     )
     app.state.event_repo = event_repo  # branches 직접 조회용
     app.state.get_overview_uc = GetOverviewUseCase(workspace_repo, project_repo, event_repo)

@@ -93,6 +93,10 @@ class PgEventRepository(EventRepository):
                 e.branch,
                 e.prompt_tokens,
                 e.response_tokens,
+                e.frame,
+                e.ai_contribution,
+                e.decision_summary,
+                e.decision_type,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
@@ -114,24 +118,7 @@ class PgEventRepository(EventRepository):
             """,
             workspace_id, branch, date_from,
         )
-        items = [
-            FeedItem(
-                event_id=r["id"],
-                user_email=r["user_email"],
-                project_name=r["project_name"],
-                prompt_preview=r["prompt_preview"],
-                status=r["status"],
-                created_at=r["created_at"],
-                branch=r["branch"],
-                prompt_tokens=r["prompt_tokens"],
-                response_tokens=r["response_tokens"],
-                raw_response=r["raw_response"],
-                diff=r["diff"],
-                commit_hash=r["commit_hash"],
-                comment_count=r["comment_count"],
-            )
-            for r in rows
-        ]
+        items = [_to_feed_item(r) for r in rows]
         return items, total_row[0]
 
     async def search_events(
@@ -143,14 +130,10 @@ class PgEventRepository(EventRepository):
             SELECT
                 e.id, e.status, e.created_at,
                 LEFT(e.raw_prompt, 120) AS prompt_preview,
-                e.raw_response,
-                e.diff,
-                e.commit_hash,
-                u.email AS user_email,
-                p.name AS project_name,
-                e.branch,
-                e.prompt_tokens,
-                e.response_tokens,
+                e.raw_response, e.diff, e.commit_hash,
+                u.email AS user_email, p.name AS project_name,
+                e.branch, e.prompt_tokens, e.response_tokens,
+                e.frame, e.ai_contribution, e.decision_summary, e.decision_type,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
@@ -162,24 +145,7 @@ class PgEventRepository(EventRepository):
             """,
             workspace_id, pattern, limit,
         )
-        return [
-            FeedItem(
-                event_id=r["id"],
-                user_email=r["user_email"],
-                project_name=r["project_name"],
-                prompt_preview=r["prompt_preview"],
-                status=r["status"],
-                created_at=r["created_at"],
-                branch=r["branch"],
-                prompt_tokens=r["prompt_tokens"],
-                response_tokens=r["response_tokens"],
-                raw_response=r["raw_response"],
-                diff=r["diff"],
-                commit_hash=r["commit_hash"],
-                comment_count=r["comment_count"],
-            )
-            for r in rows
-        ]
+        return [_to_feed_item(r) for r in rows]
 
     @staticmethod
     def _vec_str(embedding: list[float]) -> str:
@@ -202,14 +168,10 @@ class PgEventRepository(EventRepository):
             SELECT
                 e.id, e.status, e.created_at,
                 LEFT(e.raw_prompt, 120) AS prompt_preview,
-                e.raw_response,
-                e.diff,
-                e.commit_hash,
-                u.email AS user_email,
-                p.name AS project_name,
-                e.branch,
-                e.prompt_tokens,
-                e.response_tokens,
+                e.raw_response, e.diff, e.commit_hash,
+                u.email AS user_email, p.name AS project_name,
+                e.branch, e.prompt_tokens, e.response_tokens,
+                e.frame, e.ai_contribution, e.decision_summary, e.decision_type,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
@@ -221,24 +183,7 @@ class PgEventRepository(EventRepository):
             """,
             user_id, vec, limit,
         )
-        return [
-            FeedItem(
-                event_id=r["id"],
-                user_email=r["user_email"],
-                project_name=r["project_name"],
-                prompt_preview=r["prompt_preview"],
-                status=r["status"],
-                created_at=r["created_at"],
-                branch=r["branch"],
-                prompt_tokens=r["prompt_tokens"],
-                response_tokens=r["response_tokens"],
-                raw_response=r["raw_response"],
-                diff=r["diff"],
-                commit_hash=r["commit_hash"],
-                comment_count=r["comment_count"],
-            )
-            for r in rows
-        ]
+        return [_to_feed_item(r) for r in rows]
 
     async def list_branches(self, workspace_id: UUID) -> list[str]:
         rows = await self._pool.fetch(
@@ -303,6 +248,27 @@ class PgEventRepository(EventRepository):
             status.value, id,
         )
 
+    async def update_refined(
+        self,
+        id: UUID,
+        frame: str,
+        ai_contribution: float,
+        decision_summary: str,
+        decision_type: str,
+    ) -> None:
+        await self._pool.execute(
+            """
+            UPDATE decision_events
+            SET status = 'refined',
+                frame = $2,
+                ai_contribution = $3,
+                decision_summary = $4,
+                decision_type = $5
+            WHERE id = $1
+            """,
+            id, frame, ai_contribution, decision_summary, decision_type,
+        )
+
     @staticmethod
     def _to_entity(row: asyncpg.Record) -> DecisionEvent:
         embedding = row["embedding"]
@@ -322,3 +288,25 @@ class PgEventRepository(EventRepository):
             response_tokens=row.get("response_tokens"),
             embedding=list(embedding) if embedding else None,
         )
+
+
+def _to_feed_item(r: asyncpg.Record) -> "FeedItem":
+    return FeedItem(
+        event_id=r["id"],
+        user_email=r["user_email"],
+        project_name=r["project_name"],
+        prompt_preview=r["prompt_preview"],
+        status=r["status"],
+        created_at=r["created_at"],
+        branch=r["branch"],
+        prompt_tokens=r["prompt_tokens"],
+        response_tokens=r["response_tokens"],
+        raw_response=r["raw_response"],
+        diff=r["diff"],
+        commit_hash=r["commit_hash"],
+        comment_count=r["comment_count"],
+        frame=r["frame"],
+        ai_contribution=r["ai_contribution"],
+        decision_summary=r["decision_summary"],
+        decision_type=r["decision_type"],
+    )

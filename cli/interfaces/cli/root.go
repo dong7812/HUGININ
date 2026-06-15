@@ -34,6 +34,7 @@ func Execute() {
 	root.AddCommand(newLoginCmd(loginUC, wsUC, cfg))
 	root.AddCommand(newWorkspaceCmd(wsUC, cfg))
 	root.AddCommand(newProjectCmd(projUC))
+	root.AddCommand(newHookCmd())
 	for _, cmd := range newInternalCmds(projUC, ks) {
 		root.AddCommand(cmd)
 	}

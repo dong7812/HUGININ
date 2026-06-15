@@ -28,6 +28,11 @@ class DecisionEvent:
     prompt_tokens: int | None = field(default=None)
     response_tokens: int | None = field(default=None)
     embedding: list[float] | None = field(default=None)
+    # ETL 분석 결과
+    frame: str | None = field(default=None)            # A/B/C/D
+    ai_contribution: float | None = field(default=None) # 0.0–1.0
+    decision_summary: str | None = field(default=None)
+    decision_type: str | None = field(default=None)
 
     @staticmethod
     def create(
