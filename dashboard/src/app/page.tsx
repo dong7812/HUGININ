@@ -1,13 +1,23 @@
 import { Eye, GitCommit, Search, Users, ArrowRight, BarChart3, Layers } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Nav */}
-      <nav className="border-b border-zinc-800 px-6 py-4">
+      <nav className="border-b border-zinc-800/60 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <span className="font-mono font-bold text-white tracking-tight text-lg">HUGININ</span>
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/web-app-manifest-192x192.png"
+              alt="HUGININ"
+              width={28}
+              height={28}
+              className="invert opacity-90"
+            />
+            <span className="font-mono font-bold text-white tracking-tight text-base">HUGININ</span>
+          </div>
           <div className="flex items-center gap-4">
             <a href="#how" className="text-sm text-zinc-400 hover:text-white transition-colors">
               How it works
@@ -23,32 +33,86 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-5xl mx-auto px-6 pt-24 pb-20">
-        <div className="mb-5">
-          <span className="inline-block font-mono text-xs text-violet-400 border border-violet-800 bg-violet-950/40 px-3 py-1 rounded-full">
-            AI 협업 가시화
-          </span>
+      <section className="max-w-5xl mx-auto px-6 pt-20 pb-20">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-12">
+
+          {/* 텍스트 */}
+          <div className="flex-1">
+            {/* 신화 뱃지 */}
+            <div className="mb-6 flex items-center gap-3">
+              <span className="inline-block font-mono text-xs text-zinc-500 border border-zinc-800 bg-zinc-900/60 px-3 py-1 rounded-full tracking-widest uppercase">
+                Norse Mythology
+              </span>
+              <span className="text-zinc-700 text-xs">×</span>
+              <span className="inline-block font-mono text-xs text-violet-400 border border-violet-800 bg-violet-950/40 px-3 py-1 rounded-full">
+                AI 협업 가시화
+              </span>
+            </div>
+
+            {/* 오딘 설명 */}
+            <p className="font-mono text-xs text-zinc-600 mb-4 leading-relaxed max-w-lg">
+              오딘의 까마귀 <span className="text-zinc-400">Huginn(생각)</span>은 매일 세상을 날며
+              모든 것을 관찰하고 돌아와 귀띔한다.
+            </p>
+
+            <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-6">
+              팀의 AI 협업을
+              <br />
+              <span className="text-violet-400">관찰하고</span>
+              <br />
+              <span className="text-zinc-300">가져온다</span>
+            </h1>
+
+            <p className="text-base text-zinc-400 max-w-xl mb-8 leading-relaxed">
+              프롬프트는 공유되지 않는다. 누가 AI에게 뭘 물어봤는지, 어떤 결정이 AI 기반인지,
+              팀이 비슷한 시도를 중복으로 하고 있는지 — 팀에서 아무도 모른다.
+              <br /><br />
+              <span className="text-zinc-200">HUGININ이 Huginn처럼, 팀의 모든 AI 협업을 관찰하고 타임라인으로 가져온다.</span>
+            </p>
+
+            <div className="flex items-center gap-3">
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-medium px-5 py-2.5 rounded transition-colors"
+              >
+                무료로 시작하기
+                <ArrowRight size={16} />
+              </Link>
+              <a
+                href="#how"
+                className="inline-flex items-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-medium px-5 py-2.5 rounded transition-colors"
+              >
+                작동 방식
+              </a>
+            </div>
+          </div>
+
+          {/* 로고 */}
+          <div className="relative shrink-0 flex flex-col items-center gap-4">
+            {/* 글로우 */}
+            <div className="absolute inset-0 rounded-full bg-violet-600/10 blur-3xl scale-150 pointer-events-none" />
+            <div className="relative">
+              <Image
+                src="/web-app-manifest-512x512.png"
+                alt="HUGININ — Huginn, Odin's raven"
+                width={220}
+                height={220}
+                className="invert opacity-90 drop-shadow-[0_0_40px_rgba(139,92,246,0.3)]"
+                priority
+              />
+            </div>
+            {/* 룬 문자 느낌의 캡션 */}
+            <div className="text-center">
+              <p className="font-mono text-[10px] text-zinc-600 tracking-[0.3em] uppercase">Huginn · 생각</p>
+              <p className="font-mono text-[10px] text-zinc-700 tracking-[0.2em]">Odin's Raven of Thought</p>
+            </div>
+          </div>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-6">
-          팀이 AI로 개발할 때
-          <br />
-          <span className="text-violet-400">서로 뭘 하는지</span>
-          <br />
-          <span className="text-zinc-400">이제 보인다</span>
-        </h1>
-
-        <p className="text-lg text-zinc-400 max-w-2xl mb-10 leading-relaxed">
-          프롬프트는 공유되지 않는다. 누가 AI에게 뭘 물어봤는지, 어떤 결정이 AI 기반인지,
-          팀이 비슷한 시도를 중복으로 하고 있는지 — 지금 팀에서 아무도 모른다.
-          <br className="hidden sm:block" />
-          <span className="text-zinc-300"> HUGININ이 대신 보여준다.</span>
-        </p>
-
         {/* Before / After */}
-        <div className="grid sm:grid-cols-2 gap-3 mb-10 max-w-2xl">
+        <div className="grid sm:grid-cols-2 gap-3 mt-16 max-w-2xl">
           <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 font-mono text-xs">
-            <div className="text-zinc-600 mb-3">// 지금</div>
+            <div className="text-zinc-600 mb-3">// Huginn 없이</div>
             <div className="space-y-2 text-zinc-500">
               <div>팀원 A: <span className="text-zinc-400">git commit "notification"</span></div>
               <div>팀원 B: <span className="text-zinc-400">git commit "notification"</span></div>
@@ -58,7 +122,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="bg-zinc-900 border border-violet-900/50 rounded-lg p-4 font-mono text-xs">
-            <div className="text-violet-600 mb-3">// HUGININ</div>
+            <div className="text-violet-600 mb-3">// Huginn이 보고 온 것</div>
             <div className="space-y-2">
               <div className="text-zinc-300">팀원 A <span className="text-zinc-600">10:23</span></div>
               <div className="text-zinc-500 pl-2">WebSocket → SSE 전환</div>
@@ -67,22 +131,6 @@ export default function LandingPage() {
               <div className="text-emerald-600 pl-2 text-xs">↳ A의 작업 참조 → 중복 방지</div>
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-medium px-5 py-2.5 rounded transition-colors"
-          >
-            무료로 시작하기
-            <ArrowRight size={16} />
-          </Link>
-          <a
-            href="#how"
-            className="inline-flex items-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-medium px-5 py-2.5 rounded transition-colors"
-          >
-            작동 방식
-          </a>
         </div>
       </section>
 
