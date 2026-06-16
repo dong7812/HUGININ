@@ -56,7 +56,7 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
           />
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 self-start">
           <AiTrendChart workspaceId={workspaceId} />
           <CacheSuggestions workspaceId={workspaceId} />
           <FrameStats workspaceId={workspaceId} />
