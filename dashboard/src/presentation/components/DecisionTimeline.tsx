@@ -880,6 +880,13 @@ function SmartSearchPanel({
   events: SmartSearchEvent[];
   isLoading: boolean;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const COLLAPSE_CHARS = 200;
+  const isLong = (synthesis?.length ?? 0) > COLLAPSE_CHARS;
+  const displayText = isLong && !expanded
+    ? synthesis!.slice(0, COLLAPSE_CHARS).trimEnd() + "…"
+    : synthesis;
+
   if (isLoading) {
     return (
       <div className="mx-4 mt-4 rounded-xl border border-zinc-700 bg-zinc-800/50 p-4 flex flex-col gap-3">
@@ -907,8 +914,16 @@ function SmartSearchPanel({
 
       {/* LLM 합성 텍스트 */}
       {synthesis && (
-        <div className="px-4 py-3 text-sm text-zinc-300 leading-relaxed border-b border-violet-900/20">
-          {synthesis}
+        <div className="px-4 py-3 border-b border-violet-900/20">
+          <p className="text-sm text-zinc-300 leading-relaxed">{displayText}</p>
+          {isLong && (
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-1.5 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+            >
+              {expanded ? "접기" : "더보기"}
+            </button>
+          )}
         </div>
       )}
 
