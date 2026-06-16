@@ -1,18 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   ComposedChart,
-  Area,
   Bar,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from "recharts";
 import { useAiTrendQuery } from "@/application/queries/dashboardQueries";
+import type { AiTrendBucket } from "@/domain/entities";
 
 type Period = "1d" | "7d" | "30d";
 
@@ -22,19 +22,22 @@ const PERIOD_LABELS: Record<Period, string> = {
   "30d": "이번 달",
 };
 
-const FRAME_COLORS = {
-  frameA: "#818cf8",  // indigo
-  frameB: "#34d399",  // emerald
-  frameC: "#fbbf24",  // amber
-  frameD: "#f87171",  // red
-};
-
 function formatBucket(bucket: string, period: Period): string {
   const d = new Date(bucket);
   if (period === "1d") {
     return d.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
   }
   return d.toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" });
+}
+
+function computeCorrelation(buckets: AiTrendBucket[]): { highAvg: number; lowAvg: number } | null {
+  if (buckets.length < 2) return null;
+  const high = buckets.filter((b) => b.avgAi >= 0.5);
+  const low = buckets.filter((b) => b.avgAi < 0.5);
+  if (high.length === 0 || low.length === 0) return null;
+  const highAvg = high.reduce((s, b) => s + b.total, 0) / high.length;
+  const lowAvg = low.reduce((s, b) => s + b.total, 0) / low.length;
+  return { highAvg, lowAvg };
 }
 
 interface TooltipPayload {
@@ -49,20 +52,17 @@ function CustomTooltip({ active, payload, label }: {
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
+  const commitEntry = payload.find((p) => p.name === "커밋");
   const aiEntry = payload.find((p) => p.name === "AI 기여도");
   return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs">
+    <div className="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs space-y-0.5">
       <p className="text-zinc-400 mb-1">{label}</p>
-      {aiEntry && (
-        <p className="text-violet-300 font-medium mb-1">
-          AI 기여도 {Math.round(aiEntry.value * 100)}%
-        </p>
+      {commitEntry && (
+        <p className="text-zinc-200 font-medium">커밋 {commitEntry.value}건</p>
       )}
-      {payload.filter((p) => p.name !== "AI 기여도").map((p) => (
-        <p key={p.name} style={{ color: p.color }}>
-          Frame {p.name.replace("frame", "")}: {p.value}건
-        </p>
-      ))}
+      {aiEntry && (
+        <p className="text-violet-300">AI 기여도 {Math.round((aiEntry.value as number) * 100)}%</p>
+      )}
     </div>
   );
 }
@@ -75,36 +75,34 @@ export function AiTrendChart({ workspaceId }: Props) {
   const [period, setPeriod] = useState<Period>("7d");
   const { data, isLoading } = useAiTrendQuery(workspaceId, period);
 
-  const chartData = (data?.buckets ?? []).map((b) => ({
-    label: formatBucket(b.bucket, period),
-    avgAi: b.avgAi,
-    frameA: b.frameA,
-    frameB: b.frameB,
-    frameC: b.frameC,
-    frameD: b.frameD,
-    total: b.total,
-  }));
+  const chartData = useMemo(
+    () =>
+      (data?.buckets ?? []).map((b) => ({
+        label: formatBucket(b.bucket, period),
+        total: b.total,
+        avgAi: b.avgAi,
+      })),
+    [data, period]
+  );
 
-  const delta = data?.deltaPct ?? 0;
-  const deltaLabel = delta === 0
-    ? "변화 없음"
-    : `${delta > 0 ? "+" : ""}${delta.toFixed(1)}% vs 이전 기간`;
-  const deltaColor = delta > 0 ? "text-emerald-400" : delta < 0 ? "text-red-400" : "text-zinc-400";
+  const correlation = useMemo(
+    () => computeCorrelation(data?.buckets ?? []),
+    [data]
+  );
+
+  const corr = correlation
+    ? correlation.highAvg > correlation.lowAvg
+      ? { label: `AI 기여 높은 날 평균 ${correlation.highAvg.toFixed(1)}커밋 vs 낮은 날 ${correlation.lowAvg.toFixed(1)}커밋`, positive: true }
+      : { label: `AI 기여 낮은 날 평균 ${correlation.lowAvg.toFixed(1)}커밋 vs 높은 날 ${correlation.highAvg.toFixed(1)}커밋`, positive: false }
+    : null;
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
       {/* 헤더 */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-sm font-medium text-zinc-200">AI 기여도 추세</h3>
-          {data && (
-            <p className="text-xs mt-0.5">
-              <span className="text-violet-300 font-semibold">
-                {Math.round(data.currentAvgAi * 100)}%
-              </span>
-              <span className={`ml-2 ${deltaColor}`}>{deltaLabel}</span>
-            </p>
-          )}
+          <h3 className="text-sm font-medium text-zinc-200">팀 생산성 리듬</h3>
+          <p className="text-[10px] text-zinc-500 mt-0.5">커밋 속도 × AI 기여도</p>
         </div>
         <div className="flex gap-1">
           {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
@@ -123,18 +121,29 @@ export function AiTrendChart({ workspaceId }: Props) {
         </div>
       </div>
 
+      {/* 상관관계 요약 */}
+      {corr && (
+        <div className={`text-[11px] px-2.5 py-1.5 rounded-md mb-3 ${
+          corr.positive
+            ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
+            : "bg-zinc-800 text-zinc-400"
+        }`}>
+          {corr.positive ? "↑ " : "— "}{corr.label}
+        </div>
+      )}
+
       {/* 차트 */}
       {isLoading ? (
-        <div className="h-48 flex items-center justify-center">
-          <div className="text-xs text-zinc-500">로딩 중...</div>
+        <div className="h-44 flex items-center justify-center">
+          <span className="text-xs text-zinc-500">로딩 중...</span>
         </div>
       ) : chartData.length === 0 ? (
-        <div className="h-48 flex items-center justify-center">
+        <div className="h-44 flex items-center justify-center">
           <p className="text-xs text-zinc-500">이 기간에 데이터가 없습니다</p>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={200}>
-          <ComposedChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+        <ResponsiveContainer width="100%" height={180}>
+          <ComposedChart data={chartData} margin={{ top: 4, right: 28, bottom: 0, left: -20 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
             <XAxis
               dataKey="label"
@@ -143,64 +152,57 @@ export function AiTrendChart({ workspaceId }: Props) {
               tickLine={false}
               interval="preserveStartEnd"
             />
+            {/* 왼쪽: 커밋 수 */}
+            <YAxis
+              yAxisId="commits"
+              allowDecimals={false}
+              tick={{ fontSize: 10, fill: "#71717a" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            {/* 오른쪽: AI 기여도 % */}
             <YAxis
               yAxisId="ai"
-              domain={[0, 1]}
-              tick={{ fontSize: 10, fill: "#71717a" }}
-              tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              yAxisId="count"
               orientation="right"
+              domain={[0, 1]}
+              tickFormatter={(v: number) => `${Math.round(v * 100)}%`}
               tick={{ fontSize: 10, fill: "#71717a" }}
               axisLine={false}
               tickLine={false}
-              hide
             />
             <Tooltip content={<CustomTooltip />} />
-            {/* Frame stacked bars (뒤) */}
-            <Bar yAxisId="count" dataKey="frameA" name="frameA" stackId="frames" fill={FRAME_COLORS.frameA} opacity={0.5} radius={0} />
-            <Bar yAxisId="count" dataKey="frameB" name="frameB" stackId="frames" fill={FRAME_COLORS.frameB} opacity={0.5} radius={0} />
-            <Bar yAxisId="count" dataKey="frameC" name="frameC" stackId="frames" fill={FRAME_COLORS.frameC} opacity={0.5} radius={0} />
-            <Bar yAxisId="count" dataKey="frameD" name="frameD" stackId="frames" fill={FRAME_COLORS.frameD} opacity={0.5} radius={[2, 2, 0, 0]} />
-            {/* AI 기여도 라인 (앞) */}
-            <Area
+            {/* 커밋 수 바 (주) */}
+            <Bar
+              yAxisId="commits"
+              dataKey="total"
+              name="커밋"
+              fill="#52525b"
+              radius={[3, 3, 0, 0]}
+              maxBarSize={32}
+            />
+            {/* AI 기여도 라인 (부) */}
+            <Line
               yAxisId="ai"
               type="monotone"
               dataKey="avgAi"
               name="AI 기여도"
               stroke="#a78bfa"
               strokeWidth={2}
-              fill="url(#aiGradient)"
               dot={false}
               activeDot={{ r: 4, fill: "#a78bfa" }}
             />
-            <defs>
-              <linearGradient id="aiGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.2} />
-                <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
-              </linearGradient>
-            </defs>
           </ComposedChart>
         </ResponsiveContainer>
       )}
 
       {/* 범례 */}
-      <div className="flex gap-3 mt-2 justify-center">
-        <span className="flex items-center gap-1 text-[10px] text-zinc-400">
+      <div className="flex gap-4 mt-2 justify-center">
+        <span className="flex items-center gap-1 text-[10px] text-zinc-500">
+          <span className="w-2.5 h-2.5 rounded-sm bg-zinc-600 inline-block" /> 커밋 수
+        </span>
+        <span className="flex items-center gap-1 text-[10px] text-zinc-500">
           <span className="w-3 h-0.5 bg-violet-400 inline-block" /> AI 기여도
         </span>
-        {(["A", "B", "C", "D"] as const).map((f) => (
-          <span key={f} className="flex items-center gap-1 text-[10px] text-zinc-400">
-            <span
-              className="w-2 h-2 rounded-sm inline-block"
-              style={{ backgroundColor: FRAME_COLORS[`frame${f}` as keyof typeof FRAME_COLORS] }}
-            />
-            Frame {f}
-          </span>
-        ))}
       </div>
     </div>
   );

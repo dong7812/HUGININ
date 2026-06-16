@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Info } from "lucide-react";
 import { useFrameStatsQuery } from "@/application/queries/dashboardQueries";
 
 interface Props {
@@ -28,8 +29,32 @@ const FRAME_BG: Record<string, string> = {
 
 const DAYS_OPTIONS = [7, 30, 90] as const;
 
+const FRAME_DESC: Record<string, { label: string; who: string; desc: string }> = {
+  A: { label: "Human-led",   who: "인간 주도",   desc: "인간이 설계·결정, AI는 질문 답변 정도" },
+  B: { label: "AI-assisted", who: "AI 보조",     desc: "AI가 초안·코드 제안, 인간이 검토·수정" },
+  C: { label: "AI-led",      who: "AI 주도",     desc: "AI가 구현 대부분, 인간은 방향·검수" },
+  D: { label: "Automated",   who: "자동화",       desc: "AI가 독립 실행, 인간 개입 최소" },
+};
+
+function FrameLegendPanel() {
+  return (
+    <div className="grid grid-cols-2 gap-1.5 pt-3 border-t border-zinc-800 mt-1">
+      {(["A", "B", "C", "D"] as const).map((f) => (
+        <div key={f} className={`rounded-lg border px-2.5 py-2 ${FRAME_BG[f]}`}>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="text-[11px] font-bold font-mono">{f}</span>
+            <span className="text-[10px] opacity-70">{FRAME_DESC[f].who}</span>
+          </div>
+          <p className="text-[10px] opacity-60 leading-snug">{FRAME_DESC[f].desc}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function FrameStats({ workspaceId }: Props) {
   const [days, setDays] = useState<7 | 30 | 90>(30);
+  const [showLegend, setShowLegend] = useState(false);
   const { data, isLoading } = useFrameStatsQuery(workspaceId, days);
 
   if (isLoading) {
@@ -67,6 +92,13 @@ export function FrameStats({ workspaceId }: Props) {
           <div className="w-2 h-2 rounded-full bg-violet-400" />
           <span className="text-sm font-medium text-zinc-200">AI 협업 패턴</span>
           <span className="text-xs text-zinc-500 font-mono">({total})</span>
+          <button
+            onClick={() => setShowLegend((v) => !v)}
+            className={`transition-colors ${showLegend ? "text-violet-400" : "text-zinc-600 hover:text-zinc-400"}`}
+            title="Frame 설명"
+          >
+            <Info size={13} />
+          </button>
         </div>
         <div className="flex items-center gap-1">
           {DAYS_OPTIONS.map((d) => (
@@ -171,6 +203,7 @@ export function FrameStats({ workspaceId }: Props) {
             ))}
           </div>
         )}
+        {showLegend && <FrameLegendPanel />}
       </div>
     </div>
   );
