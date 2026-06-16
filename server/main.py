@@ -156,6 +156,11 @@ app.include_router(webhook_router)
 mount_mcp(app)
 
 
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+
 async def _backfill_refinement(event_repo, api_key: str) -> None:
     import asyncio
     from infrastructure.llm.claude_refiner import refine_event
