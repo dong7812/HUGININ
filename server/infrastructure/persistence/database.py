@@ -22,8 +22,12 @@ class Database:
         return self._pool
 
     async def connect(self) -> None:
-        is_local = "localhost" in self._dsn or "127.0.0.1" in self._dsn
-        ssl = "require" if not is_local else None
+        is_internal = (
+            "localhost" in self._dsn
+            or "127.0.0.1" in self._dsn
+            or ".railway.internal" in self._dsn
+        )
+        ssl = None if is_internal else "require"
 
         # 비밀번호 제외한 호스트 정보 로깅 (진단용)
         try:
