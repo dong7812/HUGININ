@@ -33,7 +33,7 @@ func Load() (*Config, error) {
 	}
 	data, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
-		return &Config{BaseURL: "http://localhost:8000"}, nil
+		return &Config{BaseURL: "https://huginin-server-production.up.railway.app"}, nil
 	}
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func Load() (*Config, error) {
 		return nil, err
 	}
 	if cfg.BaseURL == "" {
-		cfg.BaseURL = "http://localhost:8000"
+		cfg.BaseURL = "https://huginin-server-production.up.railway.app"
 	}
 	return &cfg, nil
 }
