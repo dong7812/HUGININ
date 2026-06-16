@@ -112,15 +112,22 @@ class CollectEventUseCase:
             from infrastructure.llm.claude_refiner import refine_event
             result = await refine_event(prompt, response, diff, self._anthropic_api_key, user_name)
             if result:
+                what_was_built = result.get("what_was_built", "")
+                problem_solved = result.get("problem_solved", "")
+                ai_role = result.get("ai_role", "")
                 await self._event_repo.update_refined(
                     id=event_id,
                     frame=result.get("frame", "B"),
                     ai_contribution=float(result.get("ai_contribution", 0.5)),
                     decision_summary=result.get("decision_summary", ""),
                     decision_type=result.get("decision_type", "other"),
-                    what_was_built=result.get("what_was_built", ""),
-                    problem_solved=result.get("problem_solved", ""),
-                    ai_role=result.get("ai_role", ""),
+                    what_was_built=what_was_built,
+                    problem_solved=problem_solved,
+                    ai_role=ai_role,
                 )
+                # 정제된 한국어 내용으로 임베딩 재생성 — 검색 정확도 향상
+                from infrastructure.embedding.embedding_service import EmbeddingService
+                vec = await EmbeddingService.embed_refined(what_was_built, problem_solved, ai_role)
+                await self._event_repo.update_embedding(event_id, vec)
         except Exception:
             pass  # 분석 실패가 수집을 막으면 안 됨
