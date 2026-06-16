@@ -45,3 +45,5 @@
 2026-06-16 18:49 | commit | a4eefd8 | branch:main | Sync worklogs, session history, decisions + gitignore cleanup
 2026-06-16 19:14 | commit | 4e99c5a | branch:main | Add AI trend chart + cache strategy suggestions panel
 2026-06-16 19:26 | commit | e566219 | branch:main | chore: trigger Railway rebuild for new dashboard endpoints
+2026-06-16 19:29 | commit | deb0b3f | branch:main | Sync worklogs and collab-proof snapshots
+2026-06-16 20:23 | commit | 4500995 | branch:main | Fix: link project to Railway production workspace
