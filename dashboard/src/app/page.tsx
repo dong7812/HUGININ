@@ -1,6 +1,7 @@
 import { GitCommit, Layers, Zap, ArrowRight, BarChart3, BookOpen } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { InstallSlider } from "./InstallSlider";
 
 export default function LandingPage() {
   return (
@@ -19,6 +20,9 @@ export default function LandingPage() {
             <span className="font-mono font-bold text-white tracking-tight text-base">HUGININ</span>
           </div>
           <div className="flex items-center gap-4">
+            <a href="#install" className="text-sm text-zinc-400 hover:text-white transition-colors">
+              설치
+            </a>
             <a href="#features" className="text-sm text-zinc-400 hover:text-white transition-colors">
               기능
             </a>
@@ -37,10 +41,16 @@ export default function LandingPage() {
         <div className="flex flex-col lg:flex-row items-start lg:items-center gap-12">
 
           <div className="flex-1">
-            <div className="mb-6 flex items-center gap-3">
-              <span className="inline-block font-mono text-xs text-zinc-500 border border-zinc-800 bg-zinc-900/60 px-3 py-1 rounded-full tracking-widest uppercase">
-                For AI-driven developers
+            {/* Claude Code 전용 배지 */}
+            <div className="mb-6 flex items-center gap-2 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 font-mono text-xs text-amber-400 border border-amber-800/60 bg-amber-950/30 px-3 py-1 rounded-full">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+                </svg>
+                Claude Code 전용
               </span>
+              <span className="text-zinc-700 text-xs">—</span>
+              <span className="text-xs text-zinc-500">다른 AI 도구 지원은 추후 예정</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-6">
@@ -52,12 +62,12 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-base text-zinc-400 max-w-xl mb-4 leading-relaxed">
-              Claude, Copilot으로 빠르게 만들수록 결정의 이유가 커밋 메시지 뒤에 묻힌다.
+              Claude Code로 빠르게 만들수록 결정의 이유가 커밋 메시지 뒤에 묻힌다.
               3주 뒤 같은 코드를 보며 "왜 이렇게 했지?"를 반복한다.
             </p>
             <p className="text-base text-zinc-200 max-w-xl mb-8 leading-relaxed">
               HUGININ은 git commit마다 <span className="text-violet-400">무엇을 만들었고 왜 그렇게 결정했는지</span>를
-              자동으로 기록한다. AI가 어느 정도 기여했는지도 함께.
+              Claude Code 세션에서 자동으로 기록한다.
             </p>
 
             <div className="flex items-center gap-3">
@@ -69,15 +79,15 @@ export default function LandingPage() {
                 <ArrowRight size={16} />
               </Link>
               <a
-                href="#how"
+                href="#install"
                 className="inline-flex items-center gap-2 border border-zinc-700 hover:border-zinc-500 text-zinc-300 hover:text-white font-medium px-5 py-2.5 rounded transition-colors"
               >
-                작동 방식
+                설치 방법
               </a>
             </div>
 
             <p className="text-xs text-zinc-600 mt-4 font-mono">
-              git hook 설치 1분 · 별도 입력 없음 · 개인도, 팀도 사용 가능
+              git hook 설치 1분 · 별도 입력 없음 · 개인도, 팀도 무료
             </p>
           </div>
 
@@ -103,7 +113,6 @@ export default function LandingPage() {
 
         {/* Before / After */}
         <div className="grid sm:grid-cols-2 gap-3 mt-16 max-w-2xl">
-          {/* Before */}
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5 flex flex-col gap-3">
             <span className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">Without</span>
             <div className="font-mono text-[11px] flex flex-col gap-2">
@@ -120,7 +129,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* After */}
           <div className="bg-zinc-900 border border-violet-800/40 rounded-xl overflow-hidden">
             <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-zinc-800 bg-zinc-800/30">
               <div className="flex items-center gap-2">
@@ -155,60 +163,76 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how" className="max-w-5xl mx-auto px-6 pb-20">
-        <h2 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-8">
-          How it works
-        </h2>
-
-        <div className="grid sm:grid-cols-3 gap-0 mb-8">
-          <div className="relative flex flex-col gap-3 bg-zinc-900 border border-zinc-800 rounded-l-xl p-5 sm:rounded-r-none">
-            <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-[10px] font-mono text-blue-400">1</span>
-              <span className="text-[10px] font-mono text-blue-400 uppercase tracking-widest">Collect</span>
-            </div>
-            <p className="text-sm font-medium text-zinc-200">커밋마다 자동 수집</p>
-            <p className="text-[11px] text-zinc-500 leading-relaxed">
-              git hook이 prompt, response, diff를 조용히 가져간다. 별도로 입력할 게 없다.
-            </p>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 hidden sm:flex w-6 h-6 rounded-full bg-zinc-950 border border-zinc-700 items-center justify-center text-zinc-500">
-              <ArrowRight size={12} />
-            </div>
+      {/* 설치 슬라이더 */}
+      <section id="install" className="max-w-5xl mx-auto px-6 pb-24">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
+              Quick start
+            </h2>
+            <p className="text-sm text-zinc-400 mt-1">설치부터 첫 수집까지 4단계, 약 1분</p>
           </div>
-
-          <div className="relative flex flex-col gap-3 bg-violet-950/30 border-y border-violet-900/50 p-5 sm:border-x-0 border sm:border-t border-b border-zinc-800 sm:rounded-none rounded-none">
-            <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-violet-500/20 border border-violet-500/40 flex items-center justify-center text-[10px] font-mono text-violet-400">2</span>
-              <span className="text-[10px] font-mono text-violet-400 uppercase tracking-widest">Analyze</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-zinc-200">why를 추출</p>
-              <span className="text-[9px] font-mono text-violet-500 bg-violet-950/60 border border-violet-800/50 px-1.5 py-0.5 rounded">Claude Haiku</span>
-            </div>
-            <p className="text-[11px] text-zinc-500 leading-relaxed">
-              무엇을 만들었고, 왜 그 방식을 선택했는지, AI가 어느 정도 기여했는지 구조화한다.
-            </p>
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 hidden sm:flex w-6 h-6 rounded-full bg-zinc-950 border border-zinc-700 items-center justify-center text-zinc-500">
-              <ArrowRight size={12} />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 bg-zinc-900 border border-zinc-800 rounded-r-xl p-5 sm:rounded-l-none">
-            <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-[10px] font-mono text-emerald-400">3</span>
-              <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-widest">Remember</span>
-            </div>
-            <p className="text-sm font-medium text-zinc-200">나중에 바로 찾는다</p>
-            <p className="text-[11px] text-zinc-500 leading-relaxed">
-              대시보드 타임라인, 검색, 또는 Claude MCP로 구현 전 자동 참조.
-              같은 질문 두 번 안 한다.
-            </p>
-          </div>
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-amber-400 border border-amber-800/50 bg-amber-950/20 px-2.5 py-1 rounded-full">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+            </svg>
+            Claude Code 필요
+          </span>
         </div>
 
-        <p className="text-xs text-zinc-600 font-mono text-center">
-          git commit → PII 마스킹 → PostgreSQL → Claude Haiku ETL → 타임라인
-        </p>
+        <div className="grid lg:grid-cols-2 gap-6 items-start">
+          <InstallSlider />
+
+          {/* 설치 후 확인 */}
+          <div className="flex flex-col gap-3">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-3">설치 후 첫 커밋</p>
+              <div className="bg-zinc-950 rounded-lg p-4 font-mono text-sm space-y-1.5">
+                <div className="flex gap-2">
+                  <span className="text-green-400 shrink-0">$</span>
+                  <span className="text-zinc-200">git commit -m &quot;feat: add auth&quot;</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-zinc-600 shrink-0">→</span>
+                  <span className="text-zinc-500">[huginin] Claude Code 세션 감지됨</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-zinc-600 shrink-0">→</span>
+                  <span className="text-zinc-500">프롬프트 + 응답 + diff 수집 중...</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-emerald-400 shrink-0">✓</span>
+                  <span className="text-emerald-400/80">event queued for commit a3f2c1d</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-zinc-600 font-mono mt-3">
+                백그라운드로 실행 — 커밋 속도에 영향 없음
+              </p>
+            </div>
+
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-3">수집되는 데이터</p>
+              <div className="space-y-2">
+                {[
+                  { key: "prompt",    val: "Claude Code에 입력한 실제 질문",   accent: "text-violet-400" },
+                  { key: "response",  val: "Claude의 응답 (상위 2000자)",       accent: "text-violet-400" },
+                  { key: "diff",      val: "변경된 파일 통계",                  accent: "text-zinc-400" },
+                  { key: "branch",    val: "현재 브랜치 이름",                  accent: "text-zinc-400" },
+                ].map(({ key, val, accent }) => (
+                  <div key={key} className="flex items-start gap-3">
+                    <span className={`text-[10px] font-mono ${accent} w-20 shrink-0 mt-px`}>{key}</span>
+                    <span className="text-[11px] text-zinc-500">{val}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 pt-3 border-t border-zinc-800">
+                <p className="text-[10px] text-zinc-600">
+                  PII 마스킹 후 저장 · 코드 원문은 저장하지 않음
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Feature grid */}
@@ -236,7 +260,7 @@ export default function LandingPage() {
             <h3 className="font-semibold text-white mb-2">AI 협업 패턴 (Frame A–D)</h3>
             <p className="text-sm text-zinc-400 leading-relaxed">
               Human-led · AI-assisted · AI-led · Automated —
-              이 결정에서 내가 주도했는지 AI가 주도했는지 분류해서 쌓인다.
+              이 결정에서 내가 주도했는지 AI가 주도했는지 자동으로 분류된다.
             </p>
           </div>
 
@@ -258,7 +282,7 @@ export default function LandingPage() {
             <h3 className="font-semibold text-white mb-2">팀 생산성 리듬</h3>
             <p className="text-sm text-zinc-400 leading-relaxed">
               팀이 있다면: 커밋 속도와 AI 기여도를 함께 추적한다.
-              AI 많이 쓴 날 실제로 더 빠른지 데이터로 확인한다.
+              Claude Code를 많이 쓴 날 실제로 더 빠른지 데이터로 확인한다.
             </p>
           </div>
 
@@ -295,7 +319,7 @@ export default function LandingPage() {
             Frame A / B / C / D
           </h2>
           <p className="text-sm text-zinc-500 mb-6">
-            결정마다 인간과 AI의 역할을 자동으로 분류한다 — 별도 입력 없이
+            결정마다 인간과 AI의 역할을 4단계로 자동 분류한다
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {[
@@ -320,7 +344,13 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="border-t border-zinc-800 bg-black">
         <div className="max-w-5xl mx-auto px-6 py-16 text-center">
-          <h2 className="text-2xl font-bold text-white mb-3">
+          <div className="inline-flex items-center gap-1.5 text-[10px] font-mono text-amber-400 border border-amber-800/50 bg-amber-950/20 px-2.5 py-1 rounded-full mb-4">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+            </svg>
+            Claude Code 사용자 전용
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-3 mt-2">
             AI 쓰면서 까먹는 why,<br />이제 자동으로 남긴다
           </h2>
           <p className="text-zinc-500 mb-8 text-sm">
