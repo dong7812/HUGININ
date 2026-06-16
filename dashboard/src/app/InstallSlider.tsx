@@ -10,7 +10,7 @@ const STEPS = [
     title: "CLI 설치",
     desc: "바이너리 하나로 끝난다. 의존성 없음.",
     terminal: [
-      { t: "cmd",  v: "curl -sSL https://huginin.dev/install.sh | bash" },
+      { t: "cmd",  v: "curl -sSL https://raw.githubusercontent.com/dong7812/HUGININ/main/install.sh | bash" },
       { t: "gap" },
       { t: "ok",   v: "huginin 설치 완료" },
       { t: "info", v: "huginin v0.1.0" },
@@ -18,7 +18,7 @@ const STEPS = [
     meta: [
       { label: "플랫폼",  value: "macOS · Linux · WSL" },
       { label: "의존성",  value: "없음" },
-      { label: "크기",    value: "~8 MB" },
+      { label: "소스",    value: "github.com/dong7812/HUGININ" },
     ],
     tip: null,
   },
