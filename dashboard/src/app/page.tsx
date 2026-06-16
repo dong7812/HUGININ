@@ -180,59 +180,7 @@ export default function LandingPage() {
           </span>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6 items-start">
-          <InstallSlider />
-
-          {/* 설치 후 확인 */}
-          <div className="flex flex-col gap-3">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-3">설치 후 첫 커밋</p>
-              <div className="bg-zinc-950 rounded-lg p-4 font-mono text-sm space-y-1.5">
-                <div className="flex gap-2">
-                  <span className="text-green-400 shrink-0">$</span>
-                  <span className="text-zinc-200">git commit -m &quot;feat: add auth&quot;</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-zinc-600 shrink-0">→</span>
-                  <span className="text-zinc-500">[huginin] Claude Code 세션 감지됨</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-zinc-600 shrink-0">→</span>
-                  <span className="text-zinc-500">프롬프트 + 응답 + diff 수집 중...</span>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-emerald-400 shrink-0">✓</span>
-                  <span className="text-emerald-400/80">event queued for commit a3f2c1d</span>
-                </div>
-              </div>
-              <p className="text-[10px] text-zinc-600 font-mono mt-3">
-                백그라운드로 실행 — 커밋 속도에 영향 없음
-              </p>
-            </div>
-
-            <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
-              <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-3">수집되는 데이터</p>
-              <div className="space-y-2">
-                {[
-                  { key: "prompt",    val: "Claude Code에 입력한 실제 질문",   accent: "text-violet-400" },
-                  { key: "response",  val: "Claude의 응답 (상위 2000자)",       accent: "text-violet-400" },
-                  { key: "diff",      val: "변경된 파일 통계",                  accent: "text-zinc-400" },
-                  { key: "branch",    val: "현재 브랜치 이름",                  accent: "text-zinc-400" },
-                ].map(({ key, val, accent }) => (
-                  <div key={key} className="flex items-start gap-3">
-                    <span className={`text-[10px] font-mono ${accent} w-20 shrink-0 mt-px`}>{key}</span>
-                    <span className="text-[11px] text-zinc-500">{val}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 pt-3 border-t border-zinc-800">
-                <p className="text-[10px] text-zinc-600">
-                  PII 마스킹 후 저장 · 코드 원문은 저장하지 않음
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <InstallSlider />
       </section>
 
       {/* Feature grid */}
