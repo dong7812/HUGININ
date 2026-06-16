@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { InstallSlider } from "./InstallSlider";
 
@@ -8,7 +9,10 @@ export default function LandingPage() {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-neutral-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="font-mono font-bold text-neutral-900 tracking-widest text-sm uppercase">HUGININ</span>
+          <div className="flex items-center gap-2">
+            <Image src="/web-app-manifest-192x192.png" alt="HUGININ" width={22} height={22} className="opacity-80" />
+            <span className="font-mono font-bold text-neutral-900 tracking-widest text-sm uppercase">HUGININ</span>
+          </div>
           <div className="flex items-center gap-6">
             <a href="#how" className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors">설치</a>
             <a href="#features" className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors">기능</a>
@@ -23,6 +27,22 @@ export default function LandingPage() {
       {/* Hero — Tesla style: full width, centered, large type */}
       <section className="pt-32 pb-24 px-6 text-center bg-white">
         <div className="max-w-4xl mx-auto">
+          {/* Raven logo mark */}
+          <div className="flex flex-col items-center mb-10">
+            <div className="relative w-20 h-20 flex items-center justify-center mb-3">
+              <div className="absolute inset-0 rounded-full bg-[#f5f4ef]" />
+              <Image
+                src="/web-app-manifest-512x512.png"
+                alt="Huginn — Odin's Raven of Thought"
+                width={52}
+                height={52}
+                className="relative opacity-85"
+                priority
+              />
+            </div>
+            <p className="font-mono text-[10px] text-neutral-400 tracking-[0.25em] uppercase">Huginn · 생각 · Odin&apos;s Raven</p>
+          </div>
+
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-600 mb-6">
             Claude Code 전용
           </p>
