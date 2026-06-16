@@ -391,3 +391,108 @@ async def search_events(
         ],
         total=len(items),
     )
+
+
+class SmartSearchEvent(BaseModel):
+    event_id: str
+    created_at: str
+    what_was_built: str | None = None
+    problem_solved: str | None = None
+    decision_type: str | None = None
+    frame: str | None = None
+    ai_contribution: float | None = None
+    project_name: str | None = None
+    branch: str | None = None
+    commit_hash: str | None = None
+
+
+class SmartSearchResponse(BaseModel):
+    query: str
+    synthesis: str          # LLM이 생성한 흐름 분석
+    found: int
+    events: list[SmartSearchEvent]
+
+
+@router.get("/{workspace_id}/smart-search", response_model=SmartSearchResponse)
+async def smart_search(
+    workspace_id: UUID,
+    request: Request,
+    q: str,
+    limit: int = 8,
+    user_id: UUID = Depends(get_current_user_id),
+):
+    from infrastructure.embedding.embedding_service import EmbeddingService
+    try:
+        embedding = await EmbeddingService.embed(q)
+    except Exception:
+        embedding = None
+
+    items = await request.app.state.event_repo.search_events(
+        workspace_id=workspace_id, query=q, limit=limit, embedding=embedding
+    )
+
+    if not items:
+        return SmartSearchResponse(
+            query=q, synthesis="관련된 결정 기록을 찾지 못했습니다.", found=0, events=[]
+        )
+
+    api_key = getattr(request.app.state, "anthropic_api_key", None)
+    synthesis = await _synthesize_search(q, items, api_key)
+
+    return SmartSearchResponse(
+        query=q,
+        synthesis=synthesis,
+        found=len(items),
+        events=[
+            SmartSearchEvent(
+                event_id=str(item.event_id),
+                created_at=item.created_at.isoformat(),
+                what_was_built=item.what_was_built,
+                problem_solved=item.problem_solved,
+                decision_type=item.decision_type,
+                frame=item.frame,
+                ai_contribution=item.ai_contribution,
+                project_name=item.project_name,
+                branch=item.branch,
+                commit_hash=item.commit_hash,
+            )
+            for item in items
+        ],
+    )
+
+
+async def _synthesize_search(query: str, items, api_key: str | None) -> str:
+    if not api_key:
+        return f"총 {len(items)}개의 관련 결정을 찾았습니다."
+    try:
+        import anthropic
+
+        records = "\n\n".join(
+            f"[{i+1}] {item.created_at.strftime('%Y-%m-%d')} · {item.decision_type or '기타'} · {item.project_name or ''}\n"
+            f"- 무엇을 만들었나: {item.what_was_built or item.prompt_preview or ''}\n"
+            f"- 왜 필요했나: {item.problem_solved or ''}"
+            for i, item in enumerate(items)
+        )
+
+        prompt = f"""검색어: "{query}"
+
+아래는 팀의 AI 결정 기록 {len(items)}개입니다 (시간순):
+
+{records}
+
+위 기록들을 바탕으로 다음을 한국어로 작성하세요 (총 3-5문장):
+1. 검색어와 관련된 결정들의 흐름과 맥락 요약
+2. 시간에 따라 어떻게 발전하거나 반복되었는지
+3. 가장 주목할 만한 결정이나 패턴
+
+마크다운 없이 plain text로 작성하세요."""
+
+        client = anthropic.AsyncAnthropic(api_key=api_key)
+        msg = await client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=400,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return msg.content[0].text.strip()
+    except Exception:
+        return f"총 {len(items)}개의 관련 결정을 찾았습니다."

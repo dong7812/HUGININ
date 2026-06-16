@@ -52,6 +52,17 @@ export function useFeedQuery(workspaceId: string, page = 0, limit = 15, branch?:
   });
 }
 
+export function useSmartSearchQuery(workspaceId: string, query: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["smart-search", workspaceId, query],
+    queryFn: () => repo.smartSearch(workspaceId, query),
+    enabled: !!token && !!workspaceId && query.trim().length >= 2,
+    staleTime: 60_000,
+  });
+}
+
 export function useSuggestQuery(workspaceId: string, query: string) {
   const token = useAuthStore((s) => s.token) ?? "";
   const repo = createDashboardRepository(token);

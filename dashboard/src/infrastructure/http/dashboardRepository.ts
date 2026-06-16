@@ -2,6 +2,26 @@ import type { IDashboardRepository } from "@/domain/ports";
 import type { ActivityDay, AiTrend, AiTrendBucket, CacheSuggestion, CacheSuggestions, FeedItem, FeedPage, FrameStats, MemberFrameStats, TokenStats, WorkspaceOverview } from "@/domain/entities";
 import { apiFetch } from "./apiClient";
 
+export interface SmartSearchEvent {
+  event_id: string;
+  created_at: string;
+  what_was_built: string | null;
+  problem_solved: string | null;
+  decision_type: string | null;
+  frame: string | null;
+  ai_contribution: number | null;
+  project_name: string | null;
+  branch: string | null;
+  commit_hash: string | null;
+}
+
+export interface SmartSearchResult {
+  query: string;
+  synthesis: string;
+  found: number;
+  events: SmartSearchEvent[];
+}
+
 interface RawFeedItem {
   event_id: string;
   user_email: string;
@@ -107,6 +127,13 @@ class DashboardApiRepository implements IDashboardRepository {
       this.token,
     );
     return data.items;
+  }
+
+  async smartSearch(workspaceId: string, query: string): Promise<SmartSearchResult> {
+    return apiFetch<SmartSearchResult>(
+      `/dashboard/${workspaceId}/smart-search?q=${encodeURIComponent(query)}`,
+      this.token,
+    );
   }
 
   async searchEvents(workspaceId: string, query: string, limit = 20): Promise<FeedPage> {

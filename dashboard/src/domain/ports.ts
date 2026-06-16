@@ -1,6 +1,8 @@
 import type { ActivityDay, AiTrend, CacheSuggestions, Comment, FeedPage, FrameStats, TokenStats, WorkspaceOverview } from "./entities";
+import type { SmartSearchResult } from "@/infrastructure/http/dashboardRepository";
 
 export interface IDashboardRepository {
+  smartSearch(workspaceId: string, query: string): Promise<SmartSearchResult>;
   getOverview(workspaceId: string): Promise<WorkspaceOverview>;
   getFeed(workspaceId: string, limit: number, offset: number, branch?: string, dateFrom?: string): Promise<FeedPage>;
   getActivity(workspaceId: string, days: number): Promise<ActivityDay[]>;

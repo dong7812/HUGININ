@@ -22,7 +22,8 @@ import {
   X,
   ExternalLink,
 } from "lucide-react";
-import { useFeedQuery, useBranchesQuery, useSearchQuery, useSuggestQuery } from "@/application/queries/dashboardQueries";
+import { useFeedQuery, useBranchesQuery, useSearchQuery, useSuggestQuery, useSmartSearchQuery } from "@/application/queries/dashboardQueries";
+import type { SmartSearchEvent } from "@/infrastructure/http/dashboardRepository";
 import { CommentSection } from "./CommentSection";
 import type { FeedItem } from "@/domain/entities";
 
@@ -277,6 +278,7 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
 
   const feedResult = useFeedQuery(workspaceId, page, limit, branch, dateFrom);
   const searchResult = useSearchQuery(workspaceId, submittedQuery);
+  const smartResult = useSmartSearchQuery(workspaceId, submittedQuery);
   const { data: suggestions } = useSuggestQuery(workspaceId, debouncedInput);
   const { data: branches } = useBranchesQuery(workspaceId);
 
@@ -410,7 +412,17 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
         </div>
       </div>
 
-      {items.length === 0 ? (
+      {/* Smart Search 합성 패널 */}
+      {isSearching && (
+        <SmartSearchPanel
+          query={submittedQuery}
+          synthesis={smartResult.data?.synthesis}
+          events={smartResult.data?.events ?? []}
+          isLoading={smartResult.isLoading}
+        />
+      )}
+
+      {items.length === 0 && !isSearching ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3 text-zinc-500">
           <GitCommit size={32} className="opacity-30" />
           <p className="text-sm">아직 수집된 AI 결정이 없습니다</p>
@@ -851,6 +863,98 @@ function TimelineEntry({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+const SS_TYPE_COLOR: Record<string, string> = {
+  feature: "text-violet-400", bugfix: "text-red-400", refactor: "text-amber-400",
+  config: "text-zinc-400", docs: "text-blue-400", test: "text-green-400", other: "text-zinc-500",
+};
+
+function SmartSearchPanel({
+  query, synthesis, events, isLoading,
+}: {
+  query: string;
+  synthesis?: string;
+  events: SmartSearchEvent[];
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <div className="mx-4 mt-4 rounded-xl border border-zinc-700 bg-zinc-800/50 p-4 flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+          <span className="text-xs text-zinc-400">관련 결정 분석 중...</span>
+        </div>
+        <div className="h-3 w-3/4 bg-zinc-700 rounded animate-pulse" />
+        <div className="h-3 w-full bg-zinc-700 rounded animate-pulse" />
+        <div className="h-3 w-2/3 bg-zinc-700 rounded animate-pulse" />
+      </div>
+    );
+  }
+  if (!synthesis && events.length === 0) return null;
+
+  return (
+    <div className="mx-4 mt-4 rounded-xl border border-violet-900/50 bg-violet-950/20 overflow-hidden">
+      {/* 헤더 */}
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-violet-900/30 bg-violet-900/10">
+        <div className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+        <span className="text-xs font-mono text-violet-300">AI 분석</span>
+        <span className="text-xs text-zinc-500 ml-1">"{query}"</span>
+        <span className="ml-auto text-[10px] text-zinc-600 font-mono">{events.length}개 결정</span>
+      </div>
+
+      {/* LLM 합성 텍스트 */}
+      {synthesis && (
+        <div className="px-4 py-3 text-sm text-zinc-300 leading-relaxed border-b border-violet-900/20">
+          {synthesis}
+        </div>
+      )}
+
+      {/* 관련 이벤트 카드 */}
+      {events.length > 0 && (
+        <div className="flex flex-col divide-y divide-zinc-800/50">
+          {events.map((ev, i) => (
+            <div key={ev.event_id} className="flex gap-3 px-4 py-3 hover:bg-zinc-800/30 transition-colors">
+              <div className="flex items-center justify-center w-5 h-5 rounded-full bg-zinc-800 text-[10px] font-mono text-zinc-500 shrink-0 mt-0.5">
+                {i + 1}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className="text-[10px] font-mono text-zinc-500">
+                    {new Date(ev.created_at).toLocaleDateString("ko-KR")}
+                  </span>
+                  {ev.decision_type && (
+                    <span className={`text-[10px] font-mono ${SS_TYPE_COLOR[ev.decision_type] ?? "text-zinc-500"}`}>
+                      {ev.decision_type}
+                    </span>
+                  )}
+                  {ev.frame && (
+                    <span className="text-[10px] text-zinc-600">{{ A: "Human-led", B: "AI-assisted", C: "AI-led", D: "Automated" }[ev.frame]}</span>
+                  )}
+                  {ev.project_name && (
+                    <span className="text-[10px] text-zinc-600 truncate">{ev.project_name}</span>
+                  )}
+                </div>
+                {ev.what_was_built && (
+                  <p className="text-xs text-zinc-300 mb-0.5 line-clamp-2">{ev.what_was_built}</p>
+                )}
+                {ev.problem_solved && (
+                  <p className="text-[11px] text-zinc-500 line-clamp-1">{ev.problem_solved}</p>
+                )}
+              </div>
+              {ev.ai_contribution != null && (
+                <div className="shrink-0 flex flex-col items-end gap-1">
+                  <span className="text-[10px] font-mono text-zinc-500">
+                    AI {Math.round(ev.ai_contribution * 100)}%
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
