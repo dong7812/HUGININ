@@ -76,7 +76,7 @@ async def refine_event(
         client = anthropic.AsyncAnthropic(api_key=api_key)
         msg = await client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=512,
+            max_tokens=1024,
             system=_SYSTEM,
             messages=[
                 {
@@ -95,6 +95,10 @@ async def refine_event(
             raw = raw.split("```")[1]
             if raw.startswith("json"):
                 raw = raw[4:]
+        # max_tokens 초과로 JSON이 잘린 경우 복구 시도
+        if not raw.endswith("}"):
+            last_brace = raw.rfind("}")
+            raw = raw[:last_brace + 1] if last_brace != -1 else raw + "}"
         return json.loads(raw)
     except Exception as exc:
         logger.warning("refine_event failed: %s", exc)
