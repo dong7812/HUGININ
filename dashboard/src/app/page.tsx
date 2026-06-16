@@ -10,7 +10,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-neutral-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Image src="/web-app-manifest-192x192.png" alt="HUGININ" width={22} height={22} className="opacity-80" />
+            <Image src="/web-app-manifest-192x192.png" alt="HUGININ" width={40} height={40} className="opacity-80" />
             <span className="font-mono font-bold text-neutral-900 tracking-widest text-sm uppercase">HUGININ</span>
           </div>
           <div className="flex items-center gap-6">
@@ -29,17 +29,14 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           {/* Raven logo mark */}
           <div className="flex flex-col items-center mb-10">
-            <div className="relative w-20 h-20 flex items-center justify-center mb-3">
-              <div className="absolute inset-0 rounded-full bg-[#f5f4ef]" />
-              <Image
-                src="/web-app-manifest-512x512.png"
-                alt="Huginn — Odin's Raven of Thought"
-                width={52}
-                height={52}
-                className="relative opacity-85"
-                priority
-              />
-            </div>
+            <Image
+              src="/web-app-manifest-512x512.png"
+              alt="Huginn — Odin's Raven of Thought"
+              width={120}
+              height={120}
+              className="opacity-85 mb-4"
+              priority
+            />
             <p className="font-mono text-[10px] text-neutral-400 tracking-[0.25em] uppercase">Huginn · 생각 · Odin&apos;s Raven</p>
           </div>
 
