@@ -18,6 +18,13 @@ func newLoginCmd(uc *application.LoginUseCase, wsUC *application.WorkspaceUseCas
 		Use:   "login",
 		Short: "HUGININ 계정으로 로그인",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if server, _ := cmd.Flags().GetString("server"); server != "" {
+				cfg.BaseURL = server
+				if err := config.Save(cfg); err != nil {
+					return err
+				}
+			}
+
 			email, _ := cmd.Flags().GetString("email")
 			password, _ := cmd.Flags().GetString("password")
 
@@ -65,9 +72,10 @@ func newLoginCmd(uc *application.LoginUseCase, wsUC *application.WorkspaceUseCas
 	cmd.Flags().String("email", "", "이메일 주소 (생략 시 대화형 입력)")
 	cmd.Flags().String("password", "", "비밀번호 (생략 시 대화형 입력)")
 	cmd.Flags().String("name", "", "이름 (신규 가입 시, 생략 시 대화형 입력)")
+	cmd.Flags().String("server", "", "서버 URL 재설정 (예: http://localhost:8000)")
 	cmd.Flags().BoolVar(&register, "register", false, "신규 가입")
 
-	cmd.AddCommand(newMcpTokenCmd(uc))
+	cmd.AddCommand(newMcpTokenCmd(uc, cfg))
 
 	return cmd
 }
@@ -85,7 +93,7 @@ func prompt(label string, mask bool) (string, error) {
 	return val, err
 }
 
-func newMcpTokenCmd(uc *application.LoginUseCase) *cobra.Command {
+func newMcpTokenCmd(uc *application.LoginUseCase, cfg *config.Config) *cobra.Command {
 	return &cobra.Command{
 		Use:   "mcp-token",
 		Short: "MCP/Git hook용 장기 토큰 발급 (365일)",
@@ -94,6 +102,7 @@ func newMcpTokenCmd(uc *application.LoginUseCase) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			mcpURL := cfg.BaseURL + "/mcp"
 			fmt.Println("✓ Service token (365일):")
 			fmt.Println()
 			fmt.Println(token)
@@ -102,7 +111,7 @@ func newMcpTokenCmd(uc *application.LoginUseCase) *cobra.Command {
 			fmt.Println(`{
   "mcpServers": {
     "huginin": {
-      "url": "http://localhost:8000/mcp",
+      "url": "` + mcpURL + `",
       "type": "sse",
       "headers": { "Authorization": "Bearer ` + token + `" }
     }
