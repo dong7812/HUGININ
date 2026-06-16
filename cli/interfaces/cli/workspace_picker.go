@@ -19,6 +19,12 @@ func runWorkspacePicker(wsUC *application.WorkspaceUseCase, cfg *config.Config) 
 		return fmt.Errorf("워크스페이스 목록 조회 실패: %w", err)
 	}
 
+	if len(workspaces) == 0 {
+		fmt.Println("워크스페이스가 없습니다. 대시보드에서 생성하거나 초대코드로 참여하세요.")
+		fmt.Println("  https://huginin.vercel.app")
+		return nil
+	}
+
 	selected, err := selectWorkspace(workspaces)
 	if err != nil {
 		if err == promptui.ErrInterrupt || err == promptui.ErrEOF {
