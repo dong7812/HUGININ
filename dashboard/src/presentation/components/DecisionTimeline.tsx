@@ -511,7 +511,7 @@ function SmartSearchPanel({ query, synthesis, events, isLoading }: {
   query: string; synthesis?: string; events: SmartSearchEvent[]; isLoading: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const COLLAPSE_CHARS = 200;
+  const COLLAPSE_CHARS = 350;
   const isLong = (synthesis?.length ?? 0) > COLLAPSE_CHARS;
   const displayText = isLong && !expanded ? synthesis!.slice(0, COLLAPSE_CHARS).trimEnd() + "…" : synthesis;
 
