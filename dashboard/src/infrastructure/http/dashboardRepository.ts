@@ -101,6 +101,14 @@ class DashboardApiRepository implements IDashboardRepository {
     return data.daily;
   }
 
+  async suggestEvents(workspaceId: string, query: string): Promise<Array<{ text: string; decision_type: string | null }>> {
+    const data = await apiFetch<{ items: Array<{ text: string; decision_type: string | null }> }>(
+      `/dashboard/${workspaceId}/suggest?q=${encodeURIComponent(query)}`,
+      this.token,
+    );
+    return data.items;
+  }
+
   async searchEvents(workspaceId: string, query: string, limit = 20): Promise<FeedPage> {
     const data = await apiFetch<{
       items: Array<RawFeedItem>;

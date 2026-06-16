@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { OverviewCards } from "./OverviewCards";
 import { TokenChart } from "./TokenChart";
 import { DecisionTimeline } from "./DecisionTimeline";
@@ -28,14 +28,7 @@ function toDateFrom(range: TimeRange): string | undefined {
 
 export function WorkspaceDashboard({ workspaceId }: Props) {
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
-  const [searchInput, setSearchInput] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    if (!searchInput.trim()) { setSearchQuery(""); return; }
-    const t = setTimeout(() => setSearchQuery(searchInput), 400);
-    return () => clearTimeout(t);
-  }, [searchInput]);
+  const [submittedQuery, setSubmittedQuery] = useState("");
 
   const dateFrom = useMemo(() => toDateFrom(timeRange), [timeRange]);
 
@@ -46,8 +39,7 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
         selectedRange={timeRange}
         onSelectRange={(r) => {
           setTimeRange(r);
-          setSearchInput("");
-          setSearchQuery("");
+          setSubmittedQuery("");
         }}
       />
 
@@ -56,10 +48,9 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
           <DecisionTimeline
             workspaceId={workspaceId}
             dateFrom={dateFrom}
-            searchQuery={searchInput}
-            debouncedQuery={searchQuery}
-            onSearchChange={(q) => {
-              setSearchInput(q);
+            submittedQuery={submittedQuery}
+            onSearch={(q) => {
+              setSubmittedQuery(q);
               if (q) setTimeRange("all");
             }}
           />

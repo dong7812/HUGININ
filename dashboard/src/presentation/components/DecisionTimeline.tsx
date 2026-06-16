@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -22,16 +22,15 @@ import {
   X,
   ExternalLink,
 } from "lucide-react";
-import { useFeedQuery, useBranchesQuery, useSearchQuery } from "@/application/queries/dashboardQueries";
+import { useFeedQuery, useBranchesQuery, useSearchQuery, useSuggestQuery } from "@/application/queries/dashboardQueries";
 import { CommentSection } from "./CommentSection";
 import type { FeedItem } from "@/domain/entities";
 
 interface Props {
   workspaceId: string;
   dateFrom?: string;
-  searchQuery?: string;      // 입력값 (표시용)
-  debouncedQuery?: string;   // 디바운스된 값 (API 호출용)
-  onSearchChange?: (q: string) => void;
+  submittedQuery: string;
+  onSearch: (q: string) => void;
 }
 
 const STATUS_DOT: Record<string, string> = {
@@ -254,14 +253,31 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export function DecisionTimeline({ workspaceId, dateFrom, searchQuery = "", debouncedQuery = searchQuery, onSearchChange }: Props) {
+export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSearch }: Props) {
   const [page, setPage] = useState(0);
   const [branch, setBranch] = useState<string | undefined>(undefined);
+  const [inputValue, setInputValue] = useState(submittedQuery);
+  const [debouncedInput, setDebouncedInput] = useState(submittedQuery);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const limit = 15;
-  const isSearching = debouncedQuery.trim().length >= 2;
+
+  // 부모가 쿼리 초기화하면 입력도 초기화
+  useEffect(() => {
+    if (!submittedQuery) setInputValue("");
+  }, [submittedQuery]);
+
+  // 제안용 디바운스 (250ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedInput(inputValue), 250);
+    return () => clearTimeout(t);
+  }, [inputValue]);
+
+  const isSearching = submittedQuery.trim().length >= 2;
 
   const feedResult = useFeedQuery(workspaceId, page, limit, branch, dateFrom);
-  const searchResult = useSearchQuery(workspaceId, debouncedQuery);
+  const searchResult = useSearchQuery(workspaceId, submittedQuery);
+  const { data: suggestions } = useSuggestQuery(workspaceId, debouncedInput);
   const { data: branches } = useBranchesQuery(workspaceId);
 
   const { data, isLoading } = isSearching ? searchResult : feedResult;
@@ -348,25 +364,50 @@ export function DecisionTimeline({ workspaceId, dateFrom, searchQuery = "", debo
           </div>
         </div>
 
-        {onSearchChange && (
-          <div className="relative">
-            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
-            <input
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="prompt, response 전문 검색..."
-              className="w-full text-xs bg-zinc-800 border border-zinc-700 rounded-md pl-8 pr-8 py-1.5 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => onSearchChange("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-              >
-                <X size={13} />
-              </button>
-            )}
-          </div>
-        )}
+        <div className="relative">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" />
+          <input
+            ref={inputRef}
+            value={inputValue}
+            onChange={(e) => { setInputValue(e.target.value); setShowSuggestions(true); }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") { onSearch(inputValue); setShowSuggestions(false); }
+              if (e.key === "Escape") { setShowSuggestions(false); inputRef.current?.blur(); }
+            }}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+            placeholder="검색어 입력 후 Enter..."
+            className="w-full text-xs bg-zinc-800 border border-zinc-700 rounded-md pl-8 pr-8 py-1.5 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+          />
+          {inputValue && (
+            <button
+              onClick={() => { setInputValue(""); setDebouncedInput(""); onSearch(""); setShowSuggestions(false); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+            >
+              <X size={13} />
+            </button>
+          )}
+
+          {/* 제안 드롭다운 */}
+          {showSuggestions && suggestions && suggestions.length > 0 && inputValue.trim().length >= 1 && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl z-50 overflow-hidden">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { setInputValue(s.text); onSearch(s.text); setShowSuggestions(false); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-zinc-700 transition-colors group"
+                >
+                  <Search size={11} className="shrink-0 text-zinc-500 group-hover:text-zinc-400" />
+                  <span className="flex-1 text-xs text-zinc-300 truncate">{s.text}</span>
+                  {s.decision_type && (
+                    <span className="text-[10px] text-zinc-500 font-mono shrink-0">{s.decision_type}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {items.length === 0 ? (

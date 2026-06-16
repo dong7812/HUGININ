@@ -131,6 +131,34 @@ class PgEventRepository(EventRepository):
         items = [_to_feed_item(r) for r in rows]
         return items, total_row[0]
 
+    async def suggest_events(
+        self, workspace_id: UUID, query: str, limit: int = 6
+    ) -> list[dict]:
+        pattern = f"%{query}%"
+        rows = await self._pool.fetch(
+            """
+            SELECT DISTINCT ON (text)
+                COALESCE(
+                    NULLIF(LEFT(e.what_was_built, 80), ''),
+                    NULLIF(LEFT(e.decision_summary, 80), ''),
+                    LEFT(e.raw_prompt, 60)
+                ) AS text,
+                e.decision_type
+            FROM decision_events e
+            WHERE e.workspace_id = $1
+              AND (
+                e.what_was_built ILIKE $2
+                OR e.decision_summary ILIKE $2
+                OR e.problem_solved ILIKE $2
+              )
+              AND e.status = 'refined'
+            ORDER BY text, e.created_at DESC
+            LIMIT $3
+            """,
+            workspace_id, pattern, limit,
+        )
+        return [{"text": r["text"], "decision_type": r["decision_type"]} for r in rows if r["text"]]
+
     async def search_events(
         self,
         workspace_id: UUID,

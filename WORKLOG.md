@@ -47,3 +47,7 @@
 2026-06-16 19:26 | commit | e566219 | branch:main | chore: trigger Railway rebuild for new dashboard endpoints
 2026-06-16 19:29 | commit | deb0b3f | branch:main | Sync worklogs and collab-proof snapshots
 2026-06-16 20:23 | commit | 4500995 | branch:main | Fix: link project to Railway production workspace
+2026-06-16 20:25 | commit | 965f60b | branch:main | Sync worklogs
+2026-06-16 21:41 | commit | 819ac4c | branch:main | Add real install.sh + fix install URL in landing slider
+2026-06-17 00:40 | commit | 1ffd7cd | branch:main | Fix DB ssl: skip ssl for Railway internal network (.railway.internal)
+2026-06-17 02:03 | commit | 87838e2 | branch:main | Fix search debounce + workspace list refresh after creation

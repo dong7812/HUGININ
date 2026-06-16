@@ -319,6 +319,29 @@ async def get_cache_suggestions(
     )
 
 
+class SuggestItem(BaseModel):
+    text: str
+    decision_type: str | None = None
+
+
+class SuggestResponse(BaseModel):
+    items: list[SuggestItem]
+
+
+@router.get("/{workspace_id}/suggest", response_model=SuggestResponse)
+async def suggest_events(
+    workspace_id: UUID,
+    request: Request,
+    q: str,
+    limit: int = 6,
+    user_id: UUID = Depends(get_current_user_id),
+):
+    items = await request.app.state.event_repo.suggest_events(
+        workspace_id=workspace_id, query=q, limit=limit
+    )
+    return SuggestResponse(items=[SuggestItem(**i) for i in items])
+
+
 @router.get("/{workspace_id}/search", response_model=FeedResponse)
 async def search_events(
     workspace_id: UUID,

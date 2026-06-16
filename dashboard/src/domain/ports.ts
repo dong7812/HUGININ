@@ -7,6 +7,7 @@ export interface IDashboardRepository {
   getBranches(workspaceId: string): Promise<string[]>;
   getTokenStats(workspaceId: string, days: number, branch?: string): Promise<TokenStats>;
   getFrameStats(workspaceId: string, days: number): Promise<FrameStats>;
+  suggestEvents(workspaceId: string, query: string): Promise<Array<{ text: string; decision_type: string | null }>>;
   searchEvents(workspaceId: string, query: string, limit?: number): Promise<FeedPage>;
   getAiTrend(workspaceId: string, period: string): Promise<AiTrend>;
   getCacheSuggestions(workspaceId: string): Promise<CacheSuggestions>;
