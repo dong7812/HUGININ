@@ -22,7 +22,7 @@ const FRAME_COLOR: Record<string, string> = {
 };
 const FRAME_BG: Record<string, string> = {
   A: "bg-sky-50 border-sky-100 text-sky-700",
-  B: "bg-violet-50 border-violet-100 text-violet-700",
+  B: "bg-violet-50 border-violet-100 text-blue-700",
   C: "bg-emerald-50 border-emerald-100 text-emerald-700",
   D: "bg-orange-50 border-orange-100 text-orange-700",
 };
@@ -38,7 +38,7 @@ const FRAME_DESC: Record<string, { who: string; desc: string }> = {
 
 function FrameLegendPanel() {
   return (
-    <div className="grid grid-cols-2 gap-1.5 pt-3 border-t border-slate-100 mt-1">
+    <div className="grid grid-cols-2 gap-1.5 pt-3 border-t border-neutral-100 mt-1">
       {(["A", "B", "C", "D"] as const).map((f) => (
         <div key={f} className={`rounded-xl border px-2.5 py-2 ${FRAME_BG[f]}`}>
           <div className="flex items-center gap-1.5 mb-0.5">
@@ -59,12 +59,12 @@ export function FrameStats({ workspaceId }: Props) {
 
   if (isLoading) {
     return (
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4 flex flex-col gap-3">
-        <div className="h-4 w-28 bg-slate-100 rounded-lg animate-pulse" />
-        <div className="h-6 w-full bg-slate-100 rounded-lg animate-pulse" />
+      <div className="bg-white border border-neutral-100 rounded-2xl shadow-sm p-4 flex flex-col gap-3">
+        <div className="h-4 w-28 bg-neutral-100 rounded-lg animate-pulse" />
+        <div className="h-6 w-full bg-neutral-100 rounded-lg animate-pulse" />
         <div className="flex flex-col gap-2">
           {[1, 2].map((i) => (
-            <div key={i} className="h-8 w-full bg-slate-100 rounded-lg animate-pulse" />
+            <div key={i} className="h-8 w-full bg-neutral-100 rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -73,8 +73,8 @@ export function FrameStats({ workspaceId }: Props) {
 
   if (!data || data.total === 0) {
     return (
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4">
-        <p className="text-xs text-slate-400 text-center py-4">
+      <div className="bg-white border border-neutral-100 rounded-2xl shadow-sm p-4">
+        <p className="text-xs text-neutral-400 text-center py-4">
           아직 분석된 이벤트가 없습니다
         </p>
       </div>
@@ -85,30 +85,30 @@ export function FrameStats({ workspaceId }: Props) {
   const total = data.total;
 
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+    <div className="bg-white border border-neutral-100 rounded-2xl shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-violet-500" />
-          <span className="text-sm font-semibold text-slate-800">AI 협업 패턴</span>
-          <span className="text-xs text-slate-400 font-mono bg-slate-50 px-1.5 py-0.5 rounded-md">{total}</span>
+          <span className="text-sm font-semibold text-neutral-900">AI 협업 패턴</span>
+          <span className="text-xs text-neutral-400 font-mono bg-neutral-50 px-1.5 py-0.5 rounded-md">{total}</span>
           <button
             onClick={() => setShowLegend((v) => !v)}
-            className={`transition-colors ${showLegend ? "text-violet-500" : "text-slate-300 hover:text-slate-500"}`}
+            className={`transition-colors ${showLegend ? "text-blue-500" : "text-neutral-300 hover:text-neutral-500"}`}
             title="Frame 설명"
           >
             <Info size={13} />
           </button>
         </div>
-        <div className="flex items-center gap-0.5 bg-slate-100 rounded-lg p-0.5">
+        <div className="flex items-center gap-0.5 bg-neutral-100 rounded-lg p-0.5">
           {DAYS_OPTIONS.map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
               className={`text-[10px] px-2 py-0.5 rounded-md font-mono font-medium transition-all ${
                 days === d
-                  ? "bg-white text-slate-700 shadow-sm"
-                  : "text-slate-400 hover:text-slate-600"
+                  ? "bg-white text-neutral-700 shadow-sm"
+                  : "text-neutral-400 hover:text-neutral-600"
               }`}
             >
               {d}d
@@ -120,10 +120,10 @@ export function FrameStats({ workspaceId }: Props) {
       <div className="p-4 flex flex-col gap-4">
         {/* Big number */}
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold text-violet-600 font-mono">
+          <span className="text-3xl font-bold text-blue-600 font-mono">
             {Math.round(data.avgAiContribution * 100)}%
           </span>
-          <span className="text-xs text-slate-400">평균 AI 기여도</span>
+          <span className="text-xs text-neutral-400">평균 AI 기여도</span>
         </div>
 
         {/* Stacked bar */}
@@ -150,7 +150,7 @@ export function FrameStats({ workspaceId }: Props) {
               return (
                 <div key={f} className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: FRAME_COLOR[f] }} />
-                  <span className="text-[10px] text-slate-500 font-mono">
+                  <span className="text-[10px] text-neutral-500 font-mono">
                     {f} {pct}%
                   </span>
                 </div>
@@ -175,14 +175,14 @@ export function FrameStats({ workspaceId }: Props) {
 
         {/* Per-member */}
         {data.byMember.length > 0 && (
-          <div className="flex flex-col gap-1 pt-1 border-t border-slate-100">
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1.5 font-semibold">팀원별 패턴</p>
+          <div className="flex flex-col gap-1 pt-1 border-t border-neutral-100">
+            <p className="text-[10px] text-neutral-400 uppercase tracking-wider mb-1.5 font-semibold">팀원별 패턴</p>
             {data.byMember.map((m) => (
               <div key={m.userEmail} className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-600 w-20 truncate shrink-0">
+                <span className="text-[11px] text-neutral-600 w-20 truncate shrink-0">
                   {m.userName || m.userEmail.split("@")[0]}
                 </span>
-                <div className="flex-1 h-1.5 rounded-full overflow-hidden flex bg-slate-100">
+                <div className="flex-1 h-1.5 rounded-full overflow-hidden flex bg-neutral-100">
                   {frames.map((f) => {
                     const count = m[f] as number;
                     const pct = m.total > 0 ? (count / m.total) * 100 : 0;
@@ -195,7 +195,7 @@ export function FrameStats({ workspaceId }: Props) {
                     );
                   })}
                 </div>
-                <span className="text-[10px] text-slate-400 font-mono w-8 text-right shrink-0">
+                <span className="text-[10px] text-neutral-400 font-mono w-8 text-right shrink-0">
                   {Math.round(m.avgAi * 100)}%
                 </span>
               </div>

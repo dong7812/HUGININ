@@ -89,42 +89,18 @@ const STEPS = [
   },
 ];
 
-const LINE_COLORS: Record<string, string> = {
-  "1": "bg-blue-500",
-  "2": "bg-violet-500",
-  "3": "bg-emerald-500",
-  "4": "bg-amber-500",
-};
-const ACTIVE_LABEL: Record<string, string> = {
-  "1": "text-blue-400",
-  "2": "text-violet-400",
-  "3": "text-emerald-400",
-  "4": "text-amber-400",
-};
-const ACTIVE_NUM: Record<string, string> = {
-  "1": "border-blue-500 text-blue-400 bg-blue-500/10",
-  "2": "border-violet-500 text-violet-400 bg-violet-500/10",
-  "3": "border-emerald-500 text-emerald-400 bg-emerald-500/10",
-  "4": "border-amber-500 text-amber-400 bg-amber-500/10",
-};
-
 export function InstallSlider() {
   const [current, setCurrent] = useState(0);
   const step = STEPS[current];
-  const key = String(step.num);
 
   return (
-    <div className="w-full rounded-2xl border border-zinc-800 bg-zinc-900 overflow-hidden flex flex-col sm:flex-row">
-
-      {/* ── 좌측 네비 ── */}
-      <div className="sm:w-44 shrink-0 flex sm:flex-col flex-row sm:border-r border-b sm:border-b-0 border-zinc-800">
-        <div className="sm:pt-5 sm:pb-3 px-4 sm:px-5 py-3 sm:py-0">
-          <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest hidden sm:block mb-4">
-            Quick start
-          </p>
+    <div className="w-full rounded-2xl border border-neutral-200 bg-white overflow-hidden flex flex-col sm:flex-row">
+      {/* Left nav */}
+      <div className="sm:w-44 shrink-0 flex sm:flex-col flex-row sm:border-r border-b sm:border-b-0 border-neutral-100 bg-[#f5f4ef]">
+        <div className="hidden sm:block px-5 pt-5 pb-3">
+          <p className="text-[9px] font-semibold uppercase tracking-widest text-neutral-400">Quick start</p>
         </div>
         {STEPS.map((s, i) => {
-          const k = String(s.num);
           const isActive = i === current;
           const isDone = i < current;
           return (
@@ -132,19 +108,14 @@ export function InstallSlider() {
               key={s.num}
               onClick={() => setCurrent(i)}
               className={`relative flex items-center gap-3 px-4 py-3 sm:py-3.5 text-left transition-all w-full sm:w-auto flex-1 sm:flex-none ${
-                isActive ? "bg-white/[0.04]" : "hover:bg-white/[0.02]"
+                isActive ? "bg-white" : "hover:bg-neutral-100/50"
               }`}
             >
-              {/* 왼쪽 액티브 바 (desktop) */}
-              {isActive && (
-                <span className={`hidden sm:block absolute left-0 top-2 bottom-2 w-0.5 rounded-r-full ${LINE_COLORS[k]}`} />
-              )}
+              {isActive && <span className="hidden sm:block absolute left-0 top-2 bottom-2 w-0.5 rounded-r-full bg-blue-600" />}
               <span className={`w-6 h-6 rounded-full border text-[10px] font-mono flex items-center justify-center shrink-0 transition-all ${
-                isActive
-                  ? ACTIVE_NUM[k]
-                  : isDone
-                    ? "border-zinc-700 bg-zinc-700/50 text-zinc-400"
-                    : "border-zinc-800 text-zinc-600"
+                isActive ? "border-blue-600 text-blue-600 bg-blue-50" :
+                isDone ? "border-neutral-300 bg-neutral-200 text-neutral-500" :
+                "border-neutral-200 text-neutral-400"
               }`}>
                 {isDone ? (
                   <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
@@ -153,7 +124,7 @@ export function InstallSlider() {
                 ) : s.num}
               </span>
               <span className={`text-xs font-medium hidden sm:block transition-colors ${
-                isActive ? ACTIVE_LABEL[k] : isDone ? "text-zinc-500" : "text-zinc-600"
+                isActive ? "text-blue-600" : isDone ? "text-neutral-500" : "text-neutral-400"
               }`}>
                 {s.label}
               </span>
@@ -162,75 +133,63 @@ export function InstallSlider() {
         })}
       </div>
 
-      {/* ── 중앙 터미널 ── */}
+      {/* Terminal */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* 헤더 */}
-        <div className="px-5 pt-5 pb-4 border-b border-zinc-800/60">
+        <div className="px-5 pt-5 pb-4 border-b border-neutral-100">
           <div className="flex items-center gap-2 mb-1">
-            <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
-              ACTIVE_NUM[key]
-            } border-opacity-50`}>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-lg border border-blue-100 text-blue-600 bg-blue-50">
               {step.tag}
             </span>
-            <h3 className="text-sm font-semibold text-zinc-200">{step.title}</h3>
+            <h3 className="text-sm font-bold text-neutral-900">{step.title}</h3>
           </div>
-          <p className="text-xs text-zinc-500">{step.desc}</p>
+          <p className="text-xs text-neutral-500">{step.desc}</p>
         </div>
 
-        {/* 터미널 바디 */}
-        <div className="flex-1 bg-zinc-950 p-5 font-mono text-[13px] space-y-1.5">
-          {/* 창 컨트롤 */}
+        {/* Terminal body */}
+        <div className="flex-1 bg-neutral-900 p-5 font-mono text-[13px] space-y-1.5">
           <div className="flex gap-1.5 mb-4">
-            <div className="w-3 h-3 rounded-full bg-zinc-800" />
-            <div className="w-3 h-3 rounded-full bg-zinc-800" />
-            <div className="w-3 h-3 rounded-full bg-zinc-800" />
+            <div className="w-3 h-3 rounded-full bg-neutral-700" />
+            <div className="w-3 h-3 rounded-full bg-neutral-700" />
+            <div className="w-3 h-3 rounded-full bg-neutral-700" />
           </div>
-
           {step.terminal.map((line, i) => {
             if (line.t === "gap") return <div key={i} className="h-1" />;
             if (line.t === "cmd") return (
               <div key={i} className="flex gap-2.5 items-start">
-                <span className="text-green-400 shrink-0 select-none">$</span>
-                <span className="text-zinc-200 break-all leading-relaxed">{line.v}</span>
+                <span className="text-emerald-400 shrink-0 select-none">$</span>
+                <span className="text-neutral-200 break-all leading-relaxed">{line.v}</span>
               </div>
             );
             if (line.t === "ok") return (
               <div key={i} className="flex gap-2.5 items-start">
-                <span className="text-emerald-400 shrink-0">✓</span>
-                <span className="text-emerald-400/90 leading-relaxed">{line.v}</span>
+                <span className="text-blue-400 shrink-0">✓</span>
+                <span className="text-blue-300 leading-relaxed">{line.v}</span>
               </div>
             );
             if (line.t === "info") return (
               <div key={i} className="flex gap-2.5 items-start">
-                <span className="text-zinc-600 shrink-0 select-none">›</span>
-                <span className="text-zinc-400 leading-relaxed">{line.v}</span>
+                <span className="text-neutral-600 shrink-0 select-none">›</span>
+                <span className="text-neutral-400 leading-relaxed">{line.v}</span>
               </div>
             );
             if (line.t === "dim") return (
               <div key={i} className="flex gap-2.5 items-start">
-                <span className="text-zinc-700 leading-relaxed">{line.v}</span>
+                <span className="text-neutral-700 leading-relaxed">{line.v}</span>
               </div>
             );
             return null;
           })}
         </div>
 
-        {/* 하단 바 */}
-        <div className="px-5 py-3 border-t border-zinc-800/60 flex items-center justify-between">
+        <div className="px-5 py-3 border-t border-neutral-100 bg-white flex items-center justify-between">
           {step.tip ? (
-            <p className="text-[10px] font-mono text-zinc-600">{step.tip}</p>
-          ) : (
-            <div />
-          )}
+            <p className="text-[10px] font-mono text-neutral-400">{step.tip}</p>
+          ) : <div />}
           <div className="flex gap-1.5">
             {STEPS.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
+              <button key={i} onClick={() => setCurrent(i)}
                 className={`h-1 rounded-full transition-all ${
-                  i === current
-                    ? `w-4 ${LINE_COLORS[String(STEPS[current].num)]}`
-                    : "w-1.5 bg-zinc-700 hover:bg-zinc-600"
+                  i === current ? "w-4 bg-blue-600" : "w-1.5 bg-neutral-200 hover:bg-neutral-300"
                 }`}
               />
             ))}
@@ -238,26 +197,23 @@ export function InstallSlider() {
         </div>
       </div>
 
-      {/* ── 우측 컨텍스트 ── */}
-      <div className="hidden lg:flex sm:w-48 shrink-0 border-l border-zinc-800 flex-col">
-        <div className="px-4 pt-5 pb-3 border-b border-zinc-800/60">
-          <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest">Details</p>
+      {/* Right context */}
+      <div className="hidden lg:flex sm:w-48 shrink-0 border-l border-neutral-100 flex-col bg-[#f5f4ef]">
+        <div className="px-4 pt-5 pb-3 border-b border-neutral-100">
+          <p className="text-[9px] font-semibold uppercase tracking-widest text-neutral-400">Details</p>
         </div>
         <div className="flex-1 px-4 py-4 flex flex-col gap-3">
           {step.meta.map(({ label, value }) => (
             <div key={label} className="flex flex-col gap-0.5">
-              <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-wider">{label}</span>
-              <span className="text-[11px] text-zinc-300 font-mono">{value}</span>
+              <span className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">{label}</span>
+              <span className="text-[12px] text-neutral-700 font-mono">{value}</span>
             </div>
           ))}
         </div>
-        <div className="px-4 py-4 border-t border-zinc-800/60 mt-auto">
-          <p className="text-[9px] font-mono text-zinc-700 leading-relaxed">
-            Step {step.num} / {STEPS.length}
-          </p>
+        <div className="px-4 py-4 border-t border-neutral-100">
+          <p className="text-[9px] font-mono text-neutral-400">Step {step.num} / {STEPS.length}</p>
         </div>
       </div>
-
     </div>
   );
 }

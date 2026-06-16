@@ -3,4 +3,6 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-ivory: #f5f4ef;
+  --color-ivory-dark: #eeeade;
 }

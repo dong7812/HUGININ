@@ -55,13 +55,13 @@ function CustomTooltip({ active, payload, label }: {
   const commitEntry = payload.find((p) => p.name === "커밋");
   const aiEntry = payload.find((p) => p.name === "AI 기여도");
   return (
-    <div className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs shadow-lg space-y-0.5">
-      <p className="text-slate-500 mb-1 font-medium">{label}</p>
+    <div className="bg-white border border-neutral-200 rounded-xl px-3 py-2.5 text-xs shadow-lg space-y-0.5">
+      <p className="text-neutral-500 mb-1 font-medium">{label}</p>
       {commitEntry && (
-        <p className="text-slate-800 font-semibold">커밋 {commitEntry.value}건</p>
+        <p className="text-neutral-900 font-semibold">커밋 {commitEntry.value}건</p>
       )}
       {aiEntry && (
-        <p className="text-violet-600 font-medium">AI 기여도 {Math.round((aiEntry.value as number) * 100)}%</p>
+        <p className="text-blue-600 font-medium">AI 기여도 {Math.round((aiEntry.value as number) * 100)}%</p>
       )}
     </div>
   );
@@ -97,21 +97,21 @@ export function AiTrendChart({ workspaceId }: Props) {
     : null;
 
   return (
-    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-4">
+    <div className="bg-white border border-neutral-200 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-sm font-semibold text-slate-800">팀 생산성 리듬</h3>
-          <p className="text-[10px] text-slate-400 mt-0.5">커밋 속도 × AI 기여도</p>
+          <h3 className="text-sm font-semibold text-neutral-900">팀 생산성 리듬</h3>
+          <p className="text-[10px] text-neutral-400 mt-0.5">커밋 속도 × AI 기여도</p>
         </div>
-        <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+        <div className="flex gap-1 bg-neutral-100 rounded-lg p-0.5">
           {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
               className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
                 period === p
-                  ? "bg-white text-slate-800 shadow-sm"
-                  : "text-slate-500 hover:text-slate-700"
+                  ? "bg-white text-neutral-900 shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-700"
               }`}
             >
               {PERIOD_LABELS[p]}
@@ -124,7 +124,7 @@ export function AiTrendChart({ workspaceId }: Props) {
         <div className={`text-[11px] px-2.5 py-1.5 rounded-lg mb-3 font-medium ${
           corr.positive
             ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-            : "bg-slate-50 text-slate-500 border border-slate-100"
+            : "bg-neutral-50 text-neutral-500 border border-neutral-100"
         }`}>
           {corr.positive ? "↑ " : "— "}{corr.label}
         </div>
@@ -132,11 +132,11 @@ export function AiTrendChart({ workspaceId }: Props) {
 
       {isLoading ? (
         <div className="h-44 flex items-center justify-center">
-          <span className="text-xs text-slate-400">로딩 중...</span>
+          <span className="text-xs text-neutral-400">로딩 중...</span>
         </div>
       ) : chartData.length === 0 ? (
         <div className="h-44 flex items-center justify-center">
-          <p className="text-xs text-slate-400">이 기간에 데이터가 없습니다</p>
+          <p className="text-xs text-neutral-400">이 기간에 데이터가 없습니다</p>
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={180}>
@@ -189,11 +189,11 @@ export function AiTrendChart({ workspaceId }: Props) {
       )}
 
       <div className="flex gap-4 mt-2 justify-center">
-        <span className="flex items-center gap-1 text-[10px] text-slate-400">
+        <span className="flex items-center gap-1 text-[10px] text-neutral-400">
           <span className="w-2.5 h-2.5 rounded-sm bg-slate-200 inline-block" /> 커밋 수
         </span>
-        <span className="flex items-center gap-1 text-[10px] text-slate-400">
-          <span className="w-3 h-0.5 bg-violet-600 inline-block" /> AI 기여도
+        <span className="flex items-center gap-1 text-[10px] text-neutral-400">
+          <span className="w-3 h-0.5 bg-blue-600 inline-block" /> AI 기여도
         </span>
       </div>
     </div>

@@ -42,31 +42,31 @@ export function LoginForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full max-w-sm">
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-slate-600">이메일</label>
+        <label className="text-xs font-medium text-neutral-600">이메일</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           placeholder="team@company.com"
-          className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition-all shadow-sm"
+          className="bg-white border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all shadow-sm"
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-slate-600">비밀번호</label>
+        <label className="text-xs font-medium text-neutral-600">비밀번호</label>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-violet-400 transition-all shadow-sm"
+          className="bg-white border border-neutral-200 rounded-xl px-3 py-2.5 text-sm text-neutral-900 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all shadow-sm"
         />
       </div>
       {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
       <button
         type="submit"
         disabled={loading}
-        className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm"
+        className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm"
       >
         {loading ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
         로그인

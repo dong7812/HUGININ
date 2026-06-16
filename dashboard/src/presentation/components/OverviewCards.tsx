@@ -1,6 +1,5 @@
 "use client";
 
-import { Users, FolderOpen, Zap, Calendar, Database } from "lucide-react";
 import { useOverviewQuery } from "@/application/queries/dashboardQueries";
 import type { TimeRange } from "./WorkspaceDashboard";
 
@@ -10,66 +9,61 @@ interface Props {
   onSelectRange: (r: TimeRange) => void;
 }
 
+const FILTERS: { range: TimeRange; label: string; key: "eventsToday" | "eventsWeek" | "eventsTotal" }[] = [
+  { range: "today", label: "오늘", key: "eventsToday" },
+  { range: "week",  label: "이번 주", key: "eventsWeek" },
+  { range: "all",   label: "전체", key: "eventsTotal" },
+];
+
 export function OverviewCards({ workspaceId, selectedRange, onSelectRange }: Props) {
   const { data, isLoading } = useOverviewQuery(workspaceId);
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 flex-wrap">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-9 w-28 bg-slate-100 rounded-xl animate-pulse" />
+      <div className="flex gap-3">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div key={i} className="h-20 w-36 bg-white rounded-2xl border border-neutral-200 animate-pulse" />
         ))}
-        <div className="ml-auto flex gap-2">
-          {[1, 2].map((i) => (
-            <div key={i} className="h-9 w-24 bg-slate-100 rounded-xl animate-pulse" />
-          ))}
-        </div>
       </div>
     );
   }
 
-  const filterButtons: { range: TimeRange; label: string; value: number | undefined; icon: typeof Zap }[] = [
-    { range: "today", label: "오늘", value: data?.eventsToday, icon: Zap },
-    { range: "week", label: "이번 주", value: data?.eventsWeek, icon: Calendar },
-    { range: "all", label: "전체", value: data?.eventsTotal, icon: Database },
-  ];
-
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {filterButtons.map(({ range, label, value, icon: Icon }) => {
+    <div className="flex items-stretch gap-3 flex-wrap">
+      {FILTERS.map(({ range, label, key }) => {
         const active = selectedRange === range;
+        const value = data?.[key] ?? 0;
         return (
           <button
             key={range}
             onClick={() => onSelectRange(range)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl border text-sm font-medium transition-all ${
+            className={`flex flex-col items-start px-5 py-4 rounded-2xl border transition-all text-left ${
               active
-                ? "bg-violet-600 border-violet-600 text-white shadow-sm"
-                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900 shadow-sm"
+                ? "bg-blue-600 border-blue-600 text-white"
+                : "bg-white border-neutral-200 text-neutral-900 hover:border-neutral-300"
             }`}
           >
-            <Icon size={13} className={active ? "text-violet-200" : "text-slate-400"} />
-            <span>{label}</span>
-            {value !== undefined && (
-              <span className={`font-mono text-xs ${active ? "text-violet-200" : "text-slate-400"}`}>
-                {value.toLocaleString()}
-              </span>
-            )}
+            <span className={`text-[10px] font-semibold uppercase tracking-widest mb-1 ${active ? "text-blue-200" : "text-neutral-400"}`}>
+              {label}
+            </span>
+            <span className="text-2xl font-bold font-mono leading-none">{value.toLocaleString()}</span>
+            <span className={`text-[10px] mt-1 ${active ? "text-blue-200" : "text-neutral-400"}`}>decisions</span>
           </button>
         );
       })}
 
-      <div className="h-5 w-px bg-slate-200 mx-1" />
+      <div className="w-px bg-neutral-200 mx-1 self-stretch" />
 
-      <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 shadow-sm">
-        <Users size={13} className="text-emerald-500" />
-        <span className="text-xs text-slate-500">팀원</span>
-        <span className="text-xs font-mono font-semibold text-slate-700">{data?.memberCount ?? "—"}</span>
+      <div className="flex flex-col items-start px-5 py-4 rounded-2xl border border-neutral-200 bg-white">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">팀원</span>
+        <span className="text-2xl font-bold font-mono leading-none text-neutral-900">{data?.memberCount ?? "—"}</span>
+        <span className="text-[10px] text-neutral-400 mt-1">members</span>
       </div>
-      <div className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 shadow-sm">
-        <FolderOpen size={13} className="text-orange-500" />
-        <span className="text-xs text-slate-500">프로젝트</span>
-        <span className="text-xs font-mono font-semibold text-slate-700">{data?.projectCount ?? "—"}</span>
+
+      <div className="flex flex-col items-start px-5 py-4 rounded-2xl border border-neutral-200 bg-white">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">프로젝트</span>
+        <span className="text-2xl font-bold font-mono leading-none text-neutral-900">{data?.projectCount ?? "—"}</span>
+        <span className="text-[10px] text-neutral-400 mt-1">repos</span>
       </div>
     </div>
   );
