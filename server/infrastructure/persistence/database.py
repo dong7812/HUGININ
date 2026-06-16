@@ -1,6 +1,13 @@
 from __future__ import annotations
 
+import asyncio
+import logging
+
 import asyncpg
+
+logger = logging.getLogger(__name__)
+
+_RETRY_DELAYS = [2, 4, 8, 16, 30]  # seconds
 
 
 class Database:
@@ -16,13 +23,27 @@ class Database:
 
     async def connect(self) -> None:
         is_local = "localhost" in self._dsn or "127.0.0.1" in self._dsn
-        self._pool = await asyncpg.create_pool(
-            self._dsn,
-            min_size=2,
-            max_size=10,
-            command_timeout=30,
-            ssl="require" if not is_local else None,
-        )
+        ssl = "require" if not is_local else None
+
+        for attempt, delay in enumerate(_RETRY_DELAYS, start=1):
+            try:
+                self._pool = await asyncpg.create_pool(
+                    self._dsn,
+                    min_size=2,
+                    max_size=10,
+                    command_timeout=30,
+                    ssl=ssl,
+                )
+                logger.info("Database connected (attempt %d)", attempt)
+                return
+            except Exception as exc:
+                if attempt == len(_RETRY_DELAYS):
+                    raise
+                logger.warning(
+                    "DB connect failed (attempt %d/%d): %s — retrying in %ds",
+                    attempt, len(_RETRY_DELAYS), exc, delay,
+                )
+                await asyncio.sleep(delay)
 
     async def disconnect(self) -> None:
         if self._pool:
