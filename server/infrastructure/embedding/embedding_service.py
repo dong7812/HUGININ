@@ -5,7 +5,7 @@
 import asyncio
 from typing import ClassVar
 
-_MODEL_NAME = "intfloat/multilingual-e5-small"
+_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
 class EmbeddingService:
