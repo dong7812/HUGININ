@@ -391,3 +391,34 @@
 **Intent class**: FEATURE_BUILDING
 **Signal score**: HIGH
 **Outcome**: implemented
+
+## [2026-06-16] HUGININ 창업 전략 — PLG 확정, GTM 방향
+
+**Context**: 리서치 보고서(팀 프롬프트 공유 서비스, 기여 비대칭성) + 심층 전략 탐색. B2B SaaS vs B2C vs PLG 비교, EU AI Act 가능성 검토, 시장 선점 타이밍 분석.
+**Decision**: PLG (Product-Led Growth) 전략으로 확정. B2B는 감시 인식 재발, B2C는 팀 기능 가치 제로 — PLG가 HUGININ 구조와 유일하게 맞음.
+**Alternatives considered**:
+- B2B SaaS: 위에서 강제 → 감시 도구 인식 → 형식적 사용
+- B2C: 혼자 쓰면 팀 기능 가치 없음, cold start 해결 불가
+- EU AI Act 전용 툴: 엔터프라이즈 세일즈 사이클 6-18개월, 한국 시장 타이밍 불일치, 대형 플레이어 경쟁 불가
+**Reasoning**: Slack/Figma/Linear 모두 PLG. 개발자가 자발적 설치 → 감시 인식 없음 → 팀 전파 자연 발생. 데이터 lock-in이 진짜 해자.
+**AI contribution**:
+  - Identified: 세 가지 Aha Moment 후보(A/B/C) 모두 문제 있음을 분석, B2B/B2C 구조적 미스매치 진단
+  - Suggested: PLG 구조, 가격 모델(1인 무료 → 6인+ 유료 → 엔터프라이즈)
+  - Developer-driven: "창업으로 밀고 싶다" 결정, AURA 경험이 origin임을 공유
+**Intent class**: EXPLORING
+**Signal score**: HIGH
+**Outcome**: implemented (방향 확정)
+
+## [2026-06-16] 첫 사용자 전략 — AURA 팀원 직접 설치
+
+**Context**: GTM 전략 논의 중 실제 사용 팀이 0임을 확인. 클라우드 배포 후 릴리즈 계획을 검토.
+**Decision**: 클라우드 배포 전에 AURA 팀원 노트북에 직접 설치. "완성하고 주기"가 아니라 "지금 당장 로컬로".
+**Alternatives considered**: 클라우드 배포 후 링크 공유, 낯선 커뮤니티에 홍보
+**Reasoning**: AURA 팀원들은 동일한 pain(각자 AI 쓰면서 서로 모름)을 직접 겪음 → 설득 비용 0, 피드백 품질 최고. 개발자의 함정 — "완성하고 주려다가 영원히 못 줌".
+**AI contribution**:
+  - Identified: "클라우드 연결하고 줘야겠다"는 반응을 즉시 개발자 함정으로 진단
+  - Suggested: 로컬 설치 직접 해주기 (30분), 클라우드 배포보다 100배 빠른 학습
+  - Developer-driven: AURA 프로젝트 경험 공유, HUGININ의 origin story
+**Intent class**: EXPLORING
+**Signal score**: HIGH
+**Outcome**: pending (AURA 팀원 연락 예정)

@@ -66,3 +66,4 @@ cli/huginin.exe
 session-history/.tmp-*.json
 server/session-history/.tmp-*.json
 **/session-history/.tmp-*.json
+.env*.local

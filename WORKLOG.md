@@ -33,3 +33,12 @@
 2026-06-15 19:57 | commit | dfe1486 | branch:feature/interactive-login | Redesign timeline card preview: visual UI mockup + minimal empty state
 2026-06-15 20:01 | commit | e4edb7e | branch:feature/interactive-login | Remove 'no session data detected' — show raw git log + '0 context' instead
 2026-06-15 20:10 | FEATURE_BUILDING | HIGH | D:0.8 | cache:98% | tok:18760K | user_name DB 조회 전파 + ETL 3-part 서사 카드 + Huginn 브랜드 랜딩 + favicon 수정(app/ 우선순위 버그) + Before 패널 공허함 시각화
+2026-06-15 20:15 | commit | 2bd9a54 | branch:feature/interactive-login | collab-proof: session 2026-06-15 — FEATURE_BUILDING HIGH, Huginn brand + ETL narrative + user_name propagation
+2026-06-16 02:24 | commit | bf6affc | branch:feature/interactive-login | Add GitHub Webhook integration: PR events in dashboard timeline
+2026-06-16 02:43 | commit | 7dd667b | branch:feature/interactive-login | Add Frame A/B/C/D team statistics panel (Phase 2)
+2026-06-16 03:04 | commit | 53c067f | branch:feature/interactive-login | Add Railway + Vercel deployment config
+2026-06-16 15:55 | commit | 70330e9 | branch:feature/interactive-login | Fix Railway healthcheck: add /health endpoint, timeout 120s
+2026-06-16 16:10 | commit | 0050635 | branch:feature/interactive-login | Update CLI default server URL to Railway production + add --server flag
+2026-06-16 18:08 | commit | 91f3da6 | branch:feature/interactive-login | Add /workspace/new page for workspace creation from dashboard
+2026-06-16 18:26 | commit | f0e2028 | branch:main | Merge feature/interactive-login: add workspace/new page
+2026-06-16 18:36 | commit | 9822cf1 | branch:main | Fix CLI: SIGINT handler for Ctrl+C + skip workspace picker when empty
