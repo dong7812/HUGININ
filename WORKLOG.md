@@ -43,3 +43,5 @@
 2026-06-16 18:26 | commit | f0e2028 | branch:main | Merge feature/interactive-login: add workspace/new page
 2026-06-16 18:36 | commit | 9822cf1 | branch:main | Fix CLI: SIGINT handler for Ctrl+C + skip workspace picker when empty
 2026-06-16 18:49 | commit | a4eefd8 | branch:main | Sync worklogs, session history, decisions + gitignore cleanup
+2026-06-16 19:14 | commit | 4e99c5a | branch:main | Add AI trend chart + cache strategy suggestions panel
+2026-06-16 19:26 | commit | e566219 | branch:main | chore: trigger Railway rebuild for new dashboard endpoints

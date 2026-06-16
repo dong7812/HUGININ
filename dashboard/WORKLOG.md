@@ -8,3 +8,4 @@
 2026-06-14 | BUG_FIXING | button 중첩 hydration 오류 수정 — diff 헤더 button → div[role="button"]로 변경
 2026-06-14 19:00 | commit | 2c37b20 | branch:main | Initial commit from Create Next App
 2026-06-15 16:42 | commit | 782d9d9 | branch:feature/interactive-login | Make login interactive: prompt for email/password when flags omitted
+2026-06-16 19:03 | commit | 4e99c5a | branch:main | Add AI trend chart + cache strategy suggestions panel
