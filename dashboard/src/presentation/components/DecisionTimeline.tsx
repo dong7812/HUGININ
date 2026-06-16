@@ -29,7 +29,8 @@ import type { FeedItem } from "@/domain/entities";
 interface Props {
   workspaceId: string;
   dateFrom?: string;
-  searchQuery?: string;
+  searchQuery?: string;      // 입력값 (표시용)
+  debouncedQuery?: string;   // 디바운스된 값 (API 호출용)
   onSearchChange?: (q: string) => void;
 }
 
@@ -253,14 +254,14 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
-export function DecisionTimeline({ workspaceId, dateFrom, searchQuery = "", onSearchChange }: Props) {
+export function DecisionTimeline({ workspaceId, dateFrom, searchQuery = "", debouncedQuery = searchQuery, onSearchChange }: Props) {
   const [page, setPage] = useState(0);
   const [branch, setBranch] = useState<string | undefined>(undefined);
   const limit = 15;
-  const isSearching = searchQuery.trim().length >= 2;
+  const isSearching = debouncedQuery.trim().length >= 2;
 
   const feedResult = useFeedQuery(workspaceId, page, limit, branch, dateFrom);
-  const searchResult = useSearchQuery(workspaceId, searchQuery);
+  const searchResult = useSearchQuery(workspaceId, debouncedQuery);
   const { data: branches } = useBranchesQuery(workspaceId);
 
   const { data, isLoading } = isSearching ? searchResult : feedResult;

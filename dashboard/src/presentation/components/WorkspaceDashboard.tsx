@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { OverviewCards } from "./OverviewCards";
 import { TokenChart } from "./TokenChart";
 import { DecisionTimeline } from "./DecisionTimeline";
@@ -28,7 +28,14 @@ function toDateFrom(range: TimeRange): string | undefined {
 
 export function WorkspaceDashboard({ workspaceId }: Props) {
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (!searchInput.trim()) { setSearchQuery(""); return; }
+    const t = setTimeout(() => setSearchQuery(searchInput), 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const dateFrom = useMemo(() => toDateFrom(timeRange), [timeRange]);
 
@@ -39,7 +46,8 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
         selectedRange={timeRange}
         onSelectRange={(r) => {
           setTimeRange(r);
-          setSearchQuery(""); // 필터 바꾸면 검색 초기화
+          setSearchInput("");
+          setSearchQuery("");
         }}
       />
 
@@ -48,10 +56,11 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
           <DecisionTimeline
             workspaceId={workspaceId}
             dateFrom={dateFrom}
-            searchQuery={searchQuery}
+            searchQuery={searchInput}
+            debouncedQuery={searchQuery}
             onSearchChange={(q) => {
-              setSearchQuery(q);
-              if (q) setTimeRange("all"); // 검색하면 시간 필터 해제
+              setSearchInput(q);
+              if (q) setTimeRange("all");
             }}
           />
         </div>

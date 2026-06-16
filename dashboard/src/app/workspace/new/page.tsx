@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/application/stores/authStore";
 import { useWorkspaceStore } from "@/application/stores/workspaceStore";
 import { apiFetch } from "@/infrastructure/http/apiClient";
@@ -9,6 +10,7 @@ import { Loader2, Plus } from "lucide-react";
 
 export default function NewWorkspacePage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const token = useAuthStore((s) => s.token);
   const setWorkspace = useWorkspaceStore((s) => s.setWorkspace);
 
@@ -28,6 +30,7 @@ export default function NewWorkspacePage() {
         { method: "POST", body: JSON.stringify({ name }) }
       );
       setWorkspace(res.workspace_id, name);
+      await queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       router.push(`/workspace/${res.workspace_id}`);
     } catch {
       setError("워크스페이스 생성에 실패했습니다");
