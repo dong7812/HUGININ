@@ -7,7 +7,7 @@ export default function LoginPage() {
       <div className="flex flex-col items-center gap-8 w-full max-w-sm">
         <div className="flex flex-col items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight">HUGININ</h1>
-          <p className="text-sm text-zinc-400">팀 AI 의사결정 워크스페이스</p>
+          <p className="text-sm text-slate-500">팀 AI 의사결정 워크스페이스</p>
         </div>
         <LoginForm />
       </div>

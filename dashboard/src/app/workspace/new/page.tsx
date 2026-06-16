@@ -43,29 +43,29 @@ export default function NewWorkspacePage() {
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="flex flex-col gap-8 w-full max-w-sm">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold text-white">새 워크스페이스</h1>
-          <p className="text-sm text-zinc-400">팀 이름을 입력하세요</p>
+          <h1 className="text-xl font-bold text-slate-900">새 워크스페이스</h1>
+          <p className="text-sm text-slate-500">팀 이름을 입력하세요</p>
         </div>
 
         <form onSubmit={handleCreate} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-zinc-400">워크스페이스 이름</label>
+            <label className="text-xs font-medium text-slate-600">워크스페이스 이름</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
               placeholder="예: AURA Team"
-              className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-violet-600"
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-400 transition-all shadow-sm"
             />
           </div>
 
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-xs text-red-500 font-medium">{error}</p>}
 
           <button
             type="submit"
             disabled={loading || !name.trim()}
-            className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+            className="flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 disabled:opacity-50 text-white rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
             만들기

@@ -33,7 +33,7 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
   const dateFrom = useMemo(() => toDateFrom(timeRange), [timeRange]);
 
   return (
-    <div className="flex flex-col gap-4 p-6 max-w-6xl mx-auto w-full">
+    <div className="flex flex-col gap-5 p-6 max-w-6xl mx-auto w-full">
       <OverviewCards
         workspaceId={workspaceId}
         selectedRange={timeRange}
@@ -43,8 +43,8 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
         }}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
+        <div className="xl:col-span-2 bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
           <DecisionTimeline
             workspaceId={workspaceId}
             dateFrom={dateFrom}

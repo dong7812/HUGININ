@@ -24,15 +24,15 @@ export const metadata: Metadata = {
     ],
   },
   other: {
-    "msapplication-TileColor": "#09090b",
-    "theme-color": "#09090b",
+    "msapplication-TileColor": "#f8fafc",
+    "theme-color": "#f8fafc",
   },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body className="min-h-screen bg-zinc-950 text-white antialiased">
+      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
