@@ -40,6 +40,7 @@ export function Sidebar() {
           </span>
           <button
             title="새 워크스페이스"
+            onClick={() => router.push("/workspace/new")}
             className="text-zinc-500 hover:text-zinc-300 transition-colors"
           >
             <Plus size={13} />

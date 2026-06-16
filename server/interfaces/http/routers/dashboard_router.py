@@ -327,8 +327,13 @@ async def search_events(
     limit: int = 20,
     user_id: UUID = Depends(get_current_user_id),
 ):
+    from infrastructure.embedding.embedding_service import EmbeddingService
+    try:
+        embedding = await EmbeddingService.embed(q)
+    except Exception:
+        embedding = None
     items = await request.app.state.event_repo.search_events(
-        workspace_id=workspace_id, query=q, limit=limit
+        workspace_id=workspace_id, query=q, limit=limit, embedding=embedding
     )
     return FeedResponse(
         items=[

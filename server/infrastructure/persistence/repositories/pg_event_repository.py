@@ -132,11 +132,13 @@ class PgEventRepository(EventRepository):
         return items, total_row[0]
 
     async def search_events(
-        self, workspace_id: UUID, query: str, limit: int = 20
+        self,
+        workspace_id: UUID,
+        query: str,
+        limit: int = 20,
+        embedding: list[float] | None = None,
     ) -> list[FeedItem]:
-        pattern = f"%{query}%"
-        rows = await self._pool.fetch(
-            """
+        _SELECT = """
             SELECT
                 e.id, e.status, e.created_at,
                 LEFT(e.raw_prompt, 120) AS prompt_preview,
@@ -150,8 +152,27 @@ class PgEventRepository(EventRepository):
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
             LEFT JOIN projects p ON p.id = e.project_id
+        """
+        if embedding is not None:
+            vec = self._vec_str(embedding)
+            rows = await self._pool.fetch(
+                _SELECT + """
+                WHERE e.workspace_id = $1 AND e.embedding IS NOT NULL
+                ORDER BY e.embedding <-> $2::vector
+                LIMIT $3
+                """,
+                workspace_id, vec, limit,
+            )
+            if rows:
+                return [_to_feed_item(r) for r in rows]
+        pattern = f"%{query}%"
+        rows = await self._pool.fetch(
+            _SELECT + """
             WHERE e.workspace_id = $1
-              AND (e.raw_prompt ILIKE $2 OR e.raw_response ILIKE $2)
+              AND (
+                e.raw_prompt ILIKE $2 OR e.raw_response ILIKE $2
+                OR e.what_was_built ILIKE $2 OR e.problem_solved ILIKE $2
+              )
             ORDER BY e.created_at DESC
             LIMIT $3
             """,
