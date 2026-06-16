@@ -130,6 +130,7 @@ async def lifespan(app: FastAPI):
     if settings.anthropic_api_key:
         import asyncio
         asyncio.create_task(_backfill_refinement(event_repo, settings.anthropic_api_key))
+    asyncio.create_task(_backfill_embeddings(event_repo))
 
     yield
 
@@ -201,3 +202,38 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
         logger.info("Backfill complete")
     except Exception as e:
         logger.warning("Backfill error: %s", e)
+
+
+async def _backfill_embeddings(event_repo) -> None:
+    """embedding IS NULL이고 정제 완료된 이벤트 → 다국어 임베딩 생성."""
+    import asyncio
+    from infrastructure.embedding.embedding_service import EmbeddingService
+
+    try:
+        rows = await event_repo._pool.fetch(
+            """
+            SELECT id, what_was_built, problem_solved, ai_role
+            FROM decision_events
+            WHERE embedding IS NULL
+              AND what_was_built IS NOT NULL
+              AND what_was_built != ''
+            ORDER BY created_at DESC
+            """
+        )
+        if not rows:
+            return
+        logger.info("Embedding backfill: %d events", len(rows))
+        for row in rows:
+            try:
+                vec = await EmbeddingService.embed_refined(
+                    row["what_was_built"] or "",
+                    row["problem_solved"] or "",
+                    row["ai_role"] or "",
+                )
+                await event_repo.update_embedding(row["id"], vec)
+                await asyncio.sleep(0.05)
+            except Exception as e:
+                logger.warning("Embedding backfill error for %s: %s", row["id"], e)
+        logger.info("Embedding backfill complete")
+    except Exception as e:
+        logger.warning("Embedding backfill failed: %s", e)
