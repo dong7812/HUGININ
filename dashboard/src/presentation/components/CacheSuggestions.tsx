@@ -1,7 +1,11 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCacheSuggestionsQuery } from "@/application/queries/dashboardQueries";
 import type { CacheSuggestion } from "@/domain/entities";
+
+const PAGE_SIZE = 3;
 
 const PRIORITY_STYLE: Record<string, string> = {
   HIGH: "bg-red-500/15 text-red-400 border-red-500/30",
@@ -55,6 +59,11 @@ interface Props {
 
 export function CacheSuggestions({ workspaceId }: Props) {
   const { data, isLoading } = useCacheSuggestionsQuery(workspaceId);
+  const [page, setPage] = useState(0);
+
+  const suggestions = data?.suggestions ?? [];
+  const totalPages = Math.ceil(suggestions.length / PAGE_SIZE);
+  const paginated = suggestions.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
@@ -96,17 +105,40 @@ export function CacheSuggestions({ workspaceId }: Props) {
         </div>
       ) : (
         <div>
-          {data.suggestions.map((s, i) => (
-            <SuggestionCard key={i} s={s} />
+          {paginated.map((s, i) => (
+            <SuggestionCard key={page * PAGE_SIZE + i} s={s} />
           ))}
         </div>
       )}
 
-      {/* CLAUDE.md 링크 힌트 */}
-      {data && data.suggestions.length > 0 && (
-        <p className="text-[10px] text-zinc-600 mt-3">
-          프로젝트 루트의 <code className="text-zinc-400">CLAUDE.md</code>에 추가하면 Claude Code가 자동으로 참조합니다.
-        </p>
+      {/* 페이지네이션 + CLAUDE.md 힌트 */}
+      {suggestions.length > 0 && (
+        <div className="mt-3 flex items-center justify-between">
+          <p className="text-[10px] text-zinc-600">
+            <code className="text-zinc-500">CLAUDE.md</code>에 추가하면 자동 참조됩니다
+          </p>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="w-5 h-5 flex items-center justify-center rounded text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft size={12} />
+              </button>
+              <span className="text-[10px] font-mono text-zinc-600 tabular-nums w-8 text-center">
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={page === totalPages - 1}
+                className="w-5 h-5 flex items-center justify-center rounded text-zinc-500 hover:text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight size={12} />
+              </button>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
