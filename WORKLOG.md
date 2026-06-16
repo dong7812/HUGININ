@@ -42,3 +42,4 @@
 2026-06-16 18:08 | commit | 91f3da6 | branch:feature/interactive-login | Add /workspace/new page for workspace creation from dashboard
 2026-06-16 18:26 | commit | f0e2028 | branch:main | Merge feature/interactive-login: add workspace/new page
 2026-06-16 18:36 | commit | 9822cf1 | branch:main | Fix CLI: SIGINT handler for Ctrl+C + skip workspace picker when empty
+2026-06-16 18:49 | commit | a4eefd8 | branch:main | Sync worklogs, session history, decisions + gitignore cleanup

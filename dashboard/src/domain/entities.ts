@@ -89,3 +89,37 @@ export interface User {
   email: string;
   token: string;
 }
+
+export interface AiTrendBucket {
+  bucket: string;  // ISO datetime
+  avgAi: number;
+  total: number;
+  frameA: number;
+  frameB: number;
+  frameC: number;
+  frameD: number;
+}
+
+export interface AiTrend {
+  period: string;
+  buckets: AiTrendBucket[];
+  currentAvgAi: number;
+  prevAvgAi: number;
+  deltaPct: number;  // 이전 기간 대비 % 변화
+}
+
+export interface CacheSuggestion {
+  domain: string;
+  count: number;
+  priority: "HIGH" | "MED" | "LOW";
+  action: string;
+  example: string;
+  suggestionType: string;
+}
+
+export interface CacheSuggestions {
+  suggestions: CacheSuggestion[];
+  totalEventsAnalyzed: number;
+  avgPromptTokens: number;
+  highTokenAlert: boolean;
+}

@@ -1,5 +1,5 @@
 import type { IDashboardRepository } from "@/domain/ports";
-import type { ActivityDay, FeedItem, FeedPage, FrameStats, MemberFrameStats, TokenStats, WorkspaceOverview } from "@/domain/entities";
+import type { ActivityDay, AiTrend, AiTrendBucket, CacheSuggestion, CacheSuggestions, FeedItem, FeedPage, FrameStats, MemberFrameStats, TokenStats, WorkspaceOverview } from "@/domain/entities";
 import { apiFetch } from "./apiClient";
 
 interface RawFeedItem {
@@ -167,6 +167,70 @@ class DashboardApiRepository implements IDashboardRepository {
       })),
       totalPrompt: data.total_prompt,
       totalResponse: data.total_response,
+    };
+  }
+
+  async getAiTrend(workspaceId: string, period: string): Promise<AiTrend> {
+    const data = await apiFetch<{
+      period: string;
+      buckets: Array<{
+        bucket: string;
+        avg_ai: number;
+        total: number;
+        frame_a: number;
+        frame_b: number;
+        frame_c: number;
+        frame_d: number;
+      }>;
+      current_avg_ai: number;
+      prev_avg_ai: number;
+      delta_pct: number;
+    }>(`/dashboard/${workspaceId}/ai-trend?period=${period}`, this.token);
+
+    return {
+      period: data.period,
+      buckets: data.buckets.map((b): AiTrendBucket => ({
+        bucket: b.bucket,
+        avgAi: b.avg_ai,
+        total: b.total,
+        frameA: b.frame_a,
+        frameB: b.frame_b,
+        frameC: b.frame_c,
+        frameD: b.frame_d,
+      })),
+      currentAvgAi: data.current_avg_ai,
+      prevAvgAi: data.prev_avg_ai,
+      deltaPct: data.delta_pct,
+    };
+  }
+
+  async getCacheSuggestions(workspaceId: string): Promise<CacheSuggestions> {
+    const data = await apiFetch<{
+      suggestions: Array<{
+        domain: string;
+        count: number;
+        priority: "HIGH" | "MED" | "LOW";
+        action: string;
+        example: string;
+        suggestion_type: string;
+      }>;
+      total_events_analyzed: number;
+      avg_prompt_tokens: number;
+      high_token_alert: boolean;
+    }>(`/dashboard/${workspaceId}/cache-suggestions`, this.token);
+
+    return {
+      suggestions: data.suggestions.map((s): CacheSuggestion => ({
+        domain: s.domain,
+        count: s.count,
+        priority: s.priority,
+        action: s.action,
+        example: s.example,
+        suggestionType: s.suggestion_type,
+      })),
+      totalEventsAnalyzed: data.total_events_analyzed,
+      avgPromptTokens: data.avg_prompt_tokens,
+      highTokenAlert: data.high_token_alert,
     };
   }
 }

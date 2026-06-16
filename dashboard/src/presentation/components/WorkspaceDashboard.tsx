@@ -5,6 +5,8 @@ import { OverviewCards } from "./OverviewCards";
 import { TokenChart } from "./TokenChart";
 import { DecisionTimeline } from "./DecisionTimeline";
 import { FrameStats } from "./FrameStats";
+import { AiTrendChart } from "./AiTrendChart";
+import { CacheSuggestions } from "./CacheSuggestions";
 
 interface Props {
   workspaceId: string;
@@ -55,6 +57,8 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
         </div>
 
         <div className="flex flex-col gap-4">
+          <AiTrendChart workspaceId={workspaceId} />
+          <CacheSuggestions workspaceId={workspaceId} />
           <FrameStats workspaceId={workspaceId} />
           <TokenChart workspaceId={workspaceId} days={timeRange === "today" ? 1 : timeRange === "week" ? 7 : 30} />
         </div>

@@ -8,6 +8,8 @@ from application.use_cases.dashboard.get_feed import FeedInput
 from application.use_cases.dashboard.get_overview import OverviewInput
 from application.use_cases.dashboard.get_token_stats import TokenStatsInput
 from application.use_cases.dashboard.get_frame_stats import FrameStatsInput
+from application.use_cases.dashboard.get_ai_trend import AiTrendInput
+from application.use_cases.dashboard.get_cache_suggestions import CacheSuggestionsInput
 from interfaces.http.middleware.rbac_middleware import get_current_user_id
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -223,6 +225,97 @@ async def get_frame_stats(
             )
             for m in result.by_member
         ],
+    )
+
+
+class AiTrendBucketResponse(BaseModel):
+    bucket: str
+    avg_ai: float
+    total: int
+    frame_a: int
+    frame_b: int
+    frame_c: int
+    frame_d: int
+
+
+class AiTrendResponse(BaseModel):
+    period: str
+    buckets: list[AiTrendBucketResponse]
+    current_avg_ai: float
+    prev_avg_ai: float
+    delta_pct: float
+
+
+class CacheSuggestionResponse(BaseModel):
+    domain: str
+    count: int
+    priority: str
+    action: str
+    example: str
+    suggestion_type: str
+
+
+class CacheSuggestionsResponse(BaseModel):
+    suggestions: list[CacheSuggestionResponse]
+    total_events_analyzed: int
+    avg_prompt_tokens: float
+    high_token_alert: bool
+
+
+@router.get("/{workspace_id}/ai-trend", response_model=AiTrendResponse)
+async def get_ai_trend(
+    workspace_id: UUID,
+    request: Request,
+    period: str = "7d",
+    user_id: UUID = Depends(get_current_user_id),
+):
+    result = await request.app.state.get_ai_trend_uc.execute(
+        AiTrendInput(workspace_id=workspace_id, user_id=user_id, period=period)
+    )
+    return AiTrendResponse(
+        period=result.period,
+        buckets=[
+            AiTrendBucketResponse(
+                bucket=b.bucket,
+                avg_ai=b.avg_ai,
+                total=b.total,
+                frame_a=b.frame_a,
+                frame_b=b.frame_b,
+                frame_c=b.frame_c,
+                frame_d=b.frame_d,
+            )
+            for b in result.buckets
+        ],
+        current_avg_ai=result.current_avg_ai,
+        prev_avg_ai=result.prev_avg_ai,
+        delta_pct=result.delta_pct,
+    )
+
+
+@router.get("/{workspace_id}/cache-suggestions", response_model=CacheSuggestionsResponse)
+async def get_cache_suggestions(
+    workspace_id: UUID,
+    request: Request,
+    user_id: UUID = Depends(get_current_user_id),
+):
+    result = await request.app.state.get_cache_suggestions_uc.execute(
+        CacheSuggestionsInput(workspace_id=workspace_id, user_id=user_id)
+    )
+    return CacheSuggestionsResponse(
+        suggestions=[
+            CacheSuggestionResponse(
+                domain=s.domain,
+                count=s.count,
+                priority=s.priority,
+                action=s.action,
+                example=s.example,
+                suggestion_type=s.suggestion_type,
+            )
+            for s in result.suggestions
+        ],
+        total_events_analyzed=result.total_events_analyzed,
+        avg_prompt_tokens=result.avg_prompt_tokens,
+        high_token_alert=result.high_token_alert,
     )
 
 

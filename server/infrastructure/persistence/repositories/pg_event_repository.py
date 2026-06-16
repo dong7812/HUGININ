@@ -261,6 +261,78 @@ class PgEventRepository(EventRepository):
         )
         return rows
 
+    async def get_ai_trend(self, workspace_id: UUID, period: str) -> list:
+        """period: '1d'(시간별) | '7d'(일별) | '30d'(일별)"""
+        if period == "1d":
+            trunc = "hour"
+            interval = "1 day"
+        elif period == "7d":
+            trunc = "day"
+            interval = "7 days"
+        else:
+            trunc = "day"
+            interval = "30 days"
+
+        return await self._pool.fetch(
+            f"""
+            SELECT
+                DATE_TRUNC('{trunc}', created_at AT TIME ZONE 'UTC') AS bucket,
+                COALESCE(AVG(ai_contribution), 0)::float          AS avg_ai,
+                COUNT(*)::int                                       AS total,
+                COUNT(*) FILTER (WHERE frame = 'A')::int           AS frame_a,
+                COUNT(*) FILTER (WHERE frame = 'B')::int           AS frame_b,
+                COUNT(*) FILTER (WHERE frame = 'C')::int           AS frame_c,
+                COUNT(*) FILTER (WHERE frame = 'D')::int           AS frame_d
+            FROM decision_events
+            WHERE workspace_id = $1
+              AND frame IS NOT NULL
+              AND created_at >= NOW() - INTERVAL '{interval}'
+            GROUP BY bucket
+            ORDER BY bucket
+            """,
+            workspace_id,
+        )
+
+    async def get_ai_trend_prev(self, workspace_id: UUID, period: str) -> list:
+        """이전 동일 기간 집계 (비교용)."""
+        if period == "1d":
+            interval = "1 day"
+            prev_interval = "2 days"
+        elif period == "7d":
+            interval = "7 days"
+            prev_interval = "14 days"
+        else:
+            interval = "30 days"
+            prev_interval = "60 days"
+
+        return await self._pool.fetch(
+            f"""
+            SELECT
+                COALESCE(AVG(ai_contribution), 0)::float AS avg_ai,
+                COUNT(*)::int                             AS total
+            FROM decision_events
+            WHERE workspace_id = $1
+              AND frame IS NOT NULL
+              AND created_at >= NOW() - INTERVAL '{prev_interval}'
+              AND created_at <  NOW() - INTERVAL '{interval}'
+            """,
+            workspace_id,
+        )
+
+    async def get_events_for_cache_analysis(self, workspace_id: UUID) -> list:
+        return await self._pool.fetch(
+            """
+            SELECT what_was_built, problem_solved, decision_type, prompt_tokens
+            FROM decision_events
+            WHERE workspace_id = $1
+              AND status = 'refined'
+              AND created_at >= NOW() - INTERVAL '60 days'
+            ORDER BY created_at DESC
+            LIMIT 100
+            """,
+            workspace_id,
+        )
+
     async def get_daily_counts(self, workspace_id: UUID, days: int) -> list[DayCount]:
         rows = await self._pool.fetch(
             """

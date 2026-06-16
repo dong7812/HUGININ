@@ -31,6 +31,8 @@ from application.use_cases.dashboard.get_feed import GetFeedUseCase
 from application.use_cases.dashboard.get_activity import GetActivityUseCase
 from application.use_cases.dashboard.get_token_stats import GetTokenStatsUseCase
 from application.use_cases.dashboard.get_frame_stats import GetFrameStatsUseCase
+from application.use_cases.dashboard.get_ai_trend import GetAiTrendUseCase
+from application.use_cases.dashboard.get_cache_suggestions import GetCacheSuggestionsUseCase
 from application.use_cases.comment.add_comment import AddCommentUseCase
 from application.use_cases.comment.list_comments import ListCommentsUseCase
 from infrastructure.persistence.repositories.pg_comment_repository import PgCommentRepository
@@ -120,6 +122,8 @@ async def lifespan(app: FastAPI):
     app.state.get_activity_uc = GetActivityUseCase(event_repo)
     app.state.get_token_stats_uc = GetTokenStatsUseCase(event_repo)
     app.state.get_frame_stats_uc = GetFrameStatsUseCase(event_repo)
+    app.state.get_ai_trend_uc = GetAiTrendUseCase(event_repo)
+    app.state.get_cache_suggestions_uc = GetCacheSuggestionsUseCase(event_repo)
     app.state.add_comment_uc = AddCommentUseCase(comment_repo, event_repo, workspace_repo)
     app.state.list_comments_uc = ListCommentsUseCase(comment_repo, event_repo, workspace_repo)
 

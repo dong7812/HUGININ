@@ -118,6 +118,28 @@ export function useCommentsQuery(eventId: string, workspaceId: string, enabled =
   });
 }
 
+export function useAiTrendQuery(workspaceId: string, period: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["aiTrend", workspaceId, period],
+    queryFn: () => repo.getAiTrend(workspaceId, period),
+    enabled: !!token && !!workspaceId,
+    staleTime: 60_000,
+  });
+}
+
+export function useCacheSuggestionsQuery(workspaceId: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["cacheSuggestions", workspaceId],
+    queryFn: () => repo.getCacheSuggestions(workspaceId),
+    enabled: !!token && !!workspaceId,
+    staleTime: 300_000,  // 5분 — 자주 바뀌지 않음
+  });
+}
+
 export function useAddCommentMutation(eventId: string, workspaceId: string) {
   const token = useAuthStore((s) => s.token) ?? "";
   const repo = createCommentRepository(token);
