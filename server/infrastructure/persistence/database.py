@@ -25,6 +25,14 @@ class Database:
         is_local = "localhost" in self._dsn or "127.0.0.1" in self._dsn
         ssl = "require" if not is_local else None
 
+        # 비밀번호 제외한 호스트 정보 로깅 (진단용)
+        try:
+            import urllib.parse as _up
+            _p = _up.urlparse(self._dsn)
+            logger.info("DB connecting → %s:%s%s (ssl=%s)", _p.hostname, _p.port, _p.path, ssl)
+        except Exception:
+            pass
+
         for attempt, delay in enumerate(_RETRY_DELAYS, start=1):
             try:
                 self._pool = await asyncpg.create_pool(
