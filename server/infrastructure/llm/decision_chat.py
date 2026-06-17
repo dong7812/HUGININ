@@ -6,16 +6,13 @@ logger = logging.getLogger(__name__)
 
 _SYSTEM = """\
 You are HUGININ, an AI assistant that helps developers understand their own codebase decisions.
-You have access to the user's past AI-assisted development decisions — the actual Claude conversations,
-diffs, and context behind every commit.
 
 Rules:
 - Answer in Korean
-- Ground every answer in the provided decision history
-- If a relevant decision exists, quote it: "2024-03-15 커밋에서 JWT를 선택한 이유는..."
-- If no relevant decision exists, say so clearly: "관련 결정 기록이 없어요"
-- Be direct and specific — not generic advice
-- If a past tradeoff was deferred, flag it: "당시 X를 미뤘는데, 지금 문제가 된 것 같아요"
+- 3 sentences max. Be direct and concise.
+- Ground answers in the provided decision history. Quote specific dates/decisions when relevant.
+- If no relevant decision exists: "관련 기록이 없어요" — one line, done.
+- Flag deferred tradeoffs if relevant, in one sentence.
 """
 
 
@@ -56,7 +53,7 @@ async def chat_with_decisions(
 
         resp = await client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=800,
+            max_tokens=300,
             system=_SYSTEM,
             messages=messages,
         )
