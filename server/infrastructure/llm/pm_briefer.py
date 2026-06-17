@@ -3,57 +3,50 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
 _SYSTEM = """\
-당신은 시니어 PM이자 테크 리드입니다.
-주어진 프로젝트의 AI 협업 결정 로그를 분석해서 솔직하고 구체적인 의견을 냅니다.
+You are a senior PM and tech lead analyzing an AI-assisted software project.
+Respond ONLY with a single valid JSON object — no markdown, no explanation, no code fences.
+Every string value must be properly escaped (no raw newlines inside strings).
 
-절대 금지:
-- 범용적인 조언 ("더 많은 테스트를 작성하세요")
-- 칭찬 위주 어조
-- 결정 목록에 없는 내용을 근거로 삼기
-- 결론 없이 나열만 하기
-
-반드시:
-- 실제 결정 내용을 직접 인용해서 근거로 사용
-- "이 결정이 문제다" "이걸 먼저 해야 한다" 같이 의견을 명확히
-- 트레이드오프에 "나중에", "임시", "재검토" 류가 있으면 반드시 언급
-- 없는 결정 유형(blind spot)도 패턴으로 포함
-
-JSON만 출력. 마크다운 없이.
+Rules:
+- Quote specific decisions from the data as evidence
+- Give direct opinions: "this is a risk", "do this next"
+- If tradeoffs mention "나중에", "임시", "재검토" — flag them
+- Never give generic advice unrelated to the actual data
+- Write all content in Korean
 """
 
 _USER_SCHEMA = """\
-위 데이터를 PM 관점에서 분석해서 아래 JSON 형식으로 출력:
-
+Analyze the decision data above and return ONLY this JSON (no other text):
 {
-  "summary": "<전체를 한 문장으로. 현재 프로젝트 상태에 대한 솔직한 진단>",
+  "summary": "한 문장 진단. 현재 프로젝트 상태에 대한 솔직한 평가",
   "patterns": [
     {
-      "title": "<패턴 제목>",
-      "detail": "<구체적인 근거 포함 설명. 결정 내용 직접 인용>",
-      "severity": "info 또는 warning 또는 critical"
+      "title": "패턴 제목",
+      "detail": "구체적 근거. 실제 결정 내용 인용 포함",
+      "severity": "info"
     }
   ],
   "stale_tradeoffs": [
     {
-      "decision": "<결정 제목>",
-      "made_at": "<날짜 YYYY-MM-DD>",
-      "note": "<트레이드오프에서 뭘 미뤘는지 + 지금 어떤 위험인지>"
+      "decision": "결정 제목",
+      "made_at": "YYYY-MM-DD",
+      "note": "뭘 미뤘는지와 지금의 위험"
     }
   ],
-  "blind_spots": [
-    "<이 프로젝트에서 전혀 논의되지 않았지만 이 단계에서 있어야 할 결정 유형>"
-  ],
+  "blind_spots": ["이 단계에서 없으면 이상한 결정 유형"],
   "next_focus": {
-    "title": "<다음에 집중해야 할 것>",
-    "rationale": "<왜 지금인지. 결정 데이터 근거 포함>"
+    "title": "다음 집중 포인트",
+    "rationale": "왜 지금인지. 데이터 근거 포함"
   }
 }
 
-patterns는 2-4개, stale_tradeoffs는 있는 것만(없으면 빈 배열), blind_spots는 1-3개.
+severity must be exactly one of: info, warning, critical
+patterns: 2-4 items. stale_tradeoffs: empty array if none. blind_spots: 1-3 items.
 """
 
 
@@ -80,6 +73,31 @@ def _format_decisions(events: list[dict]) -> str:
     return "\n---\n".join(lines)
 
 
+def _repair_json(raw: str) -> str:
+    """LLM이 생성한 JSON의 흔한 오류를 복구."""
+    # 코드 펜스 제거
+    if "```" in raw:
+        parts = raw.split("```")
+        for part in parts:
+            stripped = part.strip()
+            if stripped.startswith("json"):
+                stripped = stripped[4:].strip()
+            if stripped.startswith("{"):
+                raw = stripped
+                break
+
+    # 첫 번째 { 부터 마지막 } 까지만 추출
+    start = raw.find("{")
+    end = raw.rfind("}")
+    if start != -1 and end != -1:
+        raw = raw[start:end + 1]
+
+    # trailing comma before } or ] 제거
+    raw = re.sub(r",\s*([\]}])", r"\1", raw)
+
+    return raw
+
+
 async def generate_pm_brief(events: list[dict], api_key: str) -> dict | None:
     if not events:
         return None
@@ -91,29 +109,29 @@ async def generate_pm_brief(events: list[dict], api_key: str) -> dict | None:
         date_range = f"{min(dates)} ~ {max(dates)}" if dates else "?"
         decisions_text = _format_decisions(events)
 
-        # decisions_text에 중괄호가 포함될 수 있으므로 format() 대신 직접 조립
         user_content = (
-            f"워크스페이스 결정 데이터:\n"
-            f"총 {len(events)}개 결정 / 기간: {date_range}\n\n"
-            + decisions_text[:8000]
-            + "\n\n" + _USER_SCHEMA
+            f"워크스페이스 결정 데이터 (총 {len(events)}개 / 기간: {date_range}):\n\n"
+            + decisions_text[:7000]
+            + "\n\n"
+            + _USER_SCHEMA
         )
 
         msg = await client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=2000,
+            max_tokens=2500,
+            temperature=0,
             system=_SYSTEM,
             messages=[{"role": "user", "content": user_content}],
         )
         raw = msg.content[0].text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        if not raw.endswith("}"):
-            last = raw.rfind("}")
-            raw = raw[:last + 1] if last != -1 else raw + "}"
-        return json.loads(raw)
+        raw = _repair_json(raw)
+        result = json.loads(raw)
+
+        # next_focus 필드 보장
+        if "next_focus" not in result:
+            result["next_focus"] = {"title": "", "rationale": ""}
+
+        return result
     except Exception as exc:
         logger.warning("pm_briefer failed: %s", exc)
         return None
