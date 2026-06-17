@@ -34,7 +34,7 @@ export function PmBriefingButton({ workspaceId }: Props) {
         className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
       >
         <Sparkles size={12} />
-        PM 브리핑
+        AI 브리핑
         {mutation.data && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 ml-0.5" />}
       </button>
 
@@ -53,7 +53,7 @@ export function PmBriefingButton({ workspaceId }: Props) {
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 shrink-0">
               <div className="flex items-center gap-2">
                 <Sparkles size={15} className="text-blue-500" />
-                <span className="font-bold text-neutral-900">PM 브리핑</span>
+                <span className="font-bold text-neutral-900">AI 브리핑</span>
                 {mutation.data && (
                   <span className="text-[10px] text-neutral-400 font-mono">{mutation.data.event_count}개 결정 기반</span>
                 )}
