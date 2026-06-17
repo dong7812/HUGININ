@@ -4,7 +4,7 @@ import type { SmartSearchResult } from "@/infrastructure/http/dashboardRepositor
 export interface IDashboardRepository {
   smartSearch(workspaceId: string, query: string): Promise<SmartSearchResult>;
   getOverview(workspaceId: string): Promise<WorkspaceOverview>;
-  getFeed(workspaceId: string, limit: number, offset: number, branch?: string, dateFrom?: string): Promise<FeedPage>;
+  getFeed(workspaceId: string, limit: number, offset: number, branch?: string, dateFrom?: string, frame?: string): Promise<FeedPage>;
   getActivity(workspaceId: string, days: number): Promise<ActivityDay[]>;
   getBranches(workspaceId: string): Promise<string[]>;
   getTokenStats(workspaceId: string, days: number, branch?: string): Promise<TokenStats>;

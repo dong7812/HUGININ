@@ -116,6 +116,7 @@ async def get_feed(
     offset: int = 0,
     branch: str | None = None,
     date_from: datetime | None = None,
+    frame: str | None = None,
     user_id: UUID = Depends(get_current_user_id),
 ):
     result = await request.app.state.get_feed_uc.execute(
@@ -126,6 +127,7 @@ async def get_feed(
             offset=offset,
             branch=branch,
             date_from=date_from,
+            frame=frame,
         )
     )
     return FeedResponse(

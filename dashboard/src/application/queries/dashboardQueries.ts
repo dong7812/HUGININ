@@ -41,12 +41,12 @@ export function useOverviewQuery(workspaceId: string) {
   });
 }
 
-export function useFeedQuery(workspaceId: string, page = 0, limit = 15, branch?: string, dateFrom?: string) {
+export function useFeedQuery(workspaceId: string, page = 0, limit = 15, branch?: string, dateFrom?: string, frame?: string) {
   const token = useAuthStore((s) => s.token) ?? "";
   const repo = createDashboardRepository(token);
   return useQuery({
-    queryKey: ["feed", workspaceId, page, branch, dateFrom],
-    queryFn: () => getEventFeed(repo, workspaceId, limit, page * limit, branch, dateFrom),
+    queryKey: ["feed", workspaceId, page, branch, dateFrom, frame],
+    queryFn: () => getEventFeed(repo, workspaceId, limit, page * limit, branch, dateFrom, frame),
     enabled: !!token && !!workspaceId,
     staleTime: 15_000,
   });

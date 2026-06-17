@@ -63,6 +63,16 @@ class PgEventRepository(EventRepository):
                 "SELECT COUNT(*) FROM decision_events WHERE workspace_id = $1",
                 workspace_id,
             )
+        elif days == 1:
+            # "오늘" = KST 자정 이후 (UTC+9)
+            row = await self._pool.fetchrow(
+                """
+                SELECT COUNT(*) FROM decision_events
+                WHERE workspace_id = $1
+                  AND created_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Seoul') AT TIME ZONE 'Asia/Seoul'
+                """,
+                workspace_id,
+            )
         else:
             row = await self._pool.fetchrow(
                 """
@@ -81,6 +91,7 @@ class PgEventRepository(EventRepository):
         offset: int,
         branch: str | None = None,
         date_from=None,
+        frame: str | None = None,
     ) -> tuple[list[FeedItem], int]:
         rows = await self._pool.fetch(
             """
@@ -115,10 +126,11 @@ class PgEventRepository(EventRepository):
             WHERE e.workspace_id = $1
               AND ($4::text IS NULL OR e.branch = $4)
               AND ($5::timestamptz IS NULL OR e.created_at >= $5)
+              AND ($6::text IS NULL OR e.frame = $6)
             ORDER BY e.created_at DESC
             LIMIT $2 OFFSET $3
             """,
-            workspace_id, limit, offset, branch, date_from,
+            workspace_id, limit, offset, branch, date_from, frame,
         )
         total_row = await self._pool.fetchrow(
             """
@@ -126,8 +138,9 @@ class PgEventRepository(EventRepository):
             WHERE workspace_id = $1
               AND ($2::text IS NULL OR branch = $2)
               AND ($3::timestamptz IS NULL OR created_at >= $3)
+              AND ($4::text IS NULL OR frame = $4)
             """,
-            workspace_id, branch, date_from,
+            workspace_id, branch, date_from, frame,
         )
         items = [_to_feed_item(r) for r in rows]
         return items, total_row[0]

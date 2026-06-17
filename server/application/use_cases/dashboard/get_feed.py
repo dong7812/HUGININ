@@ -44,6 +44,7 @@ class FeedInput:
     offset: int = 0
     branch: str | None = None
     date_from: datetime | None = None
+    frame: str | None = None
 
 
 @dataclass
@@ -63,5 +64,6 @@ class GetFeedUseCase:
             offset=input.offset,
             branch=input.branch,
             date_from=input.date_from,
+            frame=input.frame,
         )
         return FeedOutput(items=items, total=total)

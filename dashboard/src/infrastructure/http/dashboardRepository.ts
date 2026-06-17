@@ -104,13 +104,14 @@ class DashboardApiRepository implements IDashboardRepository {
     };
   }
 
-  async getFeed(workspaceId: string, limit: number, offset: number, branch?: string, dateFrom?: string): Promise<FeedPage> {
+  async getFeed(workspaceId: string, limit: number, offset: number, branch?: string, dateFrom?: string, frame?: string): Promise<FeedPage> {
     const branchParam = branch ? `&branch=${encodeURIComponent(branch)}` : "";
     const dateParam = dateFrom ? `&date_from=${encodeURIComponent(dateFrom)}` : "";
+    const frameParam = frame ? `&frame=${encodeURIComponent(frame)}` : "";
     const data = await apiFetch<{
       items: Array<RawFeedItem>;
       total: number;
-    }>(`/dashboard/${workspaceId}/feed?limit=${limit}&offset=${offset}${branchParam}${dateParam}`, this.token);
+    }>(`/dashboard/${workspaceId}/feed?limit=${limit}&offset=${offset}${branchParam}${dateParam}${frameParam}`, this.token);
 
     return { items: data.items.map(mapFeedItem), total: data.total };
   }

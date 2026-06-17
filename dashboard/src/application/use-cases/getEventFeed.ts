@@ -8,6 +8,7 @@ export async function getEventFeed(
   offset = 0,
   branch?: string,
   dateFrom?: string,
+  frame?: string,
 ): Promise<FeedPage> {
-  return repo.getFeed(workspaceId, limit, offset, branch, dateFrom);
+  return repo.getFeed(workspaceId, limit, offset, branch, dateFrom, frame);
 }

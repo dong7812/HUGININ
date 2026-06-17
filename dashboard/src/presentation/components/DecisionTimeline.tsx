@@ -142,6 +142,7 @@ function DiffView({ diff }: { diff: string }) {
 export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSearch }: Props) {
   const [page, setPage] = useState(0);
   const [branch, setBranch] = useState<string | undefined>(undefined);
+  const [frame, setFrame] = useState<string | undefined>(undefined);
   const [inputValue, setInputValue] = useState(submittedQuery);
   const [debouncedInput, setDebouncedInput] = useState(submittedQuery);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -155,7 +156,7 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
   }, [inputValue]);
 
   const isSearching = submittedQuery.trim().length >= 2;
-  const feedResult = useFeedQuery(workspaceId, page, limit, branch, dateFrom);
+  const feedResult = useFeedQuery(workspaceId, page, limit, branch, dateFrom, frame);
   const searchResult = useSearchQuery(workspaceId, submittedQuery);
   const smartResult = useSmartSearchQuery(workspaceId, submittedQuery);
   const { data: suggestions } = useSuggestQuery(workspaceId, debouncedInput);
@@ -257,6 +258,38 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
           )}
         </div>
       </div>
+
+      {/* Frame filter */}
+      {!isSearching && (
+        <div className="px-5 pb-3 flex items-center gap-1.5">
+          {(["A", "B", "C", "D"] as const).map((f) => {
+            const active = frame === f;
+            const dotCls = FRAME_DOT[f];
+            return (
+              <button
+                key={f}
+                onClick={() => { setFrame(active ? undefined : f); setPage(0); }}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors ${
+                  active
+                    ? "bg-neutral-900 text-white"
+                    : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-white" : dotCls}`} />
+                {f} · {FRAME_LABEL[f]}
+              </button>
+            );
+          })}
+          {frame && (
+            <button
+              onClick={() => { setFrame(undefined); setPage(0); }}
+              className="ml-1 text-[11px] text-neutral-400 hover:text-neutral-600 transition-colors"
+            >
+              초기화
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Smart Search Panel */}
       {isSearching && (
