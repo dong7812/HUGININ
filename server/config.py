@@ -20,9 +20,9 @@ class Settings(BaseSettings):
     # Google OAuth
     google_client_id: str = ""
     google_client_secret: str = ""
-    google_redirect_uri: str = "https://huginin-server-production.up.railway.app/auth/google/callback"
+    google_redirect_uri: str = "https://api.huginin.com/auth/google/callback"
 
     # 프론트엔드 base URL (OAuth 리다이렉트용)
-    frontend_url: str = "https://huginin.vercel.app"
+    frontend_url: str = "https://huginin.com"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="https://huginin.vercel.app/cli"
+BASE_URL="https://huginin.com/cli"
 INSTALL_DIR="/usr/local/bin"
 BINARY="huginin"
 
