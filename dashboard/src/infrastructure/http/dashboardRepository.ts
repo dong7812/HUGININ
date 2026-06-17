@@ -270,9 +270,26 @@ class DashboardApiRepository implements IDashboardRepository {
       highTokenAlert: data.high_token_alert,
     };
   }
+
+  async getPmBrief(workspaceId: string): Promise<PmBriefResult> {
+    return apiFetch<PmBriefResult>(
+      `/dashboard/${workspaceId}/pm-brief`,
+      this.token,
+      { method: "POST" },
+    );
+  }
+}
+
+export interface PmBriefResult {
+  summary: string;
+  patterns: Array<{ title: string; detail: string; severity: string }>;
+  stale_tradeoffs: Array<{ decision: string; made_at: string; note: string }>;
+  blind_spots: string[];
+  next_focus: { title: string; rationale: string };
+  event_count: number;
 }
 
 // OCP: 팩토리 함수로 교체 가능 — 테스트 시 MockDashboardRepository로 스왑
-export function createDashboardRepository(token: string): IDashboardRepository {
+export function createDashboardRepository(token: string): IDashboardRepository & { getPmBrief(workspaceId: string): Promise<PmBriefResult> } {
   return new DashboardApiRepository(token);
 }

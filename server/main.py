@@ -44,6 +44,7 @@ from interfaces.http.routers.dashboard_router import router as dashboard_router
 from interfaces.http.routers.memory_router import router as memory_router
 from interfaces.http.routers.workspace_router import router as workspace_router
 from interfaces.http.routers.webhook_router import router as webhook_router
+from interfaces.http.routers.pm_brief_router import router as pm_brief_router
 from interfaces.mcp.mcp_adapter import mount_mcp
 
 logger = logging.getLogger("huginin")
@@ -157,6 +158,7 @@ app.include_router(comment_router)
 app.include_router(dashboard_router)
 app.include_router(memory_router)
 app.include_router(webhook_router)
+app.include_router(pm_brief_router)
 
 mount_mcp(app)
 

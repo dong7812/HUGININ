@@ -162,6 +162,14 @@ export function useCacheSuggestionsQuery(workspaceId: string) {
   });
 }
 
+export function usePmBriefMutation(workspaceId: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useMutation({
+    mutationFn: () => repo.getPmBrief(workspaceId),
+  });
+}
+
 export function useAddCommentMutation(eventId: string, workspaceId: string) {
   const token = useAuthStore((s) => s.token) ?? "";
   const repo = createCommentRepository(token);

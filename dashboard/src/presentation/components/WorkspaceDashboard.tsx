@@ -7,6 +7,7 @@ import { DecisionTimeline } from "./DecisionTimeline";
 import { FrameStats } from "./FrameStats";
 import { AiTrendChart } from "./AiTrendChart";
 import { CacheSuggestions } from "./CacheSuggestions";
+import { PmBriefing } from "./PmBriefing";
 import { useWorkspaceStore } from "@/application/stores/workspaceStore";
 
 interface Props {
@@ -75,6 +76,7 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
 
           {/* Right panel */}
           <div className="flex flex-col gap-4 self-start">
+            <PmBriefing workspaceId={workspaceId} />
             <AiTrendChart workspaceId={workspaceId} />
             <FrameStats workspaceId={workspaceId} />
             <CacheSuggestions workspaceId={workspaceId} />
