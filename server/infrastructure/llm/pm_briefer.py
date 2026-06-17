@@ -116,14 +116,18 @@ async def generate_pm_brief(events: list[dict], api_key: str) -> dict | None:
             + _USER_SCHEMA
         )
 
+        # assistant prefill: '{'로 시작을 강제해서 JSON만 출력하도록 유도
         msg = await client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=2500,
             temperature=0,
             system=_SYSTEM,
-            messages=[{"role": "user", "content": user_content}],
+            messages=[
+                {"role": "user", "content": user_content},
+                {"role": "assistant", "content": "{"},
+            ],
         )
-        raw = msg.content[0].text.strip()
+        raw = "{" + msg.content[0].text.strip()
         raw = _repair_json(raw)
         result = json.loads(raw)
 
