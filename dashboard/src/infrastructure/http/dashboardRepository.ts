@@ -279,6 +279,27 @@ class DashboardApiRepository implements IDashboardRepository {
       { method: "POST" },
     );
   }
+
+  async chat(workspaceId: string, message: string, history: ChatHistoryItem[]): Promise<ChatResult> {
+    return apiFetch<ChatResult>(
+      `/dashboard/${workspaceId}/chat`,
+      this.token,
+      {
+        method: "POST",
+        body: JSON.stringify({ message, history }),
+      },
+    );
+  }
+}
+
+export interface ChatHistoryItem {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface ChatResult {
+  reply: string;
+  sources: Array<{ id: string; what_was_built: string | null; created_at: string; frame: string | null }>;
 }
 
 export interface PmBriefResult {
@@ -291,6 +312,9 @@ export interface PmBriefResult {
 }
 
 // OCP: 팩토리 함수로 교체 가능 — 테스트 시 MockDashboardRepository로 스왑
-export function createDashboardRepository(token: string): IDashboardRepository & { getPmBrief(workspaceId: string): Promise<PmBriefResult> } {
+export function createDashboardRepository(token: string): IDashboardRepository & {
+  getPmBrief(workspaceId: string): Promise<PmBriefResult>;
+  chat(workspaceId: string, message: string, history: ChatHistoryItem[]): Promise<ChatResult>;
+} {
   return new DashboardApiRepository(token);
 }

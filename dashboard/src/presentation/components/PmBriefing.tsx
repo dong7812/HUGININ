@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Sparkles, AlertTriangle, AlertCircle, Info, Clock, ArrowRight, X, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Sparkles, AlertTriangle, AlertCircle, Info, Clock, ArrowRight, X, ChevronDown, ChevronUp, CalendarDays } from "lucide-react";
 import { usePmBriefMutation } from "@/application/queries/dashboardQueries";
 import type { PmBriefResult } from "@/infrastructure/http/dashboardRepository";
 
@@ -15,57 +15,96 @@ const SEVERITY_STYLE = {
   info:     { icon: Info, color: "text-blue-500", bg: "bg-blue-50", border: "border-blue-100" },
 };
 
+function getWeekKey() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const week = Math.ceil(((d.getTime() - new Date(year, 0, 1).getTime()) / 86400000 + 1) / 7);
+  return `${year}-W${week}`;
+}
+
+function storageKey(workspaceId: string) {
+  return `huginin_brief_${workspaceId}_${getWeekKey()}`;
+}
+
+function getWeekLabel() {
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const fmt = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}`;
+  return `${fmt(monday)} – ${fmt(sunday)}`;
+}
+
 export function PmBriefingButton({ workspaceId }: Props) {
   const [open, setOpen] = useState(false);
+  const [isNew, setIsNew] = useState(false);
   const mutation = usePmBriefMutation(workspaceId);
+
+  // 이번 주 브리핑이 없으면 자동 생성
+  useEffect(() => {
+    const key = storageKey(workspaceId);
+    if (!localStorage.getItem(key) && !mutation.data && !mutation.isPending) {
+      mutation.mutate(undefined, {
+        onSuccess: () => {
+          localStorage.setItem(key, new Date().toISOString());
+          setIsNew(true);
+        },
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId]);
 
   function handleOpen() {
     setOpen(true);
+    setIsNew(false);
     if (!mutation.data && !mutation.isPending) {
-      mutation.mutate();
+      mutation.mutate(undefined, {
+        onSuccess: () => localStorage.setItem(storageKey(workspaceId), new Date().toISOString()),
+      });
     }
+  }
+
+  function handleRegenerate() {
+    localStorage.removeItem(storageKey(workspaceId));
+    mutation.mutate(undefined, {
+      onSuccess: () => localStorage.setItem(storageKey(workspaceId), new Date().toISOString()),
+    });
   }
 
   return (
     <>
-      {/* Trigger button — goes in dashboard header */}
+      {/* Trigger button */}
       <button
         onClick={handleOpen}
-        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+        className="relative flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
       >
-        <Sparkles size={12} />
-        AI 브리핑
-        {mutation.data && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 ml-0.5" />}
+        <CalendarDays size={12} />
+        주간 보고
+        {(isNew || mutation.isPending) && (
+          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 border-2 border-white" />
+        )}
       </button>
 
       {/* Slide-over panel */}
       {open && (
         <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/20 z-40 backdrop-blur-[1px]"
-            onClick={() => setOpen(false)}
-          />
-
-          {/* Panel */}
+          <div className="fixed inset-0 bg-black/20 z-40 backdrop-blur-[1px]" onClick={() => setOpen(false)} />
           <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-50 shadow-2xl flex flex-col">
-            {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 shrink-0">
               <div className="flex items-center gap-2">
-                <Sparkles size={15} className="text-blue-500" />
-                <span className="font-bold text-neutral-900">AI 브리핑</span>
-                {mutation.data && (
-                  <span className="text-[10px] text-neutral-400 font-mono">{mutation.data.event_count}개 결정 기반</span>
-                )}
+                <CalendarDays size={15} className="text-blue-500" />
+                <span className="font-bold text-neutral-900">주간 AI 보고</span>
+                <span className="text-[10px] text-neutral-400 font-mono">{getWeekLabel()}</span>
               </div>
               <div className="flex items-center gap-2">
                 {mutation.data && (
                   <button
-                    onClick={() => mutation.mutate()}
+                    onClick={handleRegenerate}
                     disabled={mutation.isPending}
                     className="text-xs text-neutral-500 hover:text-neutral-700 px-2.5 py-1.5 rounded-lg hover:bg-neutral-100 transition-colors disabled:opacity-40"
                   >
-                    재분석
+                    재생성
                   </button>
                 )}
                 <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors">
@@ -73,10 +112,8 @@ export function PmBriefingButton({ workspaceId }: Props) {
                 </button>
               </div>
             </div>
-
-            {/* Content */}
             <div className="flex-1 overflow-y-auto">
-              <PmBriefContent mutation={mutation} onAnalyze={() => mutation.mutate()} />
+              <PmBriefContent mutation={mutation} onAnalyze={handleRegenerate} />
             </div>
           </div>
         </>

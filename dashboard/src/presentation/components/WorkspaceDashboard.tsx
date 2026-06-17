@@ -8,6 +8,7 @@ import { FrameStats } from "./FrameStats";
 import { AiTrendChart } from "./AiTrendChart";
 import { CacheSuggestions } from "./CacheSuggestions";
 import { PmBriefingButton } from "./PmBriefing";
+import { DecisionChat } from "./DecisionChat";
 import { useWorkspaceStore } from "@/application/stores/workspaceStore";
 
 interface Props {
@@ -86,6 +87,9 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
           </div>
         </div>
       </div>
+
+      {/* 채팅 floating button */}
+      <DecisionChat workspaceId={workspaceId} />
     </div>
   );
 }
