@@ -115,6 +115,7 @@ class CollectEventUseCase:
                 what_was_built = result.get("what_was_built", "")
                 problem_solved = result.get("problem_solved", "")
                 ai_role = result.get("ai_role", "")
+                tradeoffs = result.get("tradeoffs") or None
                 await self._event_repo.update_refined(
                     id=event_id,
                     frame=result.get("frame", "B"),
@@ -124,6 +125,7 @@ class CollectEventUseCase:
                     what_was_built=what_was_built,
                     problem_solved=problem_solved,
                     ai_role=ai_role,
+                    tradeoffs=tradeoffs,
                 )
                 # 정제된 한국어 내용으로 임베딩 재생성 — 검색 정확도 향상
                 from infrastructure.embedding.embedding_service import EmbeddingService

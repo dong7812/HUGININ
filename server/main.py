@@ -176,7 +176,7 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
             SELECT e.id, e.raw_prompt, e.raw_response, e.diff, u.name AS user_name
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
-            WHERE e.what_was_built IS NULL
+            WHERE e.what_was_built IS NULL OR e.tradeoffs IS NULL
             ORDER BY e.created_at DESC
             """
         )
@@ -197,6 +197,7 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
                     what_was_built=result.get("what_was_built", ""),
                     problem_solved=result.get("problem_solved", ""),
                     ai_role=result.get("ai_role", ""),
+                    tradeoffs=result.get("tradeoffs") or None,
                 )
             await asyncio.sleep(0.5)
         logger.info("Backfill complete")

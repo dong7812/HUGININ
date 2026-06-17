@@ -379,9 +379,12 @@ function TimelineEntry({ item, workspaceId, graphMeta, isLast }: {
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             {titleText ? (
-              <p className="text-sm font-medium text-neutral-900 line-clamp-1 leading-snug">{titleText}</p>
+              <p className="text-sm font-semibold text-neutral-900 line-clamp-1 leading-snug">{titleText}</p>
             ) : (
               <p className="text-sm text-neutral-400 font-mono line-clamp-1 leading-snug">{item.promptPreview}</p>
+            )}
+            {item.problemSolved && !expanded && (
+              <p className="text-xs text-neutral-500 line-clamp-1 mt-0.5 leading-relaxed">{item.problemSolved}</p>
             )}
           </div>
           <button onClick={() => setExpanded((v) => !v)}
@@ -429,30 +432,44 @@ function TimelineEntry({ item, workspaceId, graphMeta, isLast }: {
         {/* Expanded */}
         {expanded && (
           <div className="mt-4 flex flex-col gap-3">
-            {/* 왜 + AI 기여 */}
-            {(item.problemSolved || item.aiRole) && (
-              <div className="border border-neutral-200 rounded-xl overflow-hidden">
-                {item.problemSolved && (
-                  <div className="flex gap-3 px-4 py-3 border-b border-neutral-100">
-                    <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest shrink-0 w-6 mt-0.5">왜</span>
-                    <p className="text-sm text-neutral-700 leading-relaxed">{item.problemSolved}</p>
-                  </div>
-                )}
-                {item.aiRole && (
-                  <div className="flex gap-3 px-4 py-3 bg-blue-50/50">
-                    <span className="text-[10px] font-semibold text-blue-500 uppercase tracking-widest shrink-0 w-6 mt-0.5">AI</span>
-                    <p className="text-sm text-neutral-600 leading-relaxed">
-                      {item.userName ? item.aiRole.replace(/인간/g, item.userName) : item.aiRole}
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* 무엇 / 왜 / 어떻게 / 트레이드오프 */}
+            <div className="border border-neutral-200 rounded-xl overflow-hidden divide-y divide-neutral-100">
+              {/* 무엇 */}
+              {item.whatWasBuilt && (
+                <div className="flex gap-3 px-4 py-3">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest shrink-0 w-8 mt-0.5">무엇</span>
+                  <p className="text-sm text-neutral-800 leading-relaxed font-medium">{item.whatWasBuilt}</p>
+                </div>
+              )}
+              {/* 왜 */}
+              {item.problemSolved && (
+                <div className="flex gap-3 px-4 py-3">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest shrink-0 w-8 mt-0.5">왜</span>
+                  <p className="text-sm text-neutral-700 leading-relaxed">{item.problemSolved}</p>
+                </div>
+              )}
+              {/* 어떻게 */}
+              {item.aiRole && (
+                <div className="flex gap-3 px-4 py-3 bg-blue-50/40">
+                  <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest shrink-0 w-8 mt-0.5">어떻게</span>
+                  <p className="text-sm text-neutral-700 leading-relaxed">
+                    {item.userName ? item.aiRole.replace(/인간/g, item.userName) : item.aiRole}
+                  </p>
+                </div>
+              )}
+              {/* 트레이드오프 */}
+              {item.tradeoffs && (
+                <div className="flex gap-3 px-4 py-3 bg-amber-50/40">
+                  <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest shrink-0 w-8 mt-0.5">선택</span>
+                  <p className="text-sm text-neutral-700 leading-relaxed">{item.tradeoffs}</p>
+                </div>
+              )}
+            </div>
 
             {/* AI 기여도 시각화 */}
             {item.frame && aiPct !== null && (
               <div className="flex items-center gap-3">
-                <span className="text-[10px] text-neutral-400 font-mono">{FRAME_LABEL[item.frame]}</span>
+                <span className="text-[10px] text-neutral-400 font-mono font-semibold">{item.frame} · {FRAME_LABEL[item.frame]}</span>
                 <div className="flex-1 h-1.5 rounded-full bg-neutral-100 overflow-hidden max-w-[160px]">
                   <div className={`h-full rounded-full ${FRAME_DOT[item.frame]}`} style={{ width: `${aiPct}%` }} />
                 </div>

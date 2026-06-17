@@ -18,8 +18,9 @@ You are an expert analyst of AI-assisted software development sessions, \
 specializing in extracting meaningful collaboration insights.
 
 Given a coding session (developer prompt, AI response, code diff), \
-extract structured metadata that reveals WHAT was built, WHY it was built, \
-and HOW AI specifically contributed. Be concrete and specific — avoid generic phrases.
+extract structured metadata that reveals WHAT was built, WHY it was needed, \
+HOW AI specifically contributed, and what TRADEOFFS were considered. \
+Be concrete and specific — avoid generic phrases.
 
 Respond with valid JSON only — no explanation, no markdown fences.
 """
@@ -42,9 +43,10 @@ Extract the following and return as JSON:
   "frame": "A" | "B" | "C" | "D",
   "ai_contribution": <float 0.0–1.0>,
   "decision_type": "feature" | "bugfix" | "refactor" | "config" | "docs" | "test" | "other",
-  "what_was_built": "<구체적 기술 결과물. 예: 'FastAPI ETL 파이프라인 + asyncpg 마이그레이션 + claude-haiku 기반 이벤트 분석기'. 단순 반복 금지>",
-  "problem_solved": "<해결한 문제/맥락. 예: '대시보드가 raw prompt만 보여줘 AI 협업 가치가 보이지 않았음 → 의미있는 분석 데이터로 전환 필요'. 왜 이 작업이 필요했는지>",
-  "ai_role": "<AI가 실제로 한 것과 {user_name}이 한 것. 예: 'claude_refiner.py 전체 설계 및 구현, ETL 프롬프트 템플릿 작성, SQL 마이그레이션 생성 — {user_name}: API 키 설정 및 서버 재시작 담당'>"
+  "what_was_built": "<구체적 기술 결과물. 예: 'FastAPI ETL 파이프라인 + asyncpg 마이그레이션 + claude-haiku 기반 이벤트 분석기'. 1-2문장, 단순 반복 금지>",
+  "problem_solved": "<해결한 문제와 맥락. 왜 이 작업이 필요했는지. 예: '대시보드가 raw prompt만 보여줘 AI 협업 가치가 보이지 않았음 → 의미있는 분석 데이터로 전환 필요'. 1-2문장>",
+  "ai_role": "<어떻게 구현했는지. AI가 실제로 한 것과 {user_name}이 한 것의 역할 분담. 예: 'claude_refiner.py 전체 설계 및 구현, ETL 프롬프트 템플릿 작성 (AI) / API 키 설정 및 서버 재시작, 방향 결정 ({user_name})'. 2-3문장>",
+  "tradeoffs": "<이 결정에서 고려한 대안과 선택 기준. 선택하지 않은 접근법과 그 이유, 현재 방식의 장단점. 없으면 null. 예: 'WebSocket 대신 SSE 선택 — 단방향 스트리밍에 충분하고 구현이 단순함. 양방향 통신이 필요해지면 WebSocket으로 전환 필요'. 1-3문장>"
 }}
 
 Frame definitions:
@@ -55,10 +57,11 @@ Frame definitions:
 
 ai_contribution = fraction of actual code/decisions made by AI (0.0=none, 1.0=all)
 
-IMPORTANT: All three narrative fields (what_was_built, problem_solved, ai_role) MUST be \
-specific to THIS session. In ai_role, always refer to the developer by name ({user_name}), \
-never as "인간" or "개발자". Never write generic text.
-Write in Korean.
+IMPORTANT:
+- All narrative fields must be specific to THIS session.
+- In ai_role, always refer to the developer by name ({user_name}), never as "인간" or "개발자".
+- tradeoffs: only include if there was a genuine choice between approaches. Set to null if trivial.
+- Write in Korean.
 """
 
 
@@ -76,7 +79,7 @@ async def refine_event(
         client = anthropic.AsyncAnthropic(api_key=api_key)
         msg = await client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
+            max_tokens=1500,
             system=_SYSTEM,
             messages=[
                 {

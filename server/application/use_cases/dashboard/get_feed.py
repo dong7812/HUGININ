@@ -28,6 +28,7 @@ class FeedItem:
     what_was_built: str | None = None
     problem_solved: str | None = None
     ai_role: str | None = None
+    tradeoffs: str | None = None
     # GitHub PR 이벤트
     event_type: str = "commit"
     pr_number: int | None = None

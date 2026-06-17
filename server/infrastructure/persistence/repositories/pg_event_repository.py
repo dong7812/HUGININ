@@ -103,6 +103,7 @@ class PgEventRepository(EventRepository):
                 e.what_was_built,
                 e.problem_solved,
                 e.ai_role,
+                e.tradeoffs,
                 e.event_type,
                 e.pr_number,
                 e.pr_url,
@@ -174,7 +175,7 @@ class PgEventRepository(EventRepository):
                 u.email AS user_email, u.name AS user_name, p.name AS project_name,
                 e.branch, e.prompt_tokens, e.response_tokens,
                 e.frame, e.ai_contribution, e.decision_summary, e.decision_type,
-                e.what_was_built, e.problem_solved, e.ai_role,
+                e.what_was_built, e.problem_solved, e.ai_role, e.tradeoffs,
                 e.event_type, e.pr_number, e.pr_url, e.github_author,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
@@ -233,7 +234,7 @@ class PgEventRepository(EventRepository):
                 u.email AS user_email, u.name AS user_name, p.name AS project_name,
                 e.branch, e.prompt_tokens, e.response_tokens,
                 e.frame, e.ai_contribution, e.decision_summary, e.decision_type,
-                e.what_was_built, e.problem_solved, e.ai_role,
+                e.what_was_built, e.problem_solved, e.ai_role, e.tradeoffs,
                 e.event_type, e.pr_number, e.pr_url, e.github_author,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
@@ -414,6 +415,7 @@ class PgEventRepository(EventRepository):
         what_was_built: str = "",
         problem_solved: str = "",
         ai_role: str = "",
+        tradeoffs: str | None = None,
     ) -> None:
         await self._pool.execute(
             """
@@ -425,11 +427,12 @@ class PgEventRepository(EventRepository):
                 decision_type = $5,
                 what_was_built = $6,
                 problem_solved = $7,
-                ai_role = $8
+                ai_role = $8,
+                tradeoffs = $9
             WHERE id = $1
             """,
             id, frame, ai_contribution, decision_summary, decision_type,
-            what_was_built, problem_solved, ai_role,
+            what_was_built, problem_solved, ai_role, tradeoffs,
         )
 
     @staticmethod
@@ -476,6 +479,7 @@ def _to_feed_item(r: asyncpg.Record) -> "FeedItem":
         what_was_built=r["what_was_built"],
         problem_solved=r["problem_solved"],
         ai_role=r["ai_role"],
+        tradeoffs=r["tradeoffs"],
         event_type=r["event_type"] or "commit",
         pr_number=r["pr_number"],
         pr_url=r["pr_url"],

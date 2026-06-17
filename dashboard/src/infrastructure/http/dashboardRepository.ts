@@ -44,6 +44,7 @@ interface RawFeedItem {
   what_was_built: string | null;
   problem_solved: string | null;
   ai_role: string | null;
+  tradeoffs: string | null;
   event_type: string;
   pr_number: number | null;
   pr_url: string | null;
@@ -73,6 +74,7 @@ function mapFeedItem(i: RawFeedItem): FeedItem {
     whatWasBuilt: i.what_was_built,
     problemSolved: i.problem_solved,
     aiRole: i.ai_role,
+    tradeoffs: i.tradeoffs ?? null,
     eventType: i.event_type ?? "commit",
     prNumber: i.pr_number ?? null,
     prUrl: i.pr_url ?? null,
