@@ -13,8 +13,13 @@ import (
 )
 
 var root = &cobra.Command{
-	Use:   "huginin",
-	Short: "HUGININ — 팀 AI 협업 가시화",
+	Use:     "huginin",
+	Short:   "HUGININ — 팀 AI 협업 가시화",
+	Version: "0.1.0",
+}
+
+func init() {
+	root.SetVersionTemplate("huginin v{{.Version}}\n")
 }
 
 func Execute() {

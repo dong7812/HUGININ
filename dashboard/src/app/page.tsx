@@ -44,11 +44,11 @@ export default function LandingPage() {
             Claude Code 전용
           </p>
           <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-neutral-900 leading-[1.05] tracking-tight mb-8">
-            AI로 만든다.
+            AI로 만들기는 쉽다.
             <br />
             <span className="text-neutral-400">왜 그렇게 만들었는지</span>
             <br />
-            기억하나?
+            추적 관리하기는 어렵다.
           </h1>
           <p className="text-lg text-neutral-500 max-w-2xl mx-auto leading-relaxed mb-10">
             Claude Code 세션마다 <span className="text-neutral-900 font-medium">무엇을 만들었고, 왜 그렇게 결정했는지</span>를
