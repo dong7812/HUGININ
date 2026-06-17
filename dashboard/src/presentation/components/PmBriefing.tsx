@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, AlertTriangle, AlertCircle, Info, Clock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Sparkles, AlertTriangle, AlertCircle, Info, Clock, ArrowRight, X, ChevronDown, ChevronUp } from "lucide-react";
 import { usePmBriefMutation } from "@/application/queries/dashboardQueries";
 import type { PmBriefResult } from "@/infrastructure/http/dashboardRepository";
 
@@ -15,153 +15,208 @@ const SEVERITY_STYLE = {
   info:     { icon: Info, color: "text-blue-500", bg: "bg-blue-50", border: "border-blue-100" },
 };
 
-export function PmBriefing({ workspaceId }: Props) {
+export function PmBriefingButton({ workspaceId }: Props) {
+  const [open, setOpen] = useState(false);
   const mutation = usePmBriefMutation(workspaceId);
-  const [showStale, setShowStale] = useState(false);
-  const brief: PmBriefResult | undefined = mutation.data;
+
+  function handleOpen() {
+    setOpen(true);
+    if (!mutation.data && !mutation.isPending) {
+      mutation.mutate();
+    }
+  }
 
   return (
-    <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles size={14} className="text-blue-500" />
-          <h3 className="text-sm font-bold text-neutral-900">PM 브리핑</h3>
-          {brief && (
-            <span className="text-[10px] text-neutral-400 font-mono">{brief.event_count}개 결정 기반</span>
-          )}
+    <>
+      {/* Trigger button — goes in dashboard header */}
+      <button
+        onClick={handleOpen}
+        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+      >
+        <Sparkles size={12} />
+        PM 브리핑
+        {mutation.data && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 ml-0.5" />}
+      </button>
+
+      {/* Slide-over panel */}
+      {open && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/20 z-40 backdrop-blur-[1px]"
+            onClick={() => setOpen(false)}
+          />
+
+          {/* Panel */}
+          <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-50 shadow-2xl flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 shrink-0">
+              <div className="flex items-center gap-2">
+                <Sparkles size={15} className="text-blue-500" />
+                <span className="font-bold text-neutral-900">PM 브리핑</span>
+                {mutation.data && (
+                  <span className="text-[10px] text-neutral-400 font-mono">{mutation.data.event_count}개 결정 기반</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {mutation.data && (
+                  <button
+                    onClick={() => mutation.mutate()}
+                    disabled={mutation.isPending}
+                    className="text-xs text-neutral-500 hover:text-neutral-700 px-2.5 py-1.5 rounded-lg hover:bg-neutral-100 transition-colors disabled:opacity-40"
+                  >
+                    재분석
+                  </button>
+                )}
+                <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              <PmBriefContent mutation={mutation} onAnalyze={() => mutation.mutate()} />
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function PmBriefContent({ mutation, onAnalyze }: {
+  mutation: ReturnType<typeof usePmBriefMutation>;
+  onAnalyze: () => void;
+}) {
+  const [staleOpen, setStaleOpen] = useState(false);
+  const brief: PmBriefResult | undefined = mutation.data;
+
+  if (mutation.isPending) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4 px-6">
+        <div className="w-8 h-8 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
+        <div className="text-center">
+          <p className="text-sm font-medium text-neutral-700 mb-1">결정 패턴 분석 중</p>
+          <p className="text-xs text-neutral-400">결정 데이터를 읽고 의견을 만들고 있어요</p>
         </div>
-        <button
-          onClick={() => mutation.mutate()}
-          disabled={mutation.isPending}
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
-        >
-          {mutation.isPending ? (
-            <>
-              <span className="w-3 h-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
-              분석 중
-            </>
-          ) : brief ? "재분석" : "지금 분석하기"}
-        </button>
       </div>
+    );
+  }
 
-      {/* Loading skeleton */}
-      {mutation.isPending && (
-        <div className="p-5 flex flex-col gap-3">
-          <div className="h-3 w-full bg-neutral-100 rounded-lg animate-pulse" />
-          <div className="h-3 w-4/5 bg-neutral-100 rounded-lg animate-pulse" />
-          <div className="h-3 w-3/5 bg-neutral-100 rounded-lg animate-pulse" />
-          <p className="text-xs text-neutral-400 text-center mt-2">결정 패턴을 분석하고 있습니다...</p>
-        </div>
-      )}
+  if (mutation.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
+        <p className="text-sm text-red-500 font-medium">분석 실패</p>
+        <p className="text-xs text-neutral-400">정제된 결정이 부족하거나 일시적 오류입니다.</p>
+        <button onClick={onAnalyze} className="text-xs text-blue-600 hover:text-blue-700 font-semibold">다시 시도</button>
+      </div>
+    );
+  }
 
-      {/* Error */}
-      {mutation.isError && !mutation.isPending && (
-        <div className="p-5 text-center">
-          <p className="text-sm text-red-500 mb-1">분석 실패</p>
-          <p className="text-xs text-neutral-400">정제된 결정이 부족하거나 일시적 오류입니다.</p>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!brief && !mutation.isPending && !mutation.isError && (
-        <div className="px-5 py-8 text-center">
-          <Sparkles size={24} className="text-neutral-200 mx-auto mb-3" />
-          <p className="text-sm text-neutral-500 font-medium mb-1">결정 데이터를 PM처럼 분석</p>
+  if (!brief) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4 px-6 text-center">
+        <Sparkles size={32} className="text-neutral-200" />
+        <div>
+          <p className="text-sm font-medium text-neutral-700 mb-1">쌓인 결정을 PM처럼 분석</p>
           <p className="text-xs text-neutral-400 leading-relaxed">
-            쌓인 결정들에서 패턴, 미해결 트레이드오프,<br />놓친 영역을 찾아 의견을 냅니다.
+            패턴, 미해결 트레이드오프,<br />놓친 영역을 찾아서 의견을 냅니다
           </p>
         </div>
+        <button
+          onClick={onAnalyze}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+        >
+          <Sparkles size={14} />
+          지금 분석하기
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col divide-y divide-neutral-100">
+      {/* Summary */}
+      <div className="px-6 py-5">
+        <p className="text-sm text-neutral-700 leading-relaxed">{brief.summary}</p>
+      </div>
+
+      {/* Patterns */}
+      {brief.patterns.length > 0 && (
+        <div className="px-6 py-5 flex flex-col gap-3">
+          <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">발견된 패턴</p>
+          {brief.patterns.map((p, i) => {
+            const style = SEVERITY_STYLE[p.severity as keyof typeof SEVERITY_STYLE] ?? SEVERITY_STYLE.info;
+            const Icon = style.icon;
+            return (
+              <div key={i} className={`rounded-xl border ${style.border} ${style.bg} p-4`}>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Icon size={13} className={style.color} />
+                  <span className="text-xs font-bold text-neutral-800">{p.title}</span>
+                </div>
+                <p className="text-xs text-neutral-600 leading-relaxed">{p.detail}</p>
+              </div>
+            );
+          })}
+        </div>
       )}
 
-      {/* Result */}
-      {brief && !mutation.isPending && (
-        <div className="flex flex-col divide-y divide-neutral-100">
-          {/* Summary */}
-          <div className="px-5 py-4">
-            <p className="text-sm text-neutral-700 leading-relaxed">{brief.summary}</p>
+      {/* Next focus */}
+      {brief.next_focus?.title && (
+        <div className="px-6 py-5">
+          <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-3">다음 집중 포인트</p>
+          <div className="bg-blue-600 rounded-xl p-4 text-white">
+            <div className="flex items-center gap-2 mb-2">
+              <ArrowRight size={13} className="text-blue-200 shrink-0" />
+              <span className="text-sm font-bold">{brief.next_focus.title}</span>
+            </div>
+            <p className="text-xs text-blue-100 leading-relaxed">{brief.next_focus.rationale}</p>
           </div>
+        </div>
+      )}
 
-          {/* Patterns */}
-          {brief.patterns.length > 0 && (
-            <div className="px-5 py-4 flex flex-col gap-2.5">
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">발견된 패턴</p>
-              {brief.patterns.map((p, i) => {
-                const style = SEVERITY_STYLE[p.severity as keyof typeof SEVERITY_STYLE] ?? SEVERITY_STYLE.info;
-                const Icon = style.icon;
-                return (
-                  <div key={i} className={`rounded-xl border ${style.border} ${style.bg} p-3`}>
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <Icon size={12} className={style.color} />
-                      <span className="text-xs font-semibold text-neutral-800">{p.title}</span>
-                    </div>
-                    <p className="text-xs text-neutral-600 leading-relaxed">{p.detail}</p>
+      {/* Stale tradeoffs */}
+      {brief.stale_tradeoffs.length > 0 && (
+        <div className="px-6 py-5">
+          <button onClick={() => setStaleOpen(v => !v)} className="flex items-center gap-2 w-full mb-3">
+            <Clock size={12} className="text-amber-500" />
+            <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex-1 text-left">
+              미해결 트레이드오프
+            </p>
+            <span className="text-[10px] font-mono text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100">
+              {brief.stale_tradeoffs.length}개
+            </span>
+            {staleOpen ? <ChevronUp size={12} className="text-neutral-400" /> : <ChevronDown size={12} className="text-neutral-400" />}
+          </button>
+          {staleOpen && (
+            <div className="flex flex-col gap-2.5">
+              {brief.stale_tradeoffs.map((t, i) => (
+                <div key={i} className="bg-amber-50 border border-amber-100 rounded-xl p-3.5">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold text-neutral-800">{t.decision}</span>
+                    <span className="text-[10px] font-mono text-neutral-400">{t.made_at}</span>
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Next focus */}
-          {brief.next_focus.title && (
-            <div className="px-5 py-4">
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">다음 집중 포인트</p>
-              <div className="bg-blue-600 rounded-xl p-3.5 text-white">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <ArrowRight size={12} className="text-blue-200" />
-                  <span className="text-sm font-bold">{brief.next_focus.title}</span>
+                  <p className="text-xs text-neutral-600 leading-relaxed">{t.note}</p>
                 </div>
-                <p className="text-xs text-blue-100 leading-relaxed">{brief.next_focus.rationale}</p>
-              </div>
+              ))}
             </div>
           )}
+        </div>
+      )}
 
-          {/* Stale tradeoffs */}
-          {brief.stale_tradeoffs.length > 0 && (
-            <div className="px-5 py-4">
-              <button
-                onClick={() => setShowStale((v) => !v)}
-                className="flex items-center gap-2 w-full text-left mb-2"
-              >
-                <Clock size={11} className="text-amber-500" />
-                <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest flex-1">
-                  미해결 트레이드오프
-                </p>
-                <span className="text-[10px] font-mono text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded">
-                  {brief.stale_tradeoffs.length}개
-                </span>
-                {showStale ? <EyeOff size={11} className="text-neutral-400" /> : <Eye size={11} className="text-neutral-400" />}
-              </button>
-              {showStale && (
-                <div className="flex flex-col gap-2">
-                  {brief.stale_tradeoffs.map((t, i) => (
-                    <div key={i} className="bg-amber-50 border border-amber-100 rounded-xl p-3">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold text-neutral-800">{t.decision}</span>
-                        <span className="text-[10px] font-mono text-neutral-400">{t.made_at}</span>
-                      </div>
-                      <p className="text-xs text-neutral-600 leading-relaxed">{t.note}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Blind spots */}
-          {brief.blind_spots.length > 0 && (
-            <div className="px-5 py-4">
-              <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">논의되지 않은 영역</p>
-              <div className="flex flex-col gap-1.5">
-                {brief.blind_spots.map((b, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <span className="text-neutral-300 text-xs mt-0.5">·</span>
-                    <p className="text-xs text-neutral-600 leading-relaxed">{b}</p>
-                  </div>
-                ))}
+      {/* Blind spots */}
+      {brief.blind_spots.length > 0 && (
+        <div className="px-6 py-5">
+          <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-3">논의되지 않은 영역</p>
+          <div className="flex flex-col gap-2">
+            {brief.blind_spots.map((b, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="text-neutral-300 mt-0.5">·</span>
+                <p className="text-xs text-neutral-600 leading-relaxed">{b}</p>
               </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       )}
     </div>
