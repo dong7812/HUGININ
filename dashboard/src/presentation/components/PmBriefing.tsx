@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Sparkles, AlertTriangle, AlertCircle, Info, Clock, ArrowRight, X, ChevronDown, ChevronUp, CalendarDays } from "lucide-react";
+import { Sparkles, AlertTriangle, AlertCircle, Info, Clock, ArrowRight, X, ChevronDown, ChevronUp } from "lucide-react";
 import { usePmBriefMutation } from "@/application/queries/dashboardQueries";
 import type { PmBriefResult } from "@/infrastructure/http/dashboardRepository";
 
@@ -79,8 +79,8 @@ export function PmBriefingButton({ workspaceId }: Props) {
         onClick={handleOpen}
         className="relative flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
       >
-        <CalendarDays size={12} />
-        주간 보고
+        <Sparkles size={12} />
+        AI 브리핑
         {(isNew || mutation.isPending) && (
           <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500 border-2 border-white" />
         )}
@@ -93,8 +93,8 @@ export function PmBriefingButton({ workspaceId }: Props) {
           <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-50 shadow-2xl flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 shrink-0">
               <div className="flex items-center gap-2">
-                <CalendarDays size={15} className="text-blue-500" />
-                <span className="font-bold text-neutral-900">주간 AI 보고</span>
+                <Sparkles size={15} className="text-blue-500" />
+                <span className="font-bold text-neutral-900">AI 브리핑</span>
                 <span className="text-[10px] text-neutral-400 font-mono">{getWeekLabel()}</span>
               </div>
               <div className="flex items-center gap-2">
