@@ -37,3 +37,15 @@ func (uc *LoginUseCase) CreateServiceToken() (string, error) {
 	}
 	return uc.api.CreateServiceToken(token)
 }
+
+func (uc *LoginUseCase) BrowserLogin() (string, string, error) {
+	return uc.api.CreateCLISession()
+}
+
+func (uc *LoginUseCase) PollSession(sessionID string) (status, token, userID string, err error) {
+	return uc.api.PollCLISession(sessionID)
+}
+
+func (uc *LoginUseCase) SaveToken(token, userID string) error {
+	return uc.keystore.Save(token, userID)
+}

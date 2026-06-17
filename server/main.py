@@ -12,6 +12,8 @@ from infrastructure.persistence.database import Database
 from infrastructure.persistence.repositories.pg_event_repository import PgEventRepository
 from infrastructure.persistence.repositories.pg_project_repository import PgProjectRepository
 from infrastructure.persistence.repositories.pg_user_repository import PgUserRepository
+from infrastructure.smtp.email_sender import EmailSender
+from infrastructure.oauth.google_oauth import GoogleOAuth
 from infrastructure.persistence.repositories.pg_workspace_repository import PgWorkspaceRepository
 from infrastructure.security.argon2_password_service import Argon2PasswordService
 from infrastructure.security.jwt_service import JwtService
@@ -102,7 +104,25 @@ async def lifespan(app: FastAPI):
     app.state.project_repo = project_repo
 
     # Use Cases
-    app.state.register_uc = RegisterUseCase(user_repo, jwt, password)
+    # SMTP / OAuth
+    email_sender = EmailSender(
+        host=settings.smtp_host,
+        port=settings.smtp_port,
+        user=settings.smtp_user,
+        password=settings.smtp_password,
+        from_addr=settings.smtp_from,
+    )
+    google_oauth = GoogleOAuth(
+        client_id=settings.google_client_id,
+        client_secret=settings.google_client_secret,
+        redirect_uri=settings.google_redirect_uri,
+    )
+    app.state.google_oauth = google_oauth
+    app.state.frontend_url = settings.frontend_url
+
+    app.state.register_uc = RegisterUseCase(
+        user_repo, jwt, password, email_sender=email_sender, frontend_url=settings.frontend_url
+    )
     app.state.login_uc = LoginUseCase(user_repo, jwt, password)
     app.state.create_workspace_uc = CreateWorkspaceUseCase(workspace_repo)
     app.state.join_workspace_uc = JoinWorkspaceUseCase(workspace_repo)

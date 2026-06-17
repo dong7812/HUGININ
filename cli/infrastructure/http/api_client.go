@@ -167,6 +167,36 @@ func (c *Client) CreateServiceToken(token string) (string, error) {
 	return r["access_token"].(string), nil
 }
 
+func (c *Client) CreateCLISession() (string, string, error) {
+	r, err := c.post("/auth/cli/session", "", map[string]any{})
+	if err != nil {
+		return "", "", err
+	}
+	return r["session_id"].(string), r["auth_url"].(string), nil
+}
+
+func (c *Client) PollCLISession(sessionID string) (string, string, string, error) {
+	req, err := http.NewRequest(http.MethodGet, c.baseURL+"/auth/cli/poll/"+sessionID, nil)
+	if err != nil {
+		return "", "", "", err
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return "", "", "", err
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return "", "", "", fmt.Errorf("server error %d: %s", resp.StatusCode, string(data))
+	}
+	var r map[string]any
+	json.Unmarshal(data, &r)
+	status, _ := r["status"].(string)
+	tok, _ := r["token"].(string)
+	userID, _ := r["user_id"].(string)
+	return status, tok, userID, nil
+}
+
 func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch string) (string, error) {
 	body := map[string]any{
 		"workspace_id": workspaceID,

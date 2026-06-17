@@ -20,6 +20,8 @@ type APIClient interface {
 	LinkProject(token, workspaceID, name, gitRemote string) (id string, err error)
 	CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch string) (eventID string, err error)
 	CreateServiceToken(token string) (serviceToken string, err error)
+	CreateCLISession() (sessionID, authURL string, err error)
+	PollCLISession(sessionID string) (status, token, userID string, err error)
 }
 
 // Member 워크스페이스 멤버.
