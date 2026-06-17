@@ -25,40 +25,35 @@ _SYSTEM = """\
 JSON만 출력. 마크다운 없이.
 """
 
-_USER_TEMPLATE = """\
-워크스페이스 결정 데이터:
-총 {count}개 결정 / 기간: {date_range}
-
-{decisions}
-
+_USER_SCHEMA = """\
 위 데이터를 PM 관점에서 분석해서 아래 JSON 형식으로 출력:
 
-{{
+{
   "summary": "<전체를 한 문장으로. 현재 프로젝트 상태에 대한 솔직한 진단>",
   "patterns": [
-    {{
+    {
       "title": "<패턴 제목>",
       "detail": "<구체적인 근거 포함 설명. 결정 내용 직접 인용>",
-      "severity": "info" | "warning" | "critical"
-    }}
+      "severity": "info 또는 warning 또는 critical"
+    }
   ],
   "stale_tradeoffs": [
-    {{
+    {
       "decision": "<결정 제목>",
-      "made_at": "<날짜>",
+      "made_at": "<날짜 YYYY-MM-DD>",
       "note": "<트레이드오프에서 뭘 미뤘는지 + 지금 어떤 위험인지>"
-    }}
+    }
   ],
   "blind_spots": [
     "<이 프로젝트에서 전혀 논의되지 않았지만 이 단계에서 있어야 할 결정 유형>"
   ],
-  "next_focus": {{
+  "next_focus": {
     "title": "<다음에 집중해야 할 것>",
     "rationale": "<왜 지금인지. 결정 데이터 근거 포함>"
-  }}
-}}
+  }
+}
 
-patterns는 2-4개, stale_tradeoffs는 있는 것만, blind_spots는 1-3개.
+patterns는 2-4개, stale_tradeoffs는 있는 것만(없으면 빈 배열), blind_spots는 1-3개.
 """
 
 
@@ -96,18 +91,19 @@ async def generate_pm_brief(events: list[dict], api_key: str) -> dict | None:
         date_range = f"{min(dates)} ~ {max(dates)}" if dates else "?"
         decisions_text = _format_decisions(events)
 
+        # decisions_text에 중괄호가 포함될 수 있으므로 format() 대신 직접 조립
+        user_content = (
+            f"워크스페이스 결정 데이터:\n"
+            f"총 {len(events)}개 결정 / 기간: {date_range}\n\n"
+            + decisions_text[:8000]
+            + "\n\n" + _USER_SCHEMA
+        )
+
         msg = await client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=2000,
             system=_SYSTEM,
-            messages=[{
-                "role": "user",
-                "content": _USER_TEMPLATE.format(
-                    count=len(events),
-                    date_range=date_range,
-                    decisions=decisions_text[:8000],
-                ),
-            }],
+            messages=[{"role": "user", "content": user_content}],
         )
         raw = msg.content[0].text.strip()
         if raw.startswith("```"):
