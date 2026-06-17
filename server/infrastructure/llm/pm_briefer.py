@@ -62,10 +62,18 @@ patterns는 2-4개, stale_tradeoffs는 있는 것만, blind_spots는 1-3개.
 """
 
 
+def _date_str(val) -> str:
+    if val is None:
+        return "?"
+    if hasattr(val, "strftime"):
+        return val.strftime("%Y-%m-%d")
+    return str(val)[:10]
+
+
 def _format_decisions(events: list[dict]) -> str:
     lines = []
     for e in events:
-        date = e["created_at"][:10] if e.get("created_at") else "?"
+        date = _date_str(e.get("created_at"))
         parts = [f"[{date}] {e.get('decision_type','?')} | Frame {e.get('frame','?')} | AI {int((e.get('ai_contribution') or 0) * 100)}%"]
         if e.get("what_was_built"):
             parts.append(f"무엇: {e['what_was_built']}")
@@ -84,7 +92,7 @@ async def generate_pm_brief(events: list[dict], api_key: str) -> dict | None:
         import anthropic
         client = anthropic.AsyncAnthropic(api_key=api_key)
 
-        dates = [e["created_at"][:10] for e in events if e.get("created_at")]
+        dates = [_date_str(e.get("created_at")) for e in events if e.get("created_at")]
         date_range = f"{min(dates)} ~ {max(dates)}" if dates else "?"
         decisions_text = _format_decisions(events)
 
