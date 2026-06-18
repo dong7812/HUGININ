@@ -2,8 +2,14 @@
 set -euo pipefail
 
 BASE_URL="https://huginin.com/cli"
-INSTALL_DIR="/usr/local/bin"
 BINARY="huginin"
+
+# Homebrew prefix 우선 (Apple Silicon Mac)
+if [ -d "/opt/homebrew/bin" ]; then
+  INSTALL_DIR="/opt/homebrew/bin"
+else
+  INSTALL_DIR="/usr/local/bin"
+fi
 
 # 언인스톨 모드
 if [ "${1:-}" = "uninstall" ]; then
