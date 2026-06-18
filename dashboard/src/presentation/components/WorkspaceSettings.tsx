@@ -5,7 +5,7 @@ import { Settings, Copy, Check, X, Trash2, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/application/stores/authStore";
 import { useWorkspaceStore } from "@/application/stores/workspaceStore";
-import { apiInvite, apiDeleteWorkspace } from "@/infrastructure/http/apiClient";
+import { apiInvite, apiDeleteWorkspace, apiFetch } from "@/infrastructure/http/apiClient";
 
 interface Props {
   workspaceId: string;
@@ -65,7 +65,14 @@ export function WorkspaceSettings({ workspaceId }: Props) {
     try {
       await apiDeleteWorkspace(workspaceId, token);
       clearWorkspace();
-      router.push("/workspace/new");
+      const remaining = await apiFetch<Array<{ id: string; name: string }>>("/workspace", token).catch(() => []);
+      if (remaining.length > 0) {
+        const setWorkspace = useWorkspaceStore.getState().setWorkspace;
+        setWorkspace(remaining[0].id, remaining[0].name);
+        router.push(`/workspace/${remaining[0].id}`);
+      } else {
+        router.push("/workspace/new");
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "삭제 실패");
       setLoadingDelete(false);
