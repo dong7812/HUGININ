@@ -67,6 +67,9 @@ class PgWorkspaceRepository(WorkspaceRepository):
         )
         return [self._to_member(r) for r in rows]
 
+    async def delete(self, workspace_id: UUID) -> None:
+        await self._pool.execute("DELETE FROM workspaces WHERE id = $1", workspace_id)
+
     async def count_by_workspace(self, workspace_id: UUID) -> int:
         row = await self._pool.fetchrow(
             "SELECT COUNT(*) FROM workspace_members WHERE workspace_id = $1",

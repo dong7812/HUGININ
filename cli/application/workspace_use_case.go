@@ -69,3 +69,11 @@ func (uc *WorkspaceUseCase) ChangeRole(workspaceID, targetUserID, newRole string
 	}
 	return uc.api.ChangeRole(t, workspaceID, targetUserID, newRole)
 }
+
+func (uc *WorkspaceUseCase) Delete(workspaceID string) error {
+	t, err := uc.token()
+	if err != nil {
+		return err
+	}
+	return uc.api.DeleteWorkspace(t, workspaceID)
+}

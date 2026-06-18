@@ -81,6 +81,17 @@ async def invite_member(
     return InviteMemberResponse(code=result.code, role=result.role, expires_at=result.expires_at)
 
 
+@router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_workspace(
+    workspace_id: UUID,
+    request: Request,
+    member=Depends(require_workspace_admin),
+):
+    if member.role.value != "owner":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only owner can delete workspace")
+    await request.app.state.workspace_repo.delete(workspace_id)
+
+
 @router.get("/{workspace_id}/members", response_model=list[MemberResponse])
 async def list_members(
     workspace_id: UUID,

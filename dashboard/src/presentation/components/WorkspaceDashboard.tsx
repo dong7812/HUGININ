@@ -9,6 +9,7 @@ import { AiTrendChart } from "./AiTrendChart";
 import { CacheSuggestions } from "./CacheSuggestions";
 import { PmBriefingButton } from "./PmBriefing";
 import { DecisionChat } from "./DecisionChat";
+import { WorkspaceSettings } from "./WorkspaceSettings";
 import { useWorkspaceStore } from "@/application/stores/workspaceStore";
 
 interface Props {
@@ -46,7 +47,10 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
           </h1>
           <p className="text-sm text-neutral-400 mt-0.5">AI Decision Journal</p>
         </div>
-        <PmBriefingButton workspaceId={workspaceId} />
+        <div className="flex items-center gap-2">
+          <PmBriefingButton workspaceId={workspaceId} />
+          <WorkspaceSettings workspaceId={workspaceId} />
+        </div>
       </div>
 
       <div className="p-6 max-w-7xl mx-auto">

@@ -149,6 +149,24 @@ func (c *Client) ChangeRole(token, workspaceID, targetUserID, newRole string) er
 	return err
 }
 
+func (c *Client) DeleteWorkspace(token, workspaceID string) error {
+	req, err := http.NewRequest(http.MethodDelete, c.baseURL+"/workspace/"+workspaceID, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 400 {
+		data, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("server error %d: %s", resp.StatusCode, string(data))
+	}
+	return nil
+}
+
 func (c *Client) LinkProject(token, workspaceID, name, gitRemote string) (string, error) {
 	r, err := c.post("/project", token, map[string]any{
 		"workspace_id": workspaceID, "name": name, "git_remote": gitRemote,

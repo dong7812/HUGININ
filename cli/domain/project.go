@@ -17,6 +17,7 @@ type APIClient interface {
 	InviteMember(token, workspaceID, role string, expiresHours int) (code string, err error)
 	ListMembers(token, workspaceID string) ([]Member, error)
 	ChangeRole(token, workspaceID, targetUserID, newRole string) error
+	DeleteWorkspace(token, workspaceID string) error
 	LinkProject(token, workspaceID, name, gitRemote string) (id string, err error)
 	CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch string) (eventID string, err error)
 	CreateServiceToken(token string) (serviceToken string, err error)

@@ -1,7 +1,10 @@
 package cli
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -141,6 +144,34 @@ func newWorkspaceCmd(uc *application.WorkspaceUseCase, cfg *config.Config) *cobr
 	roleCmd.MarkFlagRequired("user")
 	roleCmd.MarkFlagRequired("role")
 
-	cmd.AddCommand(createCmd, joinCmd, listCmd, inviteCmd, membersCmd, roleCmd)
+	// huginin workspace delete --workspace <id>
+	deleteCmd := &cobra.Command{
+		Use:   "delete",
+		Short: "워크스페이스 삭제 (owner 전용)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			wsID, _ := cmd.Flags().GetString("workspace")
+			fmt.Printf("워크스페이스 %s 을(를) 영구 삭제합니다. 계속하려면 'delete'를 입력하세요: ", wsID)
+			reader := bufio.NewReader(os.Stdin)
+			input, _ := reader.ReadString('\n')
+			if strings.TrimSpace(input) != "delete" {
+				fmt.Println("취소됨")
+				return nil
+			}
+			if err := uc.Delete(wsID); err != nil {
+				return err
+			}
+			if cfg.WorkspaceID == wsID {
+				cfg.WorkspaceID = ""
+				cfg.WorkspaceName = ""
+				_ = config.Save(cfg)
+			}
+			fmt.Println("✓ 워크스페이스가 삭제되었습니다")
+			return nil
+		},
+	}
+	deleteCmd.Flags().String("workspace", "", "워크스페이스 ID")
+	deleteCmd.MarkFlagRequired("workspace")
+
+	cmd.AddCommand(createCmd, joinCmd, listCmd, inviteCmd, membersCmd, roleCmd, deleteCmd)
 	return cmd
 }

@@ -7,6 +7,7 @@ interface WorkspaceState {
   workspaceId: string | null;
   workspaceName: string | null;
   setWorkspace: (id: string, name: string) => void;
+  clearWorkspace: () => void;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>()(
@@ -15,6 +16,7 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       workspaceId: null,
       workspaceName: null,
       setWorkspace: (id, name) => set({ workspaceId: id, workspaceName: name }),
+      clearWorkspace: () => set({ workspaceId: null, workspaceName: null }),
     }),
     { name: "huginin-workspace" }
   )

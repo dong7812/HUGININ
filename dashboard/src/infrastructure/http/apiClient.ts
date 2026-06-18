@@ -55,6 +55,29 @@ export async function apiRegister(
   return { token: data.access_token, user_id: data.user_id, email_verified: data.email_verified ?? false };
 }
 
+export async function apiInvite(
+  workspaceId: string,
+  token: string,
+  role = "member",
+  expiresHours = 72
+): Promise<{ code: string; role: string; expires_at: string | null }> {
+  const res = await fetch(`${API_BASE}/workspace/${workspaceId}/invite`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ role, expires_hours: expiresHours }),
+  });
+  if (!res.ok) throw new ApiError(res.status, "초대코드 생성 실패");
+  return res.json();
+}
+
+export async function apiDeleteWorkspace(workspaceId: string, token: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/workspace/${workspaceId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, "워크스페이스 삭제 실패");
+}
+
 export async function apiCliSession(): Promise<{ session_id: string; auth_url: string }> {
   const res = await fetch(`${API_BASE}/auth/cli/session`, { method: "POST" });
   if (!res.ok) throw new ApiError(res.status, "CLI session failed");
