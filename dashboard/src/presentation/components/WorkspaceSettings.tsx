@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Settings, Copy, Check, X, Trash2, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/application/stores/authStore";
 import { useWorkspaceStore } from "@/application/stores/workspaceStore";
 import { apiInvite, apiDeleteWorkspace, apiFetch } from "@/infrastructure/http/apiClient";
@@ -13,6 +14,7 @@ interface Props {
 
 export function WorkspaceSettings({ workspaceId }: Props) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const token = useAuthStore((s) => s.token);
   const clearWorkspace = useWorkspaceStore((s) => s.clearWorkspace);
 
@@ -65,6 +67,7 @@ export function WorkspaceSettings({ workspaceId }: Props) {
     try {
       await apiDeleteWorkspace(workspaceId, token);
       clearWorkspace();
+      await queryClient.invalidateQueries({ queryKey: ["workspaces"] });
       const remaining = await apiFetch<Array<{ id: string; name: string }>>("/workspace", token).catch(() => []);
       if (remaining.length > 0) {
         const setWorkspace = useWorkspaceStore.getState().setWorkspace;
