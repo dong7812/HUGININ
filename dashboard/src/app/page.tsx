@@ -2,13 +2,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { InstallSlider } from "./InstallSlider";
-import { LandingAuthGuard } from "./LandingAuthGuard";
 import { StartButton } from "./StartButton";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-neutral-900">
-      <LandingAuthGuard />
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-neutral-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
