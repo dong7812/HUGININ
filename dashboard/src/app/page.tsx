@@ -2,10 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { InstallSlider } from "./InstallSlider";
+import { LandingAuthGuard } from "./LandingAuthGuard";
+import { StartButton } from "./StartButton";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-neutral-900">
+      <LandingAuthGuard />
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-neutral-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -16,10 +19,9 @@ export default function LandingPage() {
           <div className="flex items-center gap-6">
             <a href="#how" className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors">설치</a>
             <a href="#features" className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors">기능</a>
-            <Link href="/login"
-              className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+            <StartButton className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
               시작하기
-            </Link>
+            </StartButton>
           </div>
         </div>
       </nav>
@@ -56,11 +58,10 @@ export default function LandingPage() {
             3주 뒤 "왜 이렇게 했지?"가 사라진다.
           </p>
           <div className="flex items-center justify-center gap-3">
-            <Link href="/login"
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-7 py-3.5 rounded-xl transition-colors text-sm">
+            <StartButton className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-7 py-3.5 rounded-xl transition-colors text-sm">
               무료로 시작하기
               <ArrowRight size={16} />
-            </Link>
+            </StartButton>
             <a href="#how"
               className="inline-flex items-center gap-2 border border-neutral-200 hover:border-neutral-400 text-neutral-700 font-medium px-7 py-3.5 rounded-xl transition-colors text-sm">
               설치 방법
@@ -232,11 +233,10 @@ export default function LandingPage() {
             <br />이제 자동으로 남긴다
           </h2>
           <p className="text-neutral-400 mb-10 text-base">git hook 설치 1분 · 별도 입력 없음 · 개인도, 팀도 무료</p>
-          <Link href="/login"
-            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-4 rounded-xl transition-colors text-base">
+          <StartButton className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-4 rounded-xl transition-colors text-base">
             무료로 시작하기
             <ArrowRight size={18} />
-          </Link>
+          </StartButton>
         </div>
       </section>
 
