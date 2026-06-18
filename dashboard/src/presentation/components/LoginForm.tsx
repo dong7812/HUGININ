@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuthStore } from "@/application/stores/authStore";
 import { useWorkspaceStore } from "@/application/stores/workspaceStore";
@@ -10,8 +10,11 @@ import { LogIn, Loader2 } from "lucide-react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
-export function LoginForm() {
+function LoginFormInner() {
   const router = useRouter();
+  const params = useSearchParams();
+  const redirect = params.get("redirect");
+
   const setAuth = useAuthStore((s) => s.setAuth);
   const setWorkspace = useWorkspaceStore((s) => s.setWorkspace);
 
@@ -28,6 +31,11 @@ export function LoginForm() {
       const { token } = await apiLogin(email, password);
       setAuth(token, email);
 
+      if (redirect) {
+        router.push(redirect);
+        return;
+      }
+
       const ws = await apiFetch<Array<{ id: string; name: string }>>("/workspace", token);
       if (ws.length > 0) {
         setWorkspace(ws[0].id, ws[0].name);
@@ -43,11 +51,26 @@ export function LoginForm() {
   }
 
   function handleGoogle() {
+    if (redirect) {
+      // CLI 세션 ID 추출해서 state로 전달
+      const sessionMatch = redirect.match(/session=([^&]+)/);
+      const sessionId = sessionMatch?.[1];
+      if (sessionId) {
+        window.location.href = `${API_BASE}/auth/google?state=cli_${sessionId}`;
+        return;
+      }
+    }
     window.location.href = `${API_BASE}/auth/google`;
   }
 
   return (
     <div className="flex flex-col gap-4 w-full max-w-sm">
+      {redirect && (
+        <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-center">
+          <p className="text-xs text-blue-700 font-medium">CLI 로그인 승인을 위해 계속하세요</p>
+        </div>
+      )}
+
       {/* Google */}
       <button
         type="button"
@@ -98,7 +121,7 @@ export function LoginForm() {
           className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors shadow-sm"
         >
           {loading ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
-          로그인
+          {redirect ? "로그인하고 승인" : "로그인"}
         </button>
       </form>
 
@@ -109,5 +132,13 @@ export function LoginForm() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export function LoginForm({ redirect: _ }: { redirect?: string | null } = {}) {
+  return (
+    <Suspense fallback={<div className="w-full max-w-sm h-64 animate-pulse bg-neutral-50 rounded-2xl" />}>
+      <LoginFormInner />
+    </Suspense>
   );
 }
