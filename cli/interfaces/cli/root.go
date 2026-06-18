@@ -40,7 +40,7 @@ func Execute() {
 	projUC := application.NewProjectUseCase(api, ks)
 
 	root.RunE = func(cmd *cobra.Command, args []string) error {
-		return tui.StartSession(cfg, wsUC)
+		return tui.StartSession(cfg, wsUC, ks)
 	}
 
 	root.AddCommand(newLoginCmd(loginUC, wsUC, cfg))

@@ -2,15 +2,16 @@ package tui
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
 	"huginin/application"
+	"huginin/domain"
 	"huginin/infrastructure/config"
 )
 
@@ -24,96 +25,60 @@ var (
 	yellow = lipgloss.NewStyle().Foreground(lipgloss.Color("#fbbf24"))
 	bold   = lipgloss.NewStyle().Bold(true)
 
-	headerStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color("#0f172a")).
-			Foreground(lipgloss.Color("#e2e8f0")).
-			Padding(0, 1)
-
 	promptPrefix = blue.Bold(true).Render("huginin") + dim.Render(" > ")
 )
 
 // ── messages ──────────────────────────────────────────────────────────────────
 
-type asyncResultMsg struct {
-	lines []string
-}
-
 type claudeDoneMsg struct{ err error }
+type loginDoneMsg struct{ err error }
+type asyncLinesMsg struct{ lines []string }
 
 // ── model ─────────────────────────────────────────────────────────────────────
 
 type model struct {
 	cfg  *config.Config
 	wsUC *application.WorkspaceUseCase
+	ks   domain.TokenRepository
 
 	input    textinput.Model
-	viewport viewport.Model
-	ready    bool
-	width    int
-	height   int
-
-	lines []string // rendered output history
+	quitting bool
 }
 
-func newModel(cfg *config.Config, wsUC *application.WorkspaceUseCase) model {
+func newModel(cfg *config.Config, wsUC *application.WorkspaceUseCase, ks domain.TokenRepository) model {
 	ti := textinput.New()
 	ti.Prompt = promptPrefix
 	ti.CharLimit = 500
 	ti.Focus()
-
-	m := model{cfg: cfg, wsUC: wsUC, input: ti}
-	m.lines = m.welcome()
-	return m
-}
-
-func (m model) welcome() []string {
-	lines := []string{
-		bold.Render("HUGININ") + "  " + dim.Render("v0.1.0"),
-		"",
-	}
-	if m.cfg.WorkspaceName != "" {
-		lines = append(lines, green.Render("✓")+" workspace: "+bold.Render(m.cfg.WorkspaceName))
-	} else {
-		lines = append(lines, yellow.Render("⚠")+" 워크스페이스가 설정되지 않았습니다 — "+dim.Render("huginin login"))
-	}
-	lines = append(lines,
-		"",
-		dim.Render("claude · workspace · help · exit"),
-		dim.Render(strings.Repeat("─", 40)),
-	)
-	return lines
+	return model{cfg: cfg, wsUC: wsUC, ks: ks, input: ti}
 }
 
 // ── Bubble Tea ────────────────────────────────────────────────────────────────
 
 func (m model) Init() tea.Cmd {
-	return textinput.Blink
+	wsLine := yellow.Render("⚠  로그인 필요 — login 입력")
+	if m.cfg.WorkspaceName != "" {
+		wsLine = green.Render("✓") + " workspace: " + bold.Render(m.cfg.WorkspaceName)
+	}
+	sep := dim.Render(strings.Repeat("─", 44))
+	return tea.Batch(
+		textinput.Blink,
+		tea.Println(bold.Render("HUGININ")+"  "+dim.Render("v0.1.0")),
+		tea.Println(wsLine),
+		tea.Println(""),
+		tea.Println(dim.Render("claude · login · logout · workspace · help · exit")),
+		tea.Println(sep),
+	)
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-		vph := msg.Height - 3 // header(1) + sep(1) + input(1)
-		if vph < 1 {
-			vph = 1
-		}
-		if !m.ready {
-			m.viewport = viewport.New(msg.Width, vph)
-			m.ready = true
-		} else {
-			m.viewport.Width = msg.Width
-			m.viewport.Height = vph
-		}
-		m.viewport.SetContent(strings.Join(m.lines, "\n"))
-		m.viewport.GotoBottom()
-
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC:
 			if m.input.Value() == "" {
+				m.quitting = true
 				return m, tea.Quit
 			}
 			m.input.SetValue("")
@@ -125,73 +90,96 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if raw == "" {
 				return m, nil
 			}
-			m.push(promptPrefix + raw)
-
-			cmd, quit, teaCmd := m.dispatch(raw)
-			_ = cmd
-			if quit {
-				return m, tea.Quit
-			}
-			m.sync()
-			if teaCmd != nil {
-				return m, teaCmd
-			}
-			return m, nil
-
-		// viewport scroll
-		case tea.KeyPgUp:
-			m.viewport.HalfViewUp()
-			return m, nil
-		case tea.KeyPgDown:
-			m.viewport.HalfViewDown()
-			return m, nil
+			echo := promptPrefix + raw
+			cmd := m.dispatch(raw)
+			return m, tea.Sequence(tea.Println(echo), cmd)
 		}
 
-	case asyncResultMsg:
-		m.lines = append(m.lines, msg.lines...)
-		m.sync()
+	case asyncLinesMsg:
+		cmds := make([]tea.Cmd, len(msg.lines))
+		for i, l := range msg.lines {
+			l := l
+			cmds[i] = tea.Println(l)
+		}
+		return m, tea.Batch(cmds...)
 
 	case claudeDoneMsg:
+		line := dim.Render("─ claude 세션 종료 ─")
 		if msg.err != nil {
-			m.push(red.Render("claude 종료 (오류): " + msg.err.Error()))
-		} else {
-			m.push(dim.Render("─ claude 세션 종료 ─"))
+			line = red.Render("claude 종료 (오류): " + msg.err.Error())
 		}
-		m.sync()
+		return m, tea.Println(line)
+
+	case loginDoneMsg:
+		// 로그인 후 config 재로드
+		newCfg, err := config.Load()
+		if err == nil {
+			m.cfg = newCfg
+		}
+		if msg.err != nil {
+			return m, tea.Println(red.Render("✗ 로그인 실패: " + msg.err.Error()))
+		}
+		wsLine := yellow.Render("⚠  워크스페이스 없음")
+		if m.cfg.WorkspaceName != "" {
+			wsLine = green.Render("✓") + " workspace: " + bold.Render(m.cfg.WorkspaceName)
+		}
+		return m, tea.Println(wsLine)
 	}
 
-	var cmds []tea.Cmd
 	var tiCmd tea.Cmd
 	m.input, tiCmd = m.input.Update(msg)
-	cmds = append(cmds, tiCmd)
-	return m, tea.Batch(cmds...)
+	return m, tiCmd
 }
 
-// dispatch parses a command and returns (output lines, quit, tea.Cmd).
-func (m *model) dispatch(raw string) ([]string, bool, tea.Cmd) {
+// dispatch returns a tea.Cmd for the given input line.
+func (m *model) dispatch(raw string) tea.Cmd {
 	parts := strings.Fields(raw)
-	if len(parts) == 0 {
-		return nil, false, nil
-	}
 	verb := parts[0]
 	args := parts[1:]
 
 	switch verb {
 
 	case "exit", "quit", "q":
-		return nil, true, nil
+		m.quitting = true
+		return tea.Quit
 
 	case "help":
-		m.lines = append(m.lines, m.helpLines()...)
-		return nil, false, nil
+		return tea.Batch(
+			tea.Println(""),
+			tea.Println(blue.Render("  claude")+" [args]         Claude Code 실행"),
+			tea.Println(blue.Render("  login")+"               로그인"),
+			tea.Println(blue.Render("  logout")+"              로그아웃"),
+			tea.Println(blue.Render("  workspace")+"           현재 워크스페이스"),
+			tea.Println(blue.Render("  workspace list")+"      워크스페이스 목록"),
+			tea.Println(blue.Render("  help")+"                도움말"),
+			tea.Println(blue.Render("  exit")+"                종료  (Ctrl+C)"),
+			tea.Println(""),
+		)
 
 	case "claude":
-		m.push(dim.Render("─ claude 세션 시작 ─"))
-		m.sync()
-		return nil, false, tea.ExecProcess(
-			exec.Command("claude", args...),
-			func(err error) tea.Msg { return claudeDoneMsg{err: err} },
+		claudeArgs := args
+		return tea.Sequence(
+			tea.Println(dim.Render("─ claude 세션 시작 ─")),
+			tea.ExecProcess(
+				exec.Command("claude", claudeArgs...),
+				func(err error) tea.Msg { return claudeDoneMsg{err: err} },
+			),
 		)
+
+	case "login":
+		return tea.ExecProcess(
+			exec.Command(os.Args[0], "login"),
+			func(err error) tea.Msg { return loginDoneMsg{err: err} },
+		)
+
+	case "logout":
+		if err := m.ks.Clear(); err != nil {
+			return tea.Println(red.Render("✗ 로그아웃 실패: " + err.Error()))
+		}
+		m.cfg.WorkspaceName = ""
+		m.cfg.WorkspaceID = ""
+		_ = config.Save(m.cfg)
+		return tea.Println(green.Render("✓") + " 로그아웃 완료")
 
 	case "workspace":
 		sub := ""
@@ -201,101 +189,53 @@ func (m *model) dispatch(raw string) ([]string, bool, tea.Cmd) {
 		switch sub {
 		case "", "current":
 			if m.cfg.WorkspaceName != "" {
-				m.push("  " + green.Render("▸") + " " + bold.Render(m.cfg.WorkspaceName) +
-					"  " + dim.Render(m.cfg.WorkspaceID))
-			} else {
-				m.push(yellow.Render("  워크스페이스 없음"))
+				return tea.Println(fmt.Sprintf("  %s %s  %s",
+					green.Render("▸"),
+					bold.Render(m.cfg.WorkspaceName),
+					dim.Render(m.cfg.WorkspaceID),
+				))
 			}
+			return tea.Println(yellow.Render("  워크스페이스 없음"))
 
 		case "list":
 			wsUC := m.wsUC
-			cfg := m.cfg
-			return nil, false, func() tea.Msg {
+			return func() tea.Msg {
 				workspaces, err := wsUC.List()
 				if err != nil {
-					return asyncResultMsg{lines: []string{red.Render("✗ " + err.Error())}}
+					return asyncLinesMsg{lines: []string{red.Render("✗ " + err.Error())}}
 				}
-				lines := []string{}
-				for _, w := range workspaces {
+				lines := make([]string, len(workspaces))
+				for i, w := range workspaces {
 					marker := "  "
-					if w.ID == cfg.WorkspaceID {
+					if w.ID == m.cfg.WorkspaceID {
 						marker = green.Render("▸ ")
 					}
-					lines = append(lines, fmt.Sprintf("%s%s  %s",
-						marker,
-						bold.Render(w.Name),
-						dim.Render("/"+w.Slug),
-					))
+					lines[i] = fmt.Sprintf("%s%s  %s", marker, bold.Render(w.Name), dim.Render("/"+w.Slug))
 				}
-				return asyncResultMsg{lines: lines}
+				return asyncLinesMsg{lines: lines}
 			}
-
-		default:
-			m.push(dim.Render("  workspace [list | current]"))
 		}
-		return nil, false, nil
+		return tea.Println(dim.Render("  workspace [list | current]"))
 
 	default:
-		m.push(red.Render("알 수 없는 명령: "+verb) + "  " + dim.Render("(help)"))
-		return nil, false, nil
-	}
-}
-
-func (m *model) push(line string) {
-	m.lines = append(m.lines, line)
-}
-
-func (m *model) sync() {
-	m.viewport.SetContent(strings.Join(m.lines, "\n"))
-	m.viewport.GotoBottom()
-}
-
-func (m model) helpLines() []string {
-	return []string{
-		"",
-		blue.Render("  claude") + " [args]       Claude Code 실행",
-		blue.Render("  workspace") + "            현재 워크스페이스",
-		blue.Render("  workspace list") + "       워크스페이스 목록",
-		blue.Render("  help") + "                 도움말",
-		blue.Render("  exit") + "                 종료  (Ctrl+C)",
-		"",
+		return tea.Println(red.Render("알 수 없는 명령: "+verb) + "  " + dim.Render("(help)"))
 	}
 }
 
 // ── view ──────────────────────────────────────────────────────────────────────
 
 func (m model) View() string {
-	if !m.ready {
+	if m.quitting {
 		return ""
 	}
-
-	wsLabel := dim.Render("no workspace")
-	if m.cfg.WorkspaceName != "" {
-		wsLabel = dim.Render(m.cfg.WorkspaceName)
-	}
-
-	title := bold.Foreground(lipgloss.Color("#93c5fd")).Render("HUGININ")
-	gap := strings.Repeat(" ", max(0, m.width-lipgloss.Width(title)-lipgloss.Width(wsLabel)-2))
-	header := headerStyle.Width(m.width).Render(title + gap + wsLabel)
-
-	sep := dim.Render(strings.Repeat("─", m.width))
-
-	return lipgloss.JoinVertical(lipgloss.Left,
-		header,
-		m.viewport.View(),
-		sep,
-		m.input.View(),
-	)
+	return m.input.View()
 }
 
 // ── entry ─────────────────────────────────────────────────────────────────────
 
-func StartSession(cfg *config.Config, wsUC *application.WorkspaceUseCase) error {
-	m := newModel(cfg, wsUC)
-	p := tea.NewProgram(m,
-		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
-	)
+func StartSession(cfg *config.Config, wsUC *application.WorkspaceUseCase, ks domain.TokenRepository) error {
+	m := newModel(cfg, wsUC, ks)
+	p := tea.NewProgram(m)
 	_, err := p.Run()
 	return err
 }
