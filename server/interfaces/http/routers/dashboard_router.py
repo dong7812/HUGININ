@@ -485,17 +485,18 @@ async def _synthesize_search(query: str, items, api_key: str | None) -> str:
 
 {records}
 
-위 기록들을 바탕으로 다음을 한국어로 작성하세요 (총 3-5문장):
+위 기록들을 바탕으로 다음을 한국어로 작성하세요 (총 5-8문장):
 1. 검색어와 관련된 결정들의 흐름과 맥락 요약
 2. 시간에 따라 어떻게 발전하거나 반복되었는지
 3. 가장 주목할 만한 결정이나 패턴
+4. 이 맥락에서 주의해야 할 점 또는 미해결 트레이드오프
 
 마크다운 없이 plain text로 작성하세요."""
 
         client = anthropic.AsyncAnthropic(api_key=api_key)
         msg = await client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=400,
+            max_tokens=900,
             messages=[{"role": "user", "content": prompt}],
         )
         return msg.content[0].text.strip()
