@@ -8,14 +8,17 @@ import (
 
 	"huginin/application"
 	httpinfra "huginin/infrastructure/http"
-	"huginin/infrastructure/keystore"
 	"huginin/infrastructure/config"
+	"huginin/infrastructure/keystore"
+	"huginin/interfaces/tui"
 )
 
 var root = &cobra.Command{
 	Use:     "huginin",
 	Short:   "HUGININ — 팀 AI 협업 가시화",
 	Version: "0.1.0",
+	// 서브커맨드 없이 실행하면 TUI 세션 진입
+	SilenceUsage: true,
 }
 
 func init() {
@@ -35,6 +38,10 @@ func Execute() {
 	loginUC := application.NewLoginUseCase(api, ks)
 	wsUC := application.NewWorkspaceUseCase(api, ks)
 	projUC := application.NewProjectUseCase(api, ks)
+
+	root.RunE = func(cmd *cobra.Command, args []string) error {
+		return tui.StartSession(cfg, wsUC)
+	}
 
 	root.AddCommand(newLoginCmd(loginUC, wsUC, cfg))
 	root.AddCommand(newLogoutCmd(ks))
