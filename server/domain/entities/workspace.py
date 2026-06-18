@@ -2,7 +2,7 @@ from __future__ import annotations
 import re
 import secrets
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -37,7 +37,7 @@ class Workspace:
             name=name,
             slug=slug,
             owner_id=owner_id,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
 
 
@@ -71,7 +71,7 @@ class InviteCode:
             role=role,
             created_by=created_by,
             expires_at=(
-                datetime.utcnow() + timedelta(hours=expires_hours)
+                datetime.now(timezone.utc) + timedelta(hours=expires_hours)
                 if expires_hours
                 else None
             ),
@@ -79,7 +79,7 @@ class InviteCode:
         )
 
     def is_expired(self) -> bool:
-        return self.expires_at is not None and datetime.utcnow() > self.expires_at
+        return self.expires_at is not None and datetime.now(timezone.utc) > self.expires_at
 
     def is_used(self) -> bool:
         return self.used_by is not None

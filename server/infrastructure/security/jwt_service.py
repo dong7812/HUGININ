@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from jose import JWTError, jwt
@@ -18,7 +18,7 @@ class JwtService(TokenPort):
     def create_access_token(self, user_id: UUID) -> str:
         payload = {
             "sub": str(user_id),
-            "exp": datetime.utcnow() + timedelta(days=_EXPIRE_DAYS),
+            "exp": datetime.now(timezone.utc) + timedelta(days=_EXPIRE_DAYS),
         }
         return jwt.encode(payload, self._secret, algorithm=_ALGORITHM)
 
@@ -26,7 +26,7 @@ class JwtService(TokenPort):
         """MCP/CLI 자동화용 장기 토큰 (365일)."""
         payload = {
             "sub": str(user_id),
-            "exp": datetime.utcnow() + timedelta(days=_SERVICE_TOKEN_DAYS),
+            "exp": datetime.now(timezone.utc) + timedelta(days=_SERVICE_TOKEN_DAYS),
             "type": "service",
         }
         return jwt.encode(payload, self._secret, algorithm=_ALGORITHM)

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from application.exceptions import AlreadyMemberError, InvalidInviteCodeError
@@ -36,7 +36,7 @@ class JoinWorkspaceUseCase:
             workspace_id=invite.workspace_id,
             user_id=input.user_id,
             role=invite.role,
-            joined_at=datetime.utcnow(),
+            joined_at=datetime.now(timezone.utc),
         )
         await self._workspace_repo.add_member(member)
         await self._workspace_repo.mark_invite_used(input.invite_code, input.user_id)

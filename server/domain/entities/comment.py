@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 
@@ -19,5 +19,5 @@ class DecisionComment:
             event_id=event_id,
             user_id=user_id,
             content=content,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )

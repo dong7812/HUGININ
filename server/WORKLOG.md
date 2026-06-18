@@ -4,3 +4,7 @@
 2026-06-16 22:22 | commit | 1ffd7cd | branch:main | Fix DB ssl: skip ssl for Railway internal network (.railway.internal)
 2026-06-17 02:11 | commit | a746437 | branch:main | Search UX: 네이버 스타일 제안 드롭다운 + Enter로 semantic 검색
 2026-06-17 02:47 | commit | 04512e7 | branch:main | Fix login persistence + search accuracy
+2026-06-17 03:02 | commit | c055705 | branch:main | Smart search: LLM 합성 분석 + 관련 결정 흐름 패널
+2026-06-17 17:11 | commit | 4c21cf6 | branch:main | Fix pm_briefer: format string KeyError on curly braces in decision content
+2026-06-18 10:05 | commit | 3ba7554 | branch:main | Shorten chat replies: 3 sentences max, max_tokens 800→300
+2026-06-18 21:21 | commit | 5672071 | branch:main | Add workspace delete + invite code popup (dashboard & CLI)

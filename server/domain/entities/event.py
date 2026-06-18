@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from uuid import UUID, uuid4
 
@@ -65,7 +65,7 @@ class DecisionEvent:
             raw_response=raw_response,
             diff=diff,
             status=EventStatus.PENDING,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             branch=branch,
             prompt_tokens=est_prompt,
             response_tokens=est_response,

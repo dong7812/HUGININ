@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from domain.entities.workspace import Workspace, WorkspaceMember, WorkspaceRole
@@ -30,7 +30,7 @@ class CreateWorkspaceUseCase:
             workspace_id=workspace.id,
             user_id=input.owner_id,
             role=WorkspaceRole.OWNER,
-            joined_at=datetime.utcnow(),
+            joined_at=datetime.now(timezone.utc),
         )
         await self._workspace_repo.add_member(owner_member)
 

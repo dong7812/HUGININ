@@ -3,7 +3,7 @@ import asyncio
 import hashlib
 import hmac
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Header, HTTPException, Request, status
@@ -93,7 +93,7 @@ async def github_webhook(
         raw_response="",
         diff=None,
         status=EventStatus.PENDING,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         branch=branch,
         prompt_tokens=max(1, len(raw_prompt) // 4),
         response_tokens=0,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 
@@ -22,7 +22,7 @@ class User:
             email=email,
             name=name,
             password_hash=password_hash,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             email_verified=email_verified,
         )
 
@@ -33,7 +33,7 @@ class User:
             email=email,
             name=name,
             password_hash="",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
             email_verified=True,
             google_id=google_id,
         )
