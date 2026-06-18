@@ -37,6 +37,7 @@ func Execute() {
 	projUC := application.NewProjectUseCase(api, ks)
 
 	root.AddCommand(newLoginCmd(loginUC, wsUC, cfg))
+	root.AddCommand(newLogoutCmd(ks))
 	root.AddCommand(newWorkspaceCmd(wsUC, cfg))
 	root.AddCommand(newProjectCmd(projUC))
 	root.AddCommand(newHookCmd())
