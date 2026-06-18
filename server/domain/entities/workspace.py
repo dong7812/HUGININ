@@ -30,7 +30,8 @@ class Workspace:
 
     @staticmethod
     def create(name: str, owner_id: UUID) -> Workspace:
-        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+        base = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "workspace"
+        slug = f"{base}-{secrets.token_hex(4)}"
         return Workspace(
             id=uuid4(),
             name=name,
