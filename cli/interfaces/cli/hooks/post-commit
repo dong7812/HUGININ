@@ -74,7 +74,9 @@ CLAUDE_LOG_DIR="$HOME/.claude/projects"
 PROMPT=""
 RESPONSE=""
 if [ -d "$CLAUDE_LOG_DIR" ]; then
-  LATEST=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -newer "$HUGININ_DIR/session.lock" 2>/dev/null | head -1 || true)
+  # 최근 30분 이내 수정된 가장 최신 JSONL 파일 선택
+  LATEST=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -mmin -30 2>/dev/null \
+    | xargs ls -t 2>/dev/null | head -1 || true)
   if [ -n "$LATEST" ]; then
     PROMPT=$(python3 -c "
 import json, sys
