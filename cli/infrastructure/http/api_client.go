@@ -20,6 +20,9 @@ func New(baseURL string) *Client {
 	return &Client{baseURL: baseURL, httpClient: &http.Client{}}
 }
 
+// ErrDuplicate is returned when the server responds with 409 (already collected).
+var ErrDuplicate = fmt.Errorf("duplicate")
+
 func (c *Client) post(path, token string, body any) (map[string]any, error) {
 	b, _ := json.Marshal(body)
 	req, err := http.NewRequest(http.MethodPost, c.baseURL+path, bytes.NewReader(b))
@@ -36,6 +39,9 @@ func (c *Client) post(path, token string, body any) (map[string]any, error) {
 	}
 	defer resp.Body.Close()
 	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode == 409 {
+		return nil, ErrDuplicate
+	}
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("server error %d: %s", resp.StatusCode, string(data))
 	}

@@ -33,6 +33,7 @@ var (
 type claudeDoneMsg struct{ err error }
 type loginDoneMsg struct{ err error }
 type setupDoneMsg struct{ err error }
+type backfillDoneMsg struct{ err error }
 type asyncLinesMsg struct{ lines []string }
 
 // ── model ─────────────────────────────────────────────────────────────────────
@@ -134,6 +135,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Println(red.Render("✗ setup 실패: " + msg.err.Error()))
 		}
 		return m, tea.Println(green.Render("✓") + " setup 완료 — " + dim.Render("claude를 입력해 시작하세요"))
+
+	case backfillDoneMsg:
+		if msg.err != nil {
+			return m, tea.Println(red.Render("✗ backfill 실패: " + msg.err.Error()))
+		}
+		return m, nil
 	}
 
 	var tiCmd tea.Cmd
@@ -158,6 +165,7 @@ func (m *model) dispatch(raw string) tea.Cmd {
 			tea.Println(""),
 			tea.Println(blue.Render("  login")+"               로그인 + 워크스페이스 선택"),
 			tea.Println(blue.Render("  setup")+"               현재 repo 연결 + hook 설치"),
+			tea.Println(blue.Render("  backfill")+"            누락 커밋 소급 수집 (--count N, --since YYYY-MM-DD)"),
 			tea.Println(blue.Render("  claude")+" [args]        Claude Code 실행"),
 			tea.Println(blue.Render("  workspace")+"           현재 워크스페이스"),
 			tea.Println(blue.Render("  workspace list")+"      워크스페이스 목록"),
@@ -186,6 +194,13 @@ func (m *model) dispatch(raw string) tea.Cmd {
 		return tea.ExecProcess(
 			exec.Command(os.Args[0], "setup"),
 			func(err error) tea.Msg { return setupDoneMsg{err: err} },
+		)
+
+	case "backfill":
+		backfillArgs := append([]string{"backfill"}, args...)
+		return tea.ExecProcess(
+			exec.Command(os.Args[0], backfillArgs...),
+			func(err error) tea.Msg { return backfillDoneMsg{err: err} },
 		)
 
 	case "logout":
