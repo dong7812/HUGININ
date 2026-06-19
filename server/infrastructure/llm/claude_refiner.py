@@ -65,18 +65,32 @@ IMPORTANT:
 """
 
 
-def _no_session_result(prompt: str) -> dict:
-    """AI 세션 없는 커밋 → Frame A (human-led), ai_contribution 0."""
-    commit_msg = prompt.removeprefix("[git commit] ")[:200]
-    return {
-        "frame": "A",
-        "ai_contribution": 0.0,
-        "decision_type": "other",
-        "what_was_built": commit_msg,
-        "problem_solved": "",
-        "ai_role": "AI 세션 없음 — 개발자가 직접 작업",
-        "tradeoffs": None,
-    }
+_DIFF_ONLY_TEMPLATE = """\
+## Developer: {user_name}
+
+## Commit message:
+{commit_msg}
+
+## Code diff:
+{diff}
+
+This commit was made without a detected AI session — the developer worked independently.
+Analyze WHAT was built and WHY based solely on the commit message and diff.
+
+Extract and return as JSON:
+
+{{
+  "frame": "A",
+  "ai_contribution": 0.0,
+  "decision_type": "feature" | "bugfix" | "refactor" | "config" | "docs" | "test" | "other",
+  "what_was_built": "<구체적 기술 결과물. 커밋 메시지 그대로 복사 금지 — diff 기반으로 실제 변경 내용을 기술. 1-2문장>",
+  "problem_solved": "<이 변경이 해결한 문제나 필요성. 1문장>",
+  "ai_role": "AI 세션 없음 — {user_name}이 직접 작업",
+  "tradeoffs": null
+}}
+
+Write in Korean. Do not copy the commit message verbatim into what_was_built.
+"""
 
 
 async def refine_event(
@@ -88,7 +102,48 @@ async def refine_event(
 ) -> dict | None:
     """Claude Haiku로 이벤트 분석. 실패 시 None 반환."""
     if "[no AI session detected]" in response:
-        return _no_session_result(prompt)
+        # diff가 있으면 diff 기반 분석, 없으면 최소 메타데이터만
+        if api_key and diff and diff.strip() and diff.strip() != "N/A":
+            try:
+                import anthropic
+                commit_msg = prompt.removeprefix("[git commit] ")[:300]
+                client = anthropic.AsyncAnthropic(api_key=api_key)
+                msg = await client.messages.create(
+                    model="claude-haiku-4-5-20251001",
+                    max_tokens=800,
+                    system=_SYSTEM,
+                    messages=[{
+                        "role": "user",
+                        "content": _DIFF_ONLY_TEMPLATE.format(
+                            user_name=user_name or "개발자",
+                            commit_msg=commit_msg,
+                            diff=diff[:800],
+                        ),
+                    }],
+                )
+                raw = msg.content[0].text.strip()
+                if raw.startswith("```"):
+                    raw = raw.split("```")[1]
+                    if raw.startswith("json"):
+                        raw = raw[4:]
+                result = json.loads(raw)
+                # frame/ai_contribution 강제 고정
+                result["frame"] = "A"
+                result["ai_contribution"] = 0.0
+                return result
+            except Exception as exc:
+                logger.warning("diff-only refine failed: %s", exc)
+        # diff도 없으면 최소 결과
+        commit_msg = prompt.removeprefix("[git commit] ")[:200]
+        return {
+            "frame": "A",
+            "ai_contribution": 0.0,
+            "decision_type": "other",
+            "what_was_built": commit_msg,
+            "problem_solved": "",
+            "ai_role": f"AI 세션 없음 — {user_name or '개발자'}이 직접 작업",
+            "tradeoffs": None,
+        }
     try:
         import anthropic
 
