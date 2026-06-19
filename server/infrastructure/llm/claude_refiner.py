@@ -102,12 +102,7 @@ async def refine_event(
         if not raw.endswith("}"):
             last_brace = raw.rfind("}")
             raw = raw[:last_brace + 1] if last_brace != -1 else raw + "}"
-        result = json.loads(raw)
-        # no-session 커밋은 Claude가 frame을 잘못 추론할 수 있음 → 강제 보정
-        if "[no AI session detected]" in response:
-            result["frame"] = "A"
-            result["ai_contribution"] = 0.0
-        return result
+        return json.loads(raw)
     except Exception as exc:
         logger.warning("refine_event failed: %s", exc)
         return None

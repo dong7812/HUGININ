@@ -152,22 +152,15 @@ async def lifespan(app: FastAPI):
     if settings.anthropic_api_key:
         import asyncio
         if os.getenv("FORCE_REREFINE") == "1":
-            count = await db.pool.fetchval("SELECT COUNT(*) FROM decision_events")
             await db.pool.execute(
                 """
                 UPDATE decision_events
-                SET what_was_built = NULL,
-                    problem_solved = NULL,
-                    ai_role        = NULL,
-                    frame          = NULL,
-                    ai_contribution = NULL,
-                    decision_summary = NULL,
-                    decision_type  = NULL,
-                    tradeoffs      = NULL,
-                    status         = 'pending'
+                SET what_was_built = NULL, problem_solved = NULL, ai_role = NULL,
+                    frame = NULL, ai_contribution = NULL, decision_summary = NULL,
+                    decision_type = NULL, tradeoffs = NULL, status = 'pending'
                 """
             )
-            logger.info("FORCE_REREFINE: reset ETL fields for %d events", count)
+            print("[FORCE_REREFINE] all ETL fields cleared — re-refine starting", flush=True)
         asyncio.create_task(_backfill_refinement(event_repo, settings.anthropic_api_key))
     asyncio.create_task(_backfill_embeddings(event_repo))
 
@@ -217,10 +210,7 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
             SELECT e.id, e.raw_prompt, e.raw_response, e.diff, u.name AS user_name
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
-            WHERE e.what_was_built IS NULL
-               OR e.frame IS NULL
-               OR e.status != 'refined'
-               OR (e.raw_response LIKE '%no AI session detected%' AND e.frame != 'A')
+            WHERE e.what_was_built IS NULL OR e.tradeoffs IS NULL
             ORDER BY e.created_at DESC
             """
         )
