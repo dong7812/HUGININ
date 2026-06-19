@@ -1,5 +1,6 @@
 import asyncio
 from dataclasses import dataclass
+from datetime import datetime
 from uuid import UUID
 
 from application.exceptions import DuplicateEventError, NotFoundError, PermissionDeniedError
@@ -26,6 +27,7 @@ class CollectEventInput:
     branch: str | None = None
     prompt_tokens: int | None = None
     response_tokens: int | None = None
+    committed_at: datetime | None = None
 
 
 @dataclass
@@ -84,6 +86,7 @@ class CollectEventUseCase:
             branch=input.branch,
             prompt_tokens=input.prompt_tokens,
             response_tokens=input.response_tokens,
+            committed_at=input.committed_at,
         )
         await self._event_repo.save(event)
         await self._queue_port.publish_event(event.id, input.workspace_id)

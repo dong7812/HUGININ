@@ -47,6 +47,22 @@ class PgEventRepository(EventRepository):
         )
         return [r["commit_hash"] for r in rows]
 
+    async def fix_commit_timestamps(self, workspace_id: UUID, timestamps: dict) -> int:
+        updated = 0
+        async with self._pool.acquire() as conn:
+            for commit_hash, ts in timestamps.items():
+                result = await conn.execute(
+                    """
+                    UPDATE decision_events
+                    SET created_at = $1
+                    WHERE workspace_id = $2 AND commit_hash = $3
+                    """,
+                    ts, workspace_id, commit_hash,
+                )
+                if result and result.split()[-1] != "0":
+                    updated += 1
+        return updated
+
     async def find_by_commit_hash(self, commit_hash: str, workspace_id: UUID | None = None) -> DecisionEvent | None:
         if workspace_id:
             row = await self._pool.fetchrow(

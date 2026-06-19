@@ -30,12 +30,12 @@ func (uc *ProjectUseCase) Link(workspaceID, name, gitRemote string) (string, err
 	return uc.api.LinkProject(t, workspaceID, name, gitRemote)
 }
 
-func (uc *ProjectUseCase) CollectEvent(workspaceID, projectID, commitHash, prompt, response, diff, branch string) (string, error) {
+func (uc *ProjectUseCase) CollectEvent(workspaceID, projectID, commitHash, prompt, response, diff, branch, committedAt string) (string, error) {
 	t, err := uc.token()
 	if err != nil {
 		return "", err
 	}
-	return uc.api.CollectEvent(t, workspaceID, projectID, commitHash, prompt, response, diff, branch)
+	return uc.api.CollectEvent(t, workspaceID, projectID, commitHash, prompt, response, diff, branch, committedAt)
 }
 
 func (uc *ProjectUseCase) GetCommitHashes(workspaceID string) ([]string, error) {
@@ -44,4 +44,12 @@ func (uc *ProjectUseCase) GetCommitHashes(workspaceID string) ([]string, error) 
 		return nil, err
 	}
 	return uc.api.GetCommitHashes(t, workspaceID)
+}
+
+func (uc *ProjectUseCase) FixCommitTimestamps(workspaceID string, timestamps map[string]string) (int, error) {
+	t, err := uc.token()
+	if err != nil {
+		return 0, err
+	}
+	return uc.api.FixCommitTimestamps(t, workspaceID, timestamps)
 }

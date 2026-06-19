@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
@@ -184,6 +184,25 @@ async def list_commit_hashes(
 ):
     hashes = await request.app.state.event_repo.list_commit_hashes(workspace_id)
     return {"hashes": hashes}
+
+
+class FixTimestampsRequest(BaseModel):
+    timestamps: dict[str, datetime]
+
+
+@router.patch("/{workspace_id}/fix-commit-timestamps")
+async def fix_commit_timestamps(
+    workspace_id: UUID,
+    body: FixTimestampsRequest,
+    request: Request,
+    user_id: UUID = Depends(get_current_user_id),
+):
+    aware = {
+        h: ts.replace(tzinfo=timezone.utc) if ts.tzinfo is None else ts
+        for h, ts in body.timestamps.items()
+    }
+    updated = await request.app.state.event_repo.fix_commit_timestamps(workspace_id, aware)
+    return {"updated": updated}
 
 
 @router.get("/{workspace_id}/token-stats", response_model=TokenStatsResponse)

@@ -50,6 +50,30 @@ func (c *Client) post(path, token string, body any) (map[string]any, error) {
 	return result, nil
 }
 
+func (c *Client) patch(path, token string, body any) (map[string]any, error) {
+	b, _ := json.Marshal(body)
+	req, err := http.NewRequest(http.MethodPatch, c.baseURL+path, bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("server error %d: %s", resp.StatusCode, string(data))
+	}
+	var result map[string]any
+	json.Unmarshal(data, &result)
+	return result, nil
+}
+
 func (c *Client) get(path, token string) ([]map[string]any, error) {
 	req, err := http.NewRequest(http.MethodGet, c.baseURL+path, nil)
 	if err != nil {
@@ -244,7 +268,7 @@ func (c *Client) GetCommitHashes(token, workspaceID string) ([]string, error) {
 	return result.Hashes, nil
 }
 
-func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch string) (string, error) {
+func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch, committedAt string) (string, error) {
 	body := map[string]any{
 		"workspace_id": workspaceID,
 		"raw_prompt":   prompt,
@@ -262,9 +286,27 @@ func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt,
 	if branch != "" {
 		body["branch"] = branch
 	}
+	if committedAt != "" {
+		body["committed_at"] = committedAt
+	}
 	r, err := c.post("/collect/event", token, body)
 	if err != nil {
 		return "", err
 	}
 	return r["event_id"].(string), nil
+}
+
+func (c *Client) FixCommitTimestamps(token, workspaceID string, timestamps map[string]string) (int, error) {
+	body := map[string]any{"timestamps": timestamps}
+	r, err := c.patch("/dashboard/"+workspaceID+"/fix-commit-timestamps", token, body)
+	if err != nil {
+		return 0, err
+	}
+	updated := 0
+	if v, ok := r["updated"]; ok {
+		if f, ok := v.(float64); ok {
+			updated = int(f)
+		}
+	}
+	return updated, nil
 }

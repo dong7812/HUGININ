@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from uuid import UUID
 
 from domain.entities.event import DecisionEvent, EventStatus
@@ -21,6 +22,9 @@ class EventRepository(ABC):
 
     @abstractmethod
     async def list_commit_hashes(self, workspace_id: UUID) -> list[str]: ...
+
+    @abstractmethod
+    async def fix_commit_timestamps(self, workspace_id: UUID, timestamps: dict[str, datetime]) -> int: ...
 
     @abstractmethod
     async def update_status(self, id: UUID, status: EventStatus) -> None: ...

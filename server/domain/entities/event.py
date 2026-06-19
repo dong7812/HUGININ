@@ -51,6 +51,7 @@ class DecisionEvent:
         branch: str | None = None,
         prompt_tokens: int | None = None,
         response_tokens: int | None = None,
+        committed_at: datetime | None = None,
     ) -> DecisionEvent:
         # 토큰 수 미제공 시 텍스트 길이로 추정 (chars / 4)
         est_prompt = prompt_tokens if prompt_tokens is not None else max(1, len(raw_prompt) // 4)
@@ -65,7 +66,7 @@ class DecisionEvent:
             raw_response=raw_response,
             diff=diff,
             status=EventStatus.PENDING,
-            created_at=datetime.now(timezone.utc),
+            created_at=committed_at if committed_at is not None else datetime.now(timezone.utc),
             branch=branch,
             prompt_tokens=est_prompt,
             response_tokens=est_response,

@@ -39,6 +39,7 @@ async def collect_event(
                 branch=body.branch,
                 prompt_tokens=body.prompt_tokens,
                 response_tokens=body.response_tokens,
+                committed_at=body.committed_at,
             )
         )
     except DuplicateEventError:

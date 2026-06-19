@@ -19,8 +19,9 @@ type APIClient interface {
 	ChangeRole(token, workspaceID, targetUserID, newRole string) error
 	DeleteWorkspace(token, workspaceID string) error
 	LinkProject(token, workspaceID, name, gitRemote string) (id string, err error)
-	CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch string) (eventID string, err error)
+	CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch, committedAt string) (eventID string, err error)
 	GetCommitHashes(token, workspaceID string) ([]string, error)
+	FixCommitTimestamps(token, workspaceID string, timestamps map[string]string) (int, error)
 	CreateServiceToken(token string) (serviceToken string, err error)
 	CreateCLISession() (sessionID, authURL string, err error)
 	PollCLISession(sessionID string) (status, token, userID string, err error)

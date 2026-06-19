@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -15,6 +16,7 @@ class CollectEventRequest(BaseModel):
     branch: str | None = None
     prompt_tokens: int | None = None
     response_tokens: int | None = None
+    committed_at: datetime | None = None
 
 
 class CollectEventResponse(BaseModel):

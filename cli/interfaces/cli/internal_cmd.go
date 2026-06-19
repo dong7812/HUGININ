@@ -55,7 +55,7 @@ func newInternalCmds(projUC *application.ProjectUseCase, ks interface {
 				}
 			}
 
-			eventID, err := projUC.CollectEvent(wsID, projID, commitHash, prompt, response, diff, branch)
+			eventID, err := projUC.CollectEvent(wsID, projID, commitHash, prompt, response, diff, branch, "")
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "[huginin] collect error: %v\n", err)
 				return nil // 훅 실패가 커밋을 막으면 안 됨

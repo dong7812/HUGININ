@@ -96,7 +96,8 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 					response = "[no AI session detected]"
 				}
 
-				_, err := projUC.CollectEvent(wsID, projID, c.hash, prompt, response, diff, c.branch)
+				committedAt := c.ts.UTC().Format(time.RFC3339)
+				_, err := projUC.CollectEvent(wsID, projID, c.hash, prompt, response, diff, c.branch, committedAt)
 				msg := firstLine(c.msg)
 				if len(msg) > 50 {
 					msg = msg[:50] + "…"
@@ -111,6 +112,19 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 			}
 
 			fmt.Printf("\n완료: ✓ %d 수집  ✗ %d 실패\n", ok, failed)
+
+			// 이미 서버에 있는 커밋들 타임스탬프 보정
+			fmt.Print("기존 기록 타임스탬프 보정 중... ")
+			timestamps := make(map[string]string, len(commits))
+			for _, c := range commits {
+				timestamps[c.hash] = c.ts.UTC().Format(time.RFC3339)
+			}
+			if n, err := projUC.FixCommitTimestamps(wsID, timestamps); err != nil {
+				fmt.Printf("⚠ %v\n", err)
+			} else {
+				fmt.Printf("%d개 보정됨\n", n)
+			}
+
 			return nil
 		},
 	}
