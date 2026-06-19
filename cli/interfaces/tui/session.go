@@ -170,6 +170,7 @@ func (m *model) dispatch(raw string) tea.Cmd {
 			tea.Println(blue.Render("  workspace")+"           현재 워크스페이스"),
 			tea.Println(blue.Render("  workspace list")+"      워크스페이스 목록"),
 			tea.Println(blue.Render("  logout")+"              로그아웃"),
+			tea.Println(blue.Render("  uninstall")+"          huginin 바이너리 삭제"),
 			tea.Println(blue.Render("  exit")+"                종료  (Ctrl+C)"),
 			tea.Println(""),
 		)
@@ -211,6 +212,22 @@ func (m *model) dispatch(raw string) tea.Cmd {
 		m.cfg.WorkspaceID = ""
 		_ = config.Save(m.cfg)
 		return tea.Println(green.Render("✓") + " 로그아웃 완료")
+
+	case "uninstall":
+		binary := os.Args[0]
+		return tea.Sequence(
+			tea.Println(yellow.Render("huginin을 삭제합니다: ")+binary),
+			tea.Println(dim.Render("sudo rm "+binary)),
+			tea.ExecProcess(
+				exec.Command("sudo", "rm", binary),
+				func(err error) tea.Msg {
+					if err != nil {
+						return asyncLinesMsg{lines: []string{red.Render("✗ 삭제 실패: " + err.Error())}}
+					}
+					return asyncLinesMsg{lines: []string{green.Render("✓ huginin 삭제 완료")}}
+				},
+			),
+		)
 
 	case "workspace":
 		sub := ""
