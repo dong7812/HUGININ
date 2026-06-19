@@ -62,7 +62,7 @@ export function OverviewCards({ workspaceId, selectedRange, onSelectRange }: Pro
 
       <div className="flex flex-col items-start px-5 py-4 rounded-2xl border border-neutral-200 bg-white">
         <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 mb-1">프로젝트</span>
-        <span className="text-2xl font-bold font-mono leading-none text-neutral-900">{data?.projectCount ?? "—"}</span>
+        <span className="text-2xl font-bold font-mono leading-none text-neutral-900">{data?.projectCount != null ? Math.min(data.projectCount, 1) : "—"}</span>
         <span className="text-[10px] text-neutral-400 mt-1">repos</span>
       </div>
     </div>
