@@ -1,4 +1,4 @@
-"""Composition Root — 모든 의존성을 조립하는 진입점."""
+"""Composition Root — 모든 의존성을 조립하는 진입점. build:2026-06-19"""
 import logging
 import os
 from contextlib import asynccontextmanager
