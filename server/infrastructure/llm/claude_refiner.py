@@ -65,6 +65,20 @@ IMPORTANT:
 """
 
 
+def _no_session_result(prompt: str) -> dict:
+    """AI 세션 없는 커밋 → Frame A (human-led), ai_contribution 0."""
+    commit_msg = prompt.removeprefix("[git commit] ")[:200]
+    return {
+        "frame": "A",
+        "ai_contribution": 0.0,
+        "decision_type": "other",
+        "what_was_built": commit_msg,
+        "problem_solved": "",
+        "ai_role": "AI 세션 없음 — 개발자가 직접 작업",
+        "tradeoffs": None,
+    }
+
+
 async def refine_event(
     prompt: str,
     response: str,
@@ -73,6 +87,8 @@ async def refine_event(
     user_name: str = "",
 ) -> dict | None:
     """Claude Haiku로 이벤트 분석. 실패 시 None 반환."""
+    if "[no AI session detected]" in response:
+        return _no_session_result(prompt)
     try:
         import anthropic
 

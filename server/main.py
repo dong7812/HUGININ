@@ -200,7 +200,9 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
             SELECT e.id, e.raw_prompt, e.raw_response, e.diff, u.name AS user_name
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
-            WHERE e.what_was_built IS NULL OR e.tradeoffs IS NULL
+            WHERE e.what_was_built IS NULL
+               OR e.tradeoffs IS NULL
+               OR (e.raw_response LIKE '%no AI session detected%' AND e.frame != 'A')
             ORDER BY e.created_at DESC
             """
         )
