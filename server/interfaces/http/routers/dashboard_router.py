@@ -176,6 +176,16 @@ async def list_branches(
     return {"branches": branches}
 
 
+@router.get("/{workspace_id}/commit-hashes")
+async def list_commit_hashes(
+    workspace_id: UUID,
+    request: Request,
+    user_id: UUID = Depends(get_current_user_id),
+):
+    hashes = await request.app.state.event_repo.list_commit_hashes(workspace_id)
+    return {"hashes": hashes}
+
+
 @router.get("/{workspace_id}/token-stats", response_model=TokenStatsResponse)
 async def get_token_stats(
     workspace_id: UUID,

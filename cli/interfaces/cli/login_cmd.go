@@ -87,6 +87,10 @@ func browserLogin(uc *application.LoginUseCase, wsUC *application.WorkspaceUseCa
 				if err := uc.SaveToken(token, userID); err != nil {
 					return fmt.Errorf("토큰 저장 실패: %w", err)
 				}
+				// cfg 재로드: workspace picker가 Save 시 token을 덮어쓰는 버그 방지
+				if newCfg, err := config.Load(); err == nil {
+					*cfg = *newCfg
+				}
 				fmt.Println("✓ 로그인 완료")
 				fmt.Println()
 				if err := runWorkspacePicker(wsUC, cfg); err != nil {
@@ -118,6 +122,9 @@ func passwordLogin(cmd *cobra.Command, uc *application.LoginUseCase, wsUC *appli
 
 	if err := uc.Login(email, password); err != nil {
 		return fmt.Errorf("login failed: %w", err)
+	}
+	if newCfg, err := config.Load(); err == nil {
+		*cfg = *newCfg
 	}
 	fmt.Println("✓ 로그인 완료")
 	fmt.Println()

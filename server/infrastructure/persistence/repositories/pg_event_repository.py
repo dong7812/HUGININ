@@ -36,6 +36,17 @@ class PgEventRepository(EventRepository):
         )
         return self._to_entity(row) if row else None
 
+    async def list_commit_hashes(self, workspace_id: UUID) -> list[str]:
+        rows = await self._pool.fetch(
+            """
+            SELECT commit_hash FROM decision_events
+            WHERE workspace_id = $1 AND commit_hash IS NOT NULL AND commit_hash != ''
+            ORDER BY created_at DESC
+            """,
+            workspace_id,
+        )
+        return [r["commit_hash"] for r in rows]
+
     async def find_by_commit_hash(self, commit_hash: str, workspace_id: UUID | None = None) -> DecisionEvent | None:
         if workspace_id:
             row = await self._pool.fetchrow(

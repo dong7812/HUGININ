@@ -37,3 +37,11 @@ func (uc *ProjectUseCase) CollectEvent(workspaceID, projectID, commitHash, promp
 	}
 	return uc.api.CollectEvent(t, workspaceID, projectID, commitHash, prompt, response, diff, branch)
 }
+
+func (uc *ProjectUseCase) GetCommitHashes(workspaceID string) ([]string, error) {
+	t, err := uc.token()
+	if err != nil {
+		return nil, err
+	}
+	return uc.api.GetCommitHashes(t, workspaceID)
+}

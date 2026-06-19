@@ -221,6 +221,29 @@ func (c *Client) PollCLISession(sessionID string) (string, string, string, error
 	return status, tok, userID, nil
 }
 
+func (c *Client) GetCommitHashes(token, workspaceID string) ([]string, error) {
+	req, err := http.NewRequest(http.MethodGet,
+		c.baseURL+"/dashboard/"+workspaceID+"/commit-hashes", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("server error %d: %s", resp.StatusCode, string(data))
+	}
+	var result struct {
+		Hashes []string `json:"hashes"`
+	}
+	json.Unmarshal(data, &result)
+	return result.Hashes, nil
+}
+
 func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch string) (string, error) {
 	body := map[string]any{
 		"workspace_id": workspaceID,

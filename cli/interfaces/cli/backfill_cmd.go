@@ -3,7 +3,6 @@ package cli
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -15,7 +14,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"huginin/application"
-	httpinfra "huginin/infrastructure/http"
 )
 
 func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
@@ -24,26 +22,71 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "backfill",
-		Short: "로그인 전 누락된 커밋을 소급 수집",
+		Short: "서버에 없는 누락 커밋만 소급 수집",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			wsID, projID, err := loadProjectsJSON(".")
 			if err != nil {
 				return fmt.Errorf("프로젝트 미연결 — 먼저 huginin setup을 실행하세요")
 			}
 
+			// 1. 서버에 이미 있는 commit hash 목록 조회
+			fmt.Print("서버에서 수집된 커밋 목록 조회 중... ")
+			serverHashes, err := projUC.GetCommitHashes(wsID)
+			if err != nil {
+				return fmt.Errorf("서버 조회 실패: %w", err)
+			}
+			known := make(map[string]bool, len(serverHashes))
+			for _, h := range serverHashes {
+				known[h] = true
+				// 8자 prefix도 등록 (git log short hash 매칭용)
+				if len(h) >= 8 {
+					known[h[:8]] = true
+				}
+			}
+			fmt.Printf("%d개 확인\n", len(serverHashes))
+
+			// 2. 로컬 git log
 			commits, err := gitLog(count, since)
 			if err != nil {
 				return fmt.Errorf("git log 실패: %w", err)
 			}
-			if len(commits) == 0 {
-				fmt.Println("커밋 없음")
+
+			// 3. 누락 커밋 필터링
+			var missing []commitInfo
+			for _, c := range commits {
+				if !known[c.hash] && !known[c.hash[:min(8, len(c.hash))]] {
+					missing = append(missing, c)
+				}
+			}
+
+			if len(missing) == 0 {
+				fmt.Printf("\n모든 커밋이 서버에 있습니다 (로컬 %d개 확인)\n", len(commits))
 				return nil
 			}
 
-			fmt.Printf("총 %d개 커밋 확인 중...\n\n", len(commits))
-			ok, skipped, failed := 0, 0, 0
-
+			// 마지막으로 수집된 커밋 표시
 			for _, c := range commits {
+				if known[c.hash] || known[c.hash[:min(8, len(c.hash))]] {
+					fmt.Printf("서버 기준 마지막 수집: %s  %s\n", c.hash[:8], firstLine(c.msg))
+					break
+				}
+			}
+
+			fmt.Printf("누락 커밋 %d개 발견 (branch: %s):\n", len(missing), missing[0].branch)
+			for _, c := range missing {
+				msg := firstLine(c.msg)
+				if len(msg) > 60 {
+					msg = msg[:60] + "…"
+				}
+				fmt.Printf("  → %s  %s\n", c.hash[:8], msg)
+			}
+			fmt.Println()
+			fmt.Println("업로드 중...")
+
+			ok, failed := 0, 0
+			// 오래된 것부터 (역순)
+			for i := len(missing) - 1; i >= 0; i-- {
+				c := missing[i]
 				diff := gitDiff(c.hash)
 				prompt, response := findClaudeSession(c.ts)
 				if prompt == "" {
@@ -54,33 +97,34 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 				}
 
 				_, err := projUC.CollectEvent(wsID, projID, c.hash, prompt, response, diff, c.branch)
-				short := c.hash[:8]
 				msg := firstLine(c.msg)
 				if len(msg) > 50 {
 					msg = msg[:50] + "…"
 				}
-
-				switch {
-				case err == nil:
-					fmt.Printf("  ✓ %s  %s\n", short, msg)
-					ok++
-				case errors.Is(err, httpinfra.ErrDuplicate):
-					fmt.Printf("  · %s  %s (already collected)\n", short, msg)
-					skipped++
-				default:
-					fmt.Printf("  ✗ %s  %s — %v\n", short, msg, err)
+				if err != nil {
+					fmt.Printf("  ✗ %s  %s — %v\n", c.hash[:8], msg, err)
 					failed++
+				} else {
+					fmt.Printf("  ✓ %s  %s\n", c.hash[:8], msg)
+					ok++
 				}
 			}
 
-			fmt.Printf("\n완료: ✓ %d 수집  · %d 중복 스킵  ✗ %d 실패\n", ok, skipped, failed)
+			fmt.Printf("\n완료: ✓ %d 수집  ✗ %d 실패\n", ok, failed)
 			return nil
 		},
 	}
 
-	cmd.Flags().IntVarP(&count, "count", "n", 50, "소급할 최대 커밋 수")
+	cmd.Flags().IntVarP(&count, "count", "n", 100, "비교할 최대 로컬 커밋 수")
 	cmd.Flags().StringVar(&since, "since", "", "이 날짜 이후 커밋만 (YYYY-MM-DD)")
 	return cmd
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // ── git helpers ────────────────────────────────────────────────────────────
@@ -132,7 +176,6 @@ func gitLog(n int, since string) ([]commitInfo, error) {
 func gitDiff(hash string) string {
 	out, err := exec.Command("git", "diff", hash+"~1", hash, "--stat").Output()
 	if err != nil {
-		// 최초 커밋은 parent가 없음
 		out, _ = exec.Command("git", "show", "--stat", hash).Output()
 	}
 	lines := strings.Split(string(out), "\n")
@@ -215,12 +258,10 @@ func parseJSONL(path string) (prompt, response string) {
 		if raw == nil {
 			return ""
 		}
-		// try string
 		var s string
 		if json.Unmarshal(raw, &s) == nil {
 			return truncate(s, 2000)
 		}
-		// try array of blocks
 		var blocks []contentBlock
 		if json.Unmarshal(raw, &blocks) == nil {
 			for _, b := range blocks {

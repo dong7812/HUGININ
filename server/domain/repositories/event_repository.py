@@ -20,6 +20,9 @@ class EventRepository(ABC):
     ) -> list[DecisionEvent]: ...
 
     @abstractmethod
+    async def list_commit_hashes(self, workspace_id: UUID) -> list[str]: ...
+
+    @abstractmethod
     async def update_status(self, id: UUID, status: EventStatus) -> None: ...
 
     @abstractmethod
