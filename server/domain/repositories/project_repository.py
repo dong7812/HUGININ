@@ -12,6 +12,9 @@ class ProjectRepository(ABC):
     async def find_by_id(self, id: UUID) -> Project | None: ...
 
     @abstractmethod
+    async def find_by_name(self, workspace_id: UUID, name: str) -> Project | None: ...
+
+    @abstractmethod
     async def find_by_workspace(self, workspace_id: UUID) -> list[Project]: ...
 
     @abstractmethod

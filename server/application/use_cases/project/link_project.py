@@ -38,6 +38,14 @@ class LinkProjectUseCase:
         if member.role == WorkspaceRole.GUEST:
             raise PermissionDeniedError("Guests cannot create projects")
 
+        # workspace당 프로젝트는 하나 — 이미 있으면 그대로 반환 (git_remote만 업데이트)
+        existing = await self._project_repo.find_by_workspace(input.workspace_id)
+        if existing:
+            project = existing[0]
+            if input.git_remote and project.git_remote != input.git_remote:
+                await self._project_repo.update_git_remote(project.id, input.git_remote)
+            return LinkProjectOutput(project_id=str(project.id), name=project.name)
+
         project = Project.create(input.workspace_id, input.name, input.git_remote)
         await self._project_repo.save(project)
 
