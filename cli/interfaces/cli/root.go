@@ -14,10 +14,9 @@ import (
 )
 
 var root = &cobra.Command{
-	Use:     "huginin",
-	Short:   "HUGININ — 팀 AI 협업 가시화",
-	Version: "0.1.0",
-	// 서브커맨드 없이 실행하면 TUI 세션 진입
+	Use:          "huginin",
+	Short:        "HUGININ — 팀 AI 협업 가시화",
+	Version:      "0.1.0",
 	SilenceUsage: true,
 }
 
@@ -39,6 +38,7 @@ func Execute() {
 	wsUC := application.NewWorkspaceUseCase(api, ks)
 	projUC := application.NewProjectUseCase(api, ks)
 
+	// huginin 단독 실행 → TUI 세션 진입
 	root.RunE = func(cmd *cobra.Command, args []string) error {
 		return tui.StartSession(cfg, wsUC, ks)
 	}
@@ -47,7 +47,8 @@ func Execute() {
 	root.AddCommand(newLogoutCmd(ks))
 	root.AddCommand(newWorkspaceCmd(wsUC, cfg))
 	root.AddCommand(newProjectCmd(projUC))
-	root.AddCommand(newHookCmd())
+	root.AddCommand(newSetupCmd(wsUC, projUC, ks, cfg))
+	root.AddCommand(newHookCmd(wsUC, projUC, ks, cfg))
 	for _, cmd := range newInternalCmds(projUC, ks) {
 		root.AddCommand(cmd)
 	}

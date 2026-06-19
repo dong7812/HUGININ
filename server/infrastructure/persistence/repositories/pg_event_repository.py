@@ -36,10 +36,16 @@ class PgEventRepository(EventRepository):
         )
         return self._to_entity(row) if row else None
 
-    async def find_by_commit_hash(self, commit_hash: str) -> DecisionEvent | None:
-        row = await self._pool.fetchrow(
-            "SELECT * FROM decision_events WHERE commit_hash = $1", commit_hash
-        )
+    async def find_by_commit_hash(self, commit_hash: str, workspace_id: UUID | None = None) -> DecisionEvent | None:
+        if workspace_id:
+            row = await self._pool.fetchrow(
+                "SELECT * FROM decision_events WHERE commit_hash = $1 AND workspace_id = $2",
+                commit_hash, workspace_id,
+            )
+        else:
+            row = await self._pool.fetchrow(
+                "SELECT * FROM decision_events WHERE commit_hash = $1", commit_hash
+            )
         return self._to_entity(row) if row else None
 
     async def find_similar(

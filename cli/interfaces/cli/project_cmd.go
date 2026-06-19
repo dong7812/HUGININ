@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -41,7 +42,7 @@ func newProjectCmd(uc *application.ProjectUseCase) *cobra.Command {
 			}
 
 			// .huginin/projects.json 자동 생성 (Git Hook이 읽음)
-			if err := writeProjectsJSON(wsID, id); err != nil {
+			if err := writeProjectsJSONAt(".", wsID, id); err != nil {
 				fmt.Fprintf(os.Stderr, "warning: could not write .huginin/projects.json: %v\n", err)
 			}
 
@@ -66,13 +67,14 @@ func newProjectCmd(uc *application.ProjectUseCase) *cobra.Command {
 	return cmd
 }
 
-func writeProjectsJSON(workspaceID, projectID string) error {
-	if err := os.MkdirAll(".huginin", 0700); err != nil {
+func writeProjectsJSONAt(repoPath, workspaceID, projectID string) error {
+	dir := filepath.Join(repoPath, ".huginin")
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
 	data, _ := json.MarshalIndent(map[string]string{
 		"workspace_id": workspaceID,
 		"project_id":   projectID,
 	}, "", "  ")
-	return os.WriteFile(".huginin/projects.json", data, 0600)
+	return os.WriteFile(filepath.Join(dir, "projects.json"), data, 0600)
 }

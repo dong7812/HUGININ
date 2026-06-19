@@ -63,9 +63,9 @@ class CollectEventUseCase:
             if not proj_member or not proj_member.permission.can_push():
                 raise PermissionDeniedError("Insufficient project permission")
 
-        # 멱등성: 동일 commit_hash 재전송 차단
+        # 멱등성: 동일 workspace 내 동일 commit_hash 재전송 차단
         if input.commit_hash:
-            existing = await self._event_repo.find_by_commit_hash(input.commit_hash)
+            existing = await self._event_repo.find_by_commit_hash(input.commit_hash, input.workspace_id)
             if existing:
                 raise DuplicateEventError(f"Event for {input.commit_hash} already collected")
 

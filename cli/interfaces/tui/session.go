@@ -32,6 +32,7 @@ var (
 
 type claudeDoneMsg struct{ err error }
 type loginDoneMsg struct{ err error }
+type setupDoneMsg struct{ err error }
 type asyncLinesMsg struct{ lines []string }
 
 // ── model ─────────────────────────────────────────────────────────────────────
@@ -66,7 +67,7 @@ func (m model) Init() tea.Cmd {
 		tea.Println(bold.Render("HUGININ")+"  "+dim.Render("v0.1.0")),
 		tea.Println(wsLine),
 		tea.Println(""),
-		tea.Println(dim.Render("claude · login · logout · workspace · help · exit")),
+		tea.Println(dim.Render("login · setup · claude · workspace · logout · help · exit")),
 		tea.Println(sep),
 	)
 }
@@ -111,7 +112,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Println(line)
 
 	case loginDoneMsg:
-		// 로그인 후 config 재로드
 		newCfg, err := config.Load()
 		if err == nil {
 			m.cfg = newCfg
@@ -124,6 +124,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			wsLine = green.Render("✓") + " workspace: " + bold.Render(m.cfg.WorkspaceName)
 		}
 		return m, tea.Println(wsLine)
+
+	case setupDoneMsg:
+		newCfg, err := config.Load()
+		if err == nil {
+			m.cfg = newCfg
+		}
+		if msg.err != nil {
+			return m, tea.Println(red.Render("✗ setup 실패: " + msg.err.Error()))
+		}
+		return m, tea.Println(green.Render("✓") + " setup 완료 — " + dim.Render("claude를 입력해 시작하세요"))
 	}
 
 	var tiCmd tea.Cmd
@@ -146,12 +156,12 @@ func (m *model) dispatch(raw string) tea.Cmd {
 	case "help":
 		return tea.Batch(
 			tea.Println(""),
-			tea.Println(blue.Render("  claude")+" [args]         Claude Code 실행"),
-			tea.Println(blue.Render("  login")+"               로그인"),
-			tea.Println(blue.Render("  logout")+"              로그아웃"),
+			tea.Println(blue.Render("  login")+"               로그인 + 워크스페이스 선택"),
+			tea.Println(blue.Render("  setup")+"               현재 repo 연결 + hook 설치"),
+			tea.Println(blue.Render("  claude")+" [args]        Claude Code 실행"),
 			tea.Println(blue.Render("  workspace")+"           현재 워크스페이스"),
 			tea.Println(blue.Render("  workspace list")+"      워크스페이스 목록"),
-			tea.Println(blue.Render("  help")+"                도움말"),
+			tea.Println(blue.Render("  logout")+"              로그아웃"),
 			tea.Println(blue.Render("  exit")+"                종료  (Ctrl+C)"),
 			tea.Println(""),
 		)
@@ -170,6 +180,12 @@ func (m *model) dispatch(raw string) tea.Cmd {
 		return tea.ExecProcess(
 			exec.Command(os.Args[0], "login"),
 			func(err error) tea.Msg { return loginDoneMsg{err: err} },
+		)
+
+	case "setup":
+		return tea.ExecProcess(
+			exec.Command(os.Args[0], "setup"),
+			func(err error) tea.Msg { return setupDoneMsg{err: err} },
 		)
 
 	case "logout":
