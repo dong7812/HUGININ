@@ -215,9 +215,11 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
             """
         )
         if not rows:
+            print("[Backfill] no pending events", flush=True)
             return
-        logger.info("Backfill: %d events", len(rows))
-        for row in rows:
+        print(f"[Backfill] starting {len(rows)} events", flush=True)
+        ok = 0
+        for i, row in enumerate(rows):
             result = await refine_event(
                 row["raw_prompt"], row["raw_response"] or "", row["diff"], api_key, row["user_name"]
             )
@@ -233,10 +235,13 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
                     ai_role=result.get("ai_role", ""),
                     tradeoffs=result.get("tradeoffs") or None,
                 )
+                ok += 1
+            if (i + 1) % 10 == 0:
+                print(f"[Backfill] {i + 1}/{len(rows)} done ({ok} refined)", flush=True)
             await asyncio.sleep(0.5)
-        logger.info("Backfill complete")
+        print(f"[Backfill] complete — {ok}/{len(rows)} refined", flush=True)
     except Exception as e:
-        logger.warning("Backfill error: %s", e)
+        print(f"[Backfill] error: {e}", flush=True)
 
 
 async def _backfill_embeddings(event_repo) -> None:
