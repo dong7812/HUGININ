@@ -22,7 +22,10 @@ class EmbeddingService:
     async def embed(cls, text: str) -> list[float]:
         """텍스트 → 384차원 float 리스트. 스레드풀에서 실행."""
         loop = asyncio.get_event_loop()
-        model = cls._load()
+        # _load()도 executor에서 실행 — 첫 호출 시 모델 초기화가 이벤트 루프를 블로킹하지 않도록
+        if cls._model is None:
+            await loop.run_in_executor(None, cls._load)
+        model = cls._model
         vec = await loop.run_in_executor(
             None, lambda: next(iter(model.embed([text[:2048]])))
         )
