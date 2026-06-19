@@ -59,8 +59,20 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 				}
 			}
 
+			// 누락 여부와 관계없이 항상 타임스탬프 보정 실행
+			fmt.Print("기존 기록 타임스탬프 보정 중... ")
+			timestamps := make(map[string]string, len(commits))
+			for _, c := range commits {
+				timestamps[c.hash] = c.ts.UTC().Format(time.RFC3339)
+			}
+			if n, err := projUC.FixCommitTimestamps(wsID, timestamps); err != nil {
+				fmt.Printf("⚠ %v\n", err)
+			} else {
+				fmt.Printf("%d개 보정됨\n", n)
+			}
+
 			if len(missing) == 0 {
-				fmt.Printf("\n모든 커밋이 서버에 있습니다 (로컬 %d개 확인)\n", len(commits))
+				fmt.Printf("누락 커밋 없음 (로컬 %d개 확인)\n", len(commits))
 				return nil
 			}
 
@@ -112,19 +124,6 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 			}
 
 			fmt.Printf("\n완료: ✓ %d 수집  ✗ %d 실패\n", ok, failed)
-
-			// 이미 서버에 있는 커밋들 타임스탬프 보정
-			fmt.Print("기존 기록 타임스탬프 보정 중... ")
-			timestamps := make(map[string]string, len(commits))
-			for _, c := range commits {
-				timestamps[c.hash] = c.ts.UTC().Format(time.RFC3339)
-			}
-			if n, err := projUC.FixCommitTimestamps(wsID, timestamps); err != nil {
-				fmt.Printf("⚠ %v\n", err)
-			} else {
-				fmt.Printf("%d개 보정됨\n", n)
-			}
-
 			return nil
 		},
 	}
