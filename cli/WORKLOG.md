@@ -3,3 +3,5 @@
 2026-06-15 16:26 | commit | a5263eb | branch:main | Add interactive workspace picker on login
 2026-06-16 16:04 | commit | 70330e9 | branch:feature/interactive-login | Fix Railway healthcheck: add /health endpoint, timeout 120s
 2026-06-16 18:32 | commit | f0e2028 | branch:main | Merge feature/interactive-login: add workspace/new page
+2026-06-19 19:09 | commit | b155f2c | branch:main | Fix TUI session: remove alt screen, add login/logout commands
+2026-06-19 19:20 | session-end | files_changed:13 | branch:main | ed91f05 Add huginin setup command: TUI-driven repo link + hook install

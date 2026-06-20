@@ -84,11 +84,12 @@ lines = [json.loads(l) for l in open('$LATEST') if l.strip()]
 for l in reversed(lines):
     if l.get('type') == 'user':
         c = l.get('message', {}).get('content', '')
-        if isinstance(c, str): print(c[:2000]); break
-        for x in c:
-            if isinstance(x, dict) and x.get('type') == 'text':
-                print(x['text'][:2000]); break
-        break
+        if isinstance(c, str) and c.strip():
+            print(c[:2000]); break
+        elif isinstance(c, list):
+            text = next((x['text'] for x in c if isinstance(x, dict) and x.get('type') == 'text' and x.get('text','').strip()), None)
+            if text:
+                print(text[:2000]); break
 " 2>/dev/null || true)
     RESPONSE=$(python3 -c "
 import json, sys
@@ -96,10 +97,9 @@ lines = [json.loads(l) for l in open('$LATEST') if l.strip()]
 for l in reversed(lines):
     if l.get('type') == 'assistant':
         c = l.get('message', {}).get('content', [])
-        for x in (c if isinstance(c, list) else []):
-            if isinstance(x, dict) and x.get('type') == 'text':
-                print(x['text'][:2000]); break
-        break
+        text = next((x['text'] for x in (c if isinstance(c, list) else []) if isinstance(x, dict) and x.get('type') == 'text' and x.get('text','').strip()), None)
+        if text:
+            print(text[:2000]); break
 " 2>/dev/null || true)
   fi
 fi
