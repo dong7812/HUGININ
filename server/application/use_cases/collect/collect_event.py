@@ -119,10 +119,17 @@ class CollectEventUseCase:
                 problem_solved = result.get("problem_solved", "")
                 ai_role = result.get("ai_role", "")
                 tradeoffs = result.get("tradeoffs") or None
+                try:
+                    ai_contribution = float(result.get("ai_contribution", 0.5))
+                except (TypeError, ValueError):
+                    ai_contribution = 0.5
+                frame = result.get("frame", "B")
+                if frame not in ("A", "B", "C", "D"):
+                    frame = "B"
                 await self._event_repo.update_refined(
                     id=event_id,
-                    frame=result.get("frame", "B"),
-                    ai_contribution=float(result.get("ai_contribution", 0.5)),
+                    frame=frame,
+                    ai_contribution=ai_contribution,
                     decision_summary=result.get("decision_summary", ""),
                     decision_type=result.get("decision_type", "other"),
                     what_was_built=what_was_built,

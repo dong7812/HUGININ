@@ -224,10 +224,17 @@ async def _backfill_refinement(event_repo, api_key: str) -> None:
                 row["raw_prompt"], row["raw_response"] or "", row["diff"], api_key, row["user_name"]
             )
             if result:
+                try:
+                    ai_contribution = float(result.get("ai_contribution", 0.5))
+                except (TypeError, ValueError):
+                    ai_contribution = 0.5
+                frame = result.get("frame", "B")
+                if frame not in ("A", "B", "C", "D"):
+                    frame = "B"
                 await event_repo.update_refined(
                     id=row["id"],
-                    frame=result.get("frame", "B"),
-                    ai_contribution=float(result.get("ai_contribution", 0.5)),
+                    frame=frame,
+                    ai_contribution=ai_contribution,
                     decision_summary=result.get("decision_summary", ""),
                     decision_type=result.get("decision_type", "other"),
                     what_was_built=result.get("what_was_built", ""),
