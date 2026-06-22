@@ -152,6 +152,15 @@ class DashboardApiRepository implements IDashboardRepository {
     return { items: data.items.map(mapFeedItem), total: data.total };
   }
 
+  async exportContext(workspaceId: string, level: 1 | 2 | 3): Promise<string> {
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+    const res = await fetch(`${API_BASE}/dashboard/${workspaceId}/export?level=${level}`, {
+      headers: { Authorization: `Bearer ${this.token}` },
+    });
+    if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+    return res.text();
+  }
+
   async getBranches(workspaceId: string): Promise<string[]> {
     const data = await apiFetch<{ branches: string[] }>(
       `/dashboard/${workspaceId}/branches`,
@@ -319,6 +328,7 @@ export interface PmBriefResult {
 export function createDashboardRepository(token: string): IDashboardRepository & {
   getPmBrief(workspaceId: string): Promise<PmBriefResult>;
   chat(workspaceId: string, message: string, history: ChatHistoryItem[]): Promise<ChatResult>;
+  exportContext(workspaceId: string, level: 1 | 2 | 3): Promise<string>;
 } {
   return new DashboardApiRepository(token);
 }

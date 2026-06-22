@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
 from application.use_cases.dashboard.get_feed import FeedInput
@@ -537,3 +538,156 @@ async def _synthesize_search(query: str, items, api_key: str | None) -> str:
         return msg.content[0].text.strip()
     except Exception:
         return f"총 {len(items)}개의 관련 결정을 찾았습니다."
+
+
+# ──────────────────────────────────────────────
+# 종합 컨텍스트 추출 (Export)
+# ──────────────────────────────────────────────
+
+def _format_export_md(items: list, level: int, workspace_name: str) -> str:
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    lines: list[str] = [
+        f"# {workspace_name} — 의사결정 컨텍스트",
+        f"Generated: {now} · Level {level} · {len(items)}개 결정",
+        "",
+    ]
+
+    FRAME_LABEL = {"A": "Human-led", "B": "AI-assisted", "C": "AI-led", "D": "Automated"}
+    TYPE_LABEL = {
+        "feature": "기능", "bugfix": "버그픽스", "refactor": "리팩터",
+        "config": "설정", "infrastructure": "인프라", "docs": "문서",
+        "test": "테스트", "other": "기타",
+    }
+
+    prev_date = ""
+    for item in items:
+        date_str = item.created_at.strftime("%Y-%m-%d")
+        if date_str != prev_date:
+            lines.append(f"## {date_str}")
+            lines.append("")
+            prev_date = date_str
+
+        title = item.what_was_built or item.prompt_preview or "(제목 없음)"
+        meta_parts = []
+        if item.decision_type:
+            meta_parts.append(TYPE_LABEL.get(item.decision_type, item.decision_type))
+        if item.frame:
+            meta_parts.append(f"Frame {item.frame} · {FRAME_LABEL.get(item.frame, '')}")
+        if item.ai_contribution is not None:
+            meta_parts.append(f"AI {round(item.ai_contribution * 100)}%")
+        if item.project_name:
+            meta_parts.append(item.project_name)
+        if item.commit_hash:
+            meta_parts.append(f"`{item.commit_hash[:7]}`")
+        meta = " · ".join(meta_parts)
+
+        if level == 1:
+            lines.append(f"### {title}")
+            if meta:
+                lines.append(f"_{meta}_")
+            if item.problem_solved:
+                lines.append(f"> {item.problem_solved}")
+            lines.append("")
+
+        elif level == 2:
+            lines.append(f"### {title}")
+            if meta:
+                lines.append(f"_{meta}_")
+            lines.append("")
+            if item.problem_solved:
+                lines.append(f"**왜**: {item.problem_solved}")
+                lines.append("")
+            if item.what_was_built:
+                lines.append(f"**무엇**: {item.what_was_built}")
+                lines.append("")
+            if item.tradeoffs:
+                lines.append(f"**트레이드오프**: {item.tradeoffs}")
+                lines.append("")
+
+        else:  # level 3
+            lines.append(f"### {title}")
+            if meta:
+                lines.append(f"_{meta}_")
+            lines.append("")
+            if item.problem_solved:
+                lines.append(f"**왜**: {item.problem_solved}")
+                lines.append("")
+            if item.what_was_built:
+                lines.append(f"**무엇**: {item.what_was_built}")
+                lines.append("")
+            if item.tradeoffs:
+                lines.append(f"**트레이드오프**: {item.tradeoffs}")
+                lines.append("")
+            if item.rejected_alternatives:
+                lines.append(f"**기각된 대안**: {item.rejected_alternatives}")
+                lines.append("")
+            if item.implicit_constraints:
+                lines.append(f"**당시 제약**: {item.implicit_constraints}")
+                lines.append("")
+            if item.diff:
+                lines.append("<details>")
+                lines.append("<summary>Diff</summary>")
+                lines.append("")
+                lines.append("```diff")
+                lines.append(item.diff[:3000])
+                lines.append("```")
+                lines.append("</details>")
+                lines.append("")
+
+    return "\n".join(lines)
+
+
+@router.get("/{workspace_id}/export")
+async def export_context(
+    workspace_id: UUID,
+    request: Request,
+    level: int = 2,
+    user_id: UUID = Depends(get_current_user_id),
+):
+    level = max(1, min(3, level))
+
+    repo = request.app.state.event_repo
+    ws_row = await repo._pool.fetchrow(
+        "SELECT name FROM workspaces WHERE id = $1", workspace_id
+    )
+    ws_name = ws_row["name"] if ws_row else str(workspace_id)[:8]
+
+    rows = await repo._pool.fetch(
+        """
+        SELECT
+            e.id, e.created_at,
+            LEFT(e.raw_prompt, 120) AS prompt_preview,
+            e.diff, e.commit_hash,
+            u.name AS user_name, p.name AS project_name,
+            e.branch, e.frame, e.ai_contribution,
+            e.decision_type, e.what_was_built, e.problem_solved,
+            e.tradeoffs, e.rejected_alternatives, e.implicit_constraints
+        FROM decision_events e
+        JOIN users u ON u.id = e.user_id
+        LEFT JOIN projects p ON p.id = e.project_id
+        WHERE e.workspace_id = $1
+          AND e.status = 'refined'
+        ORDER BY e.created_at ASC
+        LIMIT 500
+        """,
+        workspace_id,
+    )
+
+    class _Item:
+        pass
+
+    items = []
+    for r in rows:
+        obj = _Item()
+        for k in r.keys():
+            setattr(obj, k, r[k])
+        items.append(obj)
+
+    md = _format_export_md(items, level, ws_name)
+    filename = f"huginin-context-L{level}-{datetime.now(timezone.utc).strftime('%Y%m%d')}.md"
+
+    return PlainTextResponse(
+        content=md,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

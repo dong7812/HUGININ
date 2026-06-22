@@ -17,11 +17,82 @@ import {
   Search,
   X,
   ExternalLink,
+  Download,
 } from "lucide-react";
 import { useFeedQuery, useBranchesQuery, useSearchQuery, useSuggestQuery, useSmartSearchQuery } from "@/application/queries/dashboardQueries";
 import type { SmartSearchEvent } from "@/infrastructure/http/dashboardRepository";
+import { createDashboardRepository } from "@/infrastructure/http/dashboardRepository";
+import { useAuthStore } from "@/application/stores/authStore";
 import { CommentSection } from "./CommentSection";
 import type { FeedItem } from "@/domain/entities";
+
+const LEVEL_INFO = [
+  { level: 1 as const, label: "Level 1 — 요약", desc: "결정 제목 + 왜 (한 줄 요약). 빠른 히스토리 스캔." },
+  { level: 2 as const, label: "Level 2 — 표준", desc: "왜 + 무엇 + 트레이드오프. 팀 공유 · 온보딩용." },
+  { level: 3 as const, label: "Level 3 — 전체", desc: "모든 필드 + diff 포함. AI에 컨텍스트로 주입할 때 사용." },
+];
+
+function ExportModal({ workspaceId, onClose }: { workspaceId: string; onClose: () => void }) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const [selected, setSelected] = useState<1 | 2 | 3>(2);
+  const [loading, setLoading] = useState(false);
+
+  async function handleDownload() {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const repo = createDashboardRepository(token);
+      const md = await repo.exportContext(workspaceId, selected);
+      const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `huginin-context-L${selected}-${new Date().toISOString().slice(0, 10)}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+      onClose();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl border border-neutral-200 w-full max-w-md mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-base font-bold text-neutral-900">컨텍스트 추출</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-neutral-100 text-neutral-400"><X size={15} /></button>
+        </div>
+        <div className="flex flex-col gap-2 mb-6">
+          {LEVEL_INFO.map(({ level, label, desc }) => (
+            <button
+              key={level}
+              onClick={() => setSelected(level)}
+              className={`text-left px-4 py-3 rounded-xl border transition-colors ${
+                selected === level
+                  ? "border-blue-400 bg-blue-50"
+                  : "border-neutral-200 hover:border-neutral-300"
+              }`}
+            >
+              <p className={`text-sm font-semibold mb-0.5 ${selected === level ? "text-blue-700" : "text-neutral-800"}`}>{label}</p>
+              <p className="text-xs text-neutral-500">{desc}</p>
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={handleDownload}
+          disabled={loading}
+          className="w-full flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-700 text-white text-sm font-medium rounded-xl py-2.5 transition-colors disabled:opacity-50"
+        >
+          <Download size={14} />
+          {loading ? "생성 중…" : "Markdown 다운로드"}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 interface Props {
   workspaceId: string;
@@ -147,6 +218,7 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
   const [inputValue, setInputValue] = useState(submittedQuery);
   const [debouncedInput, setDebouncedInput] = useState(submittedQuery);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const limit = 15;
 
@@ -186,6 +258,7 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
 
   return (
     <div className="flex flex-col">
+      {showExport && <ExportModal workspaceId={workspaceId} onClose={() => setShowExport(false)} />}
       {/* Header */}
       <div className="px-5 pt-5 pb-4 border-b border-neutral-100">
         <div className="flex items-center justify-between gap-3 mb-3">
@@ -194,6 +267,13 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
             <span className="text-sm text-neutral-400 font-mono">{data?.total ?? 0}</span>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowExport(true)}
+              className="flex items-center gap-1.5 text-xs text-neutral-500 border border-neutral-200 hover:border-neutral-400 hover:text-neutral-800 rounded-lg px-2.5 py-1.5 transition-colors"
+            >
+              <Download size={11} />
+              컨텍스트 추출
+            </button>
             {!isSearching && branches && branches.length > 1 && (
               <select
                 value={branch ?? ""}
