@@ -473,19 +473,19 @@ function TimelineEntry({ item, workspaceId, graphMeta, isLast }: {
               <div className="flex flex-col gap-2.5 border border-neutral-100 rounded-xl px-4 py-3">
                 {item.problemSolved && (
                   <div>
-                    <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest mb-1">왜</p>
+                    <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest mb-1">왜</p>
                     <p className="text-sm text-neutral-700 leading-relaxed">{item.problemSolved}</p>
                   </div>
                 )}
                 {item.whatWasBuilt && (
                   <div>
-                    <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest mb-1">무엇</p>
+                    <p className="text-[10px] font-semibold text-emerald-500 uppercase tracking-widest mb-1">무엇</p>
                     <p className="text-sm text-neutral-700 leading-relaxed">{item.whatWasBuilt}</p>
                   </div>
                 )}
                 {item.tradeoffs && (
                   <div>
-                    <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest mb-1">트레이드오프</p>
+                    <p className="text-[10px] font-semibold text-violet-400 uppercase tracking-widest mb-1">트레이드오프</p>
                     <p className="text-sm text-neutral-700 leading-relaxed">{item.tradeoffs}</p>
                   </div>
                 )}
