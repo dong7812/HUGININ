@@ -86,7 +86,9 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
 
           {/* Right panel */}
           <div className="flex flex-col gap-4 self-start">
-            <AiTrendChart workspaceId={workspaceId} />
+            <div data-tour="ai-chart">
+              <AiTrendChart workspaceId={workspaceId} />
+            </div>
             <FrameStats workspaceId={workspaceId} />
             <CacheSuggestions workspaceId={workspaceId} />
             <TokenChart workspaceId={workspaceId} days={timeRange === "today" ? 1 : timeRange === "week" ? 7 : 30} />

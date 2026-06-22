@@ -262,12 +262,13 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
       {/* Header */}
       <div className="px-5 pt-5 pb-4 border-b border-neutral-100">
         <div className="flex items-center justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5" data-tour="timeline">
             <h2 className="text-base font-bold text-neutral-900">결정 타임라인</h2>
             <span className="text-sm text-neutral-400 font-mono">{data?.total ?? 0}</span>
           </div>
           <div className="flex items-center gap-2">
             <button
+              data-tour="export"
               onClick={() => setShowExport(true)}
               className="flex items-center gap-1.5 text-xs text-neutral-500 border border-neutral-200 hover:border-neutral-400 hover:text-neutral-800 rounded-lg px-2.5 py-1.5 transition-colors"
             >
@@ -301,7 +302,7 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
         </div>
 
         {/* Search */}
-        <div className="relative">
+        <div className="relative" data-tour="search">
           <Search size={13} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none" />
           <input
             ref={inputRef}
