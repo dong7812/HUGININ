@@ -47,6 +47,8 @@ class FeedItemResponse(BaseModel):
     problem_solved: str | None = None
     ai_role: str | None = None
     tradeoffs: str | None = None
+    rejected_alternatives: str | None = None
+    implicit_constraints: str | None = None
     # GitHub PR 이벤트
     event_type: str = "commit"
     pr_number: int | None = None
@@ -155,6 +157,8 @@ async def get_feed(
                 problem_solved=item.problem_solved,
                 ai_role=item.ai_role,
                 tradeoffs=item.tradeoffs,
+                rejected_alternatives=item.rejected_alternatives,
+                implicit_constraints=item.implicit_constraints,
                 event_type=item.event_type,
                 pr_number=item.pr_number,
                 pr_url=item.pr_url,
@@ -416,6 +420,8 @@ async def search_events(
                 problem_solved=item.problem_solved,
                 ai_role=item.ai_role,
                 tradeoffs=item.tradeoffs,
+                rejected_alternatives=item.rejected_alternatives,
+                implicit_constraints=item.implicit_constraints,
                 event_type=item.event_type,
                 pr_number=item.pr_number,
                 pr_url=item.pr_url,
