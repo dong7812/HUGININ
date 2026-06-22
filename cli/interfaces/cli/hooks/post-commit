@@ -69,47 +69,73 @@ if [ -z "$WORKSPACE_ID" ]; then
   exit 0
 fi
 
-# Claude Code 세션 로그에서 마지막 프롬프트/응답 추출 (best-effort)
+# Claude Code 세션 로그에서 전체 대화 추출 (best-effort)
+# 마지막 1쌍이 아니라 세션 전체 DEV/AI 턴을 포맷해서 넘김
 CLAUDE_LOG_DIR="$HOME/.claude/projects"
 PROMPT=""
 RESPONSE=""
 if [ -d "$CLAUDE_LOG_DIR" ]; then
-  # 최근 24시간 이내 수정된 가장 최신 JSONL 파일 선택 (인프라 작업은 며칠에 걸쳐 진행)
   LATEST=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -mmin -1440 2>/dev/null \
     | xargs ls -t 2>/dev/null | head -1 || true)
   if [ -n "$LATEST" ]; then
     PROMPT=$(python3 -c "
 import json, sys
+
 lines = [json.loads(l) for l in open('$LATEST') if l.strip()]
-for l in reversed(lines):
-    if l.get('type') == 'user':
-        c = l.get('message', {}).get('content', '')
-        if isinstance(c, str) and c.strip():
-            print(c[:2000]); break
-        elif isinstance(c, list):
-            text = next((x['text'] for x in c if isinstance(x, dict) and x.get('type') == 'text' and x.get('text','').strip()), None)
-            if text:
-                print(text[:2000]); break
+
+turns = []
+for l in lines:
+    if l.get('type') not in ('user', 'assistant'):
+        continue
+    msg = l.get('message', {})
+    role = msg.get('role')
+    content = msg.get('content', '')
+
+    if isinstance(content, str):
+        text = content.strip()
+    elif isinstance(content, list):
+        parts = []
+        for c in content:
+            if not isinstance(c, dict):
+                continue
+            # tool_use / tool_result 제외, 순수 텍스트만
+            if c.get('type') == 'text':
+                t = c.get('text', '').strip()
+                if t:
+                    parts.append(t)
+        text = '\n'.join(parts)
+    else:
+        text = ''
+
+    if text and len(text) > 10:
+        turns.append((role, text))
+
+# 연속 같은 role 병합
+merged = []
+for role, text in turns:
+    if merged and merged[-1][0] == role:
+        merged[-1][1] += '\n' + text
+    else:
+        merged.append([role, text])
+
+# DEV/AI 레이블로 대화 포맷팅, 각 턴 600자 제한
+out = []
+for role, text in merged:
+    label = 'DEV' if role == 'user' else 'AI'
+    out.append(f'[{label}] {text[:600]}')
+
+conversation = '\n\n'.join(out)
+# 최근 8000자 (가장 의사결정이 많은 최신 맥락)
+print(conversation[-8000:])
 " 2>/dev/null || true)
-    RESPONSE=$(python3 -c "
-import json, sys
-lines = [json.loads(l) for l in open('$LATEST') if l.strip()]
-for l in reversed(lines):
-    if l.get('type') == 'assistant':
-        c = l.get('message', {}).get('content', [])
-        text = next((x['text'] for x in (c if isinstance(c, list) else []) if isinstance(x, dict) and x.get('type') == 'text' and x.get('text','').strip()), None)
-        if text:
-            print(text[:2000]); break
-" 2>/dev/null || true)
+    # RESPONSE는 더 이상 별도로 추출하지 않음 (PROMPT에 전체 대화 포함)
+    RESPONSE=""
   fi
 fi
 
-# 프롬프트가 없으면 커밋 메시지로 대체
+# 세션을 찾지 못하면 커밋 메시지로 대체
 if [ -z "$PROMPT" ]; then
   PROMPT="[git commit] $COMMIT_MSG"
-fi
-if [ -z "$RESPONSE" ]; then
-  RESPONSE="[no AI session detected]"
 fi
 
 # 비동기 업로드 (CLI 블로킹 없이)
