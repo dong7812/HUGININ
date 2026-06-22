@@ -469,6 +469,14 @@ function TimelineEntry({ item, workspaceId, graphMeta, isLast }: {
         {/* Expanded */}
         {expanded && (
           <div className="mt-4 flex flex-col gap-2.5">
+            {/* 왜 만들었나 */}
+            {item.problemSolved && (
+              <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
+                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1.5">왜 만들었나</p>
+                <p className="text-sm text-blue-900 leading-relaxed">{item.problemSolved}</p>
+              </div>
+            )}
+
             {/* 선택 이유 — 왜 이 방향인가 (커밋 메시지에 있을 수 있지만 요약) */}
             {item.tradeoffs && (
               <p className="text-xs text-neutral-500 leading-relaxed px-0.5">{item.tradeoffs}</p>
