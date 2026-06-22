@@ -10,6 +10,7 @@ import { CacheSuggestions } from "./CacheSuggestions";
 import { PmBriefingButton } from "./PmBriefing";
 import { DecisionChat } from "./DecisionChat";
 import { WorkspaceSettings } from "./WorkspaceSettings";
+import { OnboardingModal } from "./OnboardingModal";
 import { useWorkspaceStore } from "@/application/stores/workspaceStore";
 
 interface Props {
@@ -39,6 +40,7 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
 
   return (
     <div className="min-h-screen bg-[#f5f4ef]">
+      <OnboardingModal />
       {/* Page header */}
       <div className="bg-white border-b border-neutral-100 px-8 py-5 flex items-center justify-between">
         <div>
