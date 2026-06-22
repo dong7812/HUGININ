@@ -45,6 +45,8 @@ interface RawFeedItem {
   problem_solved: string | null;
   ai_role: string | null;
   tradeoffs: string | null;
+  rejected_alternatives: string | null;
+  implicit_constraints: string | null;
   event_type: string;
   pr_number: number | null;
   pr_url: string | null;
@@ -75,6 +77,8 @@ function mapFeedItem(i: RawFeedItem): FeedItem {
     problemSolved: i.problem_solved,
     aiRole: i.ai_role,
     tradeoffs: i.tradeoffs ?? null,
+    rejectedAlternatives: i.rejected_alternatives ?? null,
+    implicitConstraints: i.implicit_constraints ?? null,
     eventType: i.event_type ?? "commit",
     prNumber: i.pr_number ?? null,
     prUrl: i.pr_url ?? null,

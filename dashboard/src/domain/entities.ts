@@ -31,6 +31,8 @@ export interface FeedItem {
   problemSolved: string | null;
   aiRole: string | null;
   tradeoffs: string | null;
+  rejectedAlternatives: string | null;
+  implicitConstraints: string | null;
   // GitHub PR 이벤트
   eventType: string;
   prNumber: number | null;

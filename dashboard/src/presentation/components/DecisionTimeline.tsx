@@ -51,6 +51,7 @@ const DECISION_TYPE_LABEL: Record<string, string> = {
   config: "설정",
   docs: "문서",
   test: "테스트",
+  infrastructure: "인프라",
   other: "기타",
 };
 
@@ -443,6 +444,9 @@ function TimelineEntry({ item, workspaceId, graphMeta, isLast }: {
               {DECISION_TYPE_LABEL[item.decisionType]}
             </span>
           )}
+          {item.rejectedAlternatives && (
+            <span className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded font-mono">× 기각됨</span>
+          )}
           {item.branch && (
             <span className="flex items-center gap-1 text-[10px] font-mono" style={{ color: laneColor }}>
               <GitBranch size={9} />{item.branch}
@@ -465,39 +469,35 @@ function TimelineEntry({ item, workspaceId, graphMeta, isLast }: {
         {/* Expanded */}
         {expanded && (
           <div className="mt-4 flex flex-col gap-3">
-            {/* 무엇 / 왜 / 어떻게 / 트레이드오프 */}
-            <div className="border border-neutral-200 rounded-xl overflow-hidden divide-y divide-neutral-100">
-              {/* 무엇 */}
-              {item.whatWasBuilt && (
-                <div className="flex gap-3 px-4 py-3">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest shrink-0 w-8 mt-0.5">무엇</span>
-                  <p className="text-sm text-neutral-800 leading-relaxed font-medium">{item.whatWasBuilt}</p>
+            {/* 기각된 대안 — 핵심 차별점 */}
+            {item.rejectedAlternatives && (
+              <div className="border border-red-100 rounded-xl overflow-hidden bg-red-50/50">
+                <div className="flex items-center gap-2 px-4 py-2 border-b border-red-100">
+                  <span className="text-[10px] font-bold text-red-500 uppercase tracking-widest">× Rejected</span>
+                  <span className="text-[10px] text-red-400">고려했지만 선택하지 않은 것</span>
                 </div>
-              )}
-              {/* 왜 */}
-              {item.problemSolved && (
-                <div className="flex gap-3 px-4 py-3">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest shrink-0 w-8 mt-0.5">왜</span>
-                  <p className="text-sm text-neutral-700 leading-relaxed">{item.problemSolved}</p>
+                <p className="text-sm text-red-800 leading-relaxed px-4 py-3">{item.rejectedAlternatives}</p>
+              </div>
+            )}
+
+            {/* 암묵적 제약 */}
+            {item.implicitConstraints && (
+              <div className="border border-amber-100 rounded-xl overflow-hidden bg-amber-50/50">
+                <div className="flex items-center gap-2 px-4 py-2 border-b border-amber-100">
+                  <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest">Constraint</span>
+                  <span className="text-[10px] text-amber-500">코드에 없는 당시 제약</span>
                 </div>
-              )}
-              {/* 어떻게 */}
-              {item.aiRole && (
-                <div className="flex gap-3 px-4 py-3 bg-blue-50/40">
-                  <span className="text-[10px] font-bold text-blue-500 uppercase tracking-widest shrink-0 w-8 mt-0.5">어떻게</span>
-                  <p className="text-sm text-neutral-700 leading-relaxed">
-                    {item.userName ? item.aiRole.replace(/인간/g, item.userName) : item.aiRole}
-                  </p>
-                </div>
-              )}
-              {/* 트레이드오프 */}
-              {item.tradeoffs && (
-                <div className="flex gap-3 px-4 py-3 bg-amber-50/40">
-                  <span className="text-[10px] font-bold text-amber-600 uppercase tracking-widest shrink-0 w-8 mt-0.5">선택</span>
-                  <p className="text-sm text-neutral-700 leading-relaxed">{item.tradeoffs}</p>
-                </div>
-              )}
-            </div>
+                <p className="text-sm text-amber-900 leading-relaxed px-4 py-3">{item.implicitConstraints}</p>
+              </div>
+            )}
+
+            {/* 왜 — 간결하게 */}
+            {item.problemSolved && (
+              <div className="flex gap-3 px-1">
+                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest shrink-0 w-6 mt-0.5">왜</span>
+                <p className="text-sm text-neutral-600 leading-relaxed">{item.problemSolved}</p>
+              </div>
+            )}
 
             {/* AI 기여도 시각화 */}
             {item.frame && aiPct !== null && (
