@@ -1,146 +1,274 @@
-import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { InstallSlider } from "./InstallSlider";
 import { StartButton } from "./StartButton";
 
+function DashboardPreview() {
+  const items = [
+    {
+      frame: "C",
+      frameColor: "bg-purple-100 text-purple-700",
+      title: "ETL 파이프라인 + pgvector HNSW 인덱스 구축",
+      rejected: "Redis → PostgreSQL pgvector — 인프라 비용 절감",
+      time: "2h ago",
+      ai: "78%",
+    },
+    {
+      frame: "B",
+      frameColor: "bg-blue-100 text-blue-700",
+      title: "refresh token rotation + silent renewal 구현",
+      rejected: "cookie session → CORS 이슈로 제외됨",
+      time: "6h ago",
+      ai: "61%",
+    },
+    {
+      frame: "A",
+      frameColor: "bg-green-100 text-green-700",
+      title: "Railway Dockerfile CMD PORT env var 수정",
+      rejected: null,
+      time: "1d ago",
+      ai: "22%",
+    },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-neutral-200/80 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.15),0_0_0_1px_rgba(0,0,0,0.04)] overflow-hidden bg-white">
+      {/* Header */}
+      <div className="bg-white border-b border-neutral-100 px-4 sm:px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <Image src="/web-app-manifest-192x192.png" alt="HUGININ" width={18} height={18} className="opacity-70 shrink-0" />
+          <span className="text-[11px] font-bold text-neutral-700 tracking-widest font-mono uppercase">HUGININ</span>
+          <span className="text-neutral-200 mx-0.5">/</span>
+          <span className="text-[11px] text-neutral-400 truncate">AURA</span>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-[10px] bg-neutral-100 text-neutral-600 px-2 py-1 rounded-md font-medium hidden sm:block">AI 브리핑</span>
+          <span className="text-[10px] bg-neutral-900 text-white px-2.5 py-1 rounded-md font-medium">설정</span>
+        </div>
+      </div>
+
+      {/* Stats — 2x2 on mobile, 4-col on sm+ */}
+      <div className="bg-[#f5f4ef] px-3 sm:px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {[
+          { label: "총 결정", value: "247" },
+          { label: "이번 주", value: "18" },
+          { label: "AI 기여도", value: "74%" },
+          { label: "팀원", value: "3명" },
+        ].map((s) => (
+          <div key={s.label} className="bg-white rounded-xl px-3 py-2.5 border border-neutral-100/80">
+            <p className="text-[10px] text-neutral-400 mb-0.5">{s.label}</p>
+            <p className="text-sm font-bold text-neutral-900">{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Timeline */}
+      <div className="bg-[#f5f4ef] px-3 sm:px-4 pb-3 sm:pb-4">
+        <div className="bg-white rounded-xl border border-neutral-200/60 overflow-hidden">
+          <div className="px-3 sm:px-4 py-2.5 border-b border-neutral-100 flex items-center">
+            <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-widest">Decision Timeline</span>
+            <span className="ml-auto text-[10px] text-neutral-300 font-mono hidden sm:block">all · branch · frame</span>
+          </div>
+          {items.map((item, i) => (
+            <div key={i} className={`px-3 sm:px-4 py-3 ${i < items.length - 1 ? "border-b border-neutral-100" : ""}`}>
+              <div className="flex items-start gap-2">
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono shrink-0 mt-0.5 ${item.frameColor}`}>
+                  {item.frame}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] sm:text-xs font-medium text-neutral-900 leading-snug line-clamp-1">{item.title}</p>
+                  {item.rejected && (
+                    <p className="text-[10px] text-red-400 mt-0.5 font-mono truncate">✕ {item.rejected}</p>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-0.5 shrink-0">
+                  <span className="text-[10px] text-neutral-400 font-mono">{item.ai}</span>
+                  <span className="text-[10px] text-neutral-300">{item.time}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white text-neutral-900">
+    <div className="min-h-screen bg-white text-neutral-900 antialiased">
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-neutral-100">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-100">
+        <div className="max-w-6xl mx-auto px-5 sm:px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Image src="/web-app-manifest-192x192.png" alt="HUGININ" width={40} height={40} className="opacity-80" />
-            <span className="font-mono font-bold text-neutral-900 tracking-widest text-sm uppercase">HUGININ</span>
+            <Image src="/web-app-manifest-192x192.png" alt="HUGININ" width={26} height={26} className="opacity-80" />
+            <span className="font-mono font-bold text-neutral-900 tracking-widest text-[13px] uppercase">HUGININ</span>
           </div>
-          <div className="flex items-center gap-6">
-            <a href="#how" className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors">설치</a>
-            <a href="#features" className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors">기능</a>
-            <StartButton className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
-              시작하기
+          <div className="flex items-center gap-1 sm:gap-5">
+            <a href="#why" className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors hidden md:block">Why</a>
+            <a href="#features" className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors hidden md:block">Features</a>
+            <a href="#how" className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors hidden md:block">Install</a>
+            <StartButton className="text-sm bg-neutral-900 hover:bg-neutral-700 text-white px-4 py-2 rounded-lg font-medium transition-colors ml-2">
+              Start free
             </StartButton>
           </div>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-24 px-6 text-center bg-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col items-center mb-10">
+      <section className="pt-28 sm:pt-36 pb-0 px-5 sm:px-6 text-center bg-white overflow-hidden">
+        {/* Subtle radial glow */}
+        <div className="absolute inset-0 top-0 h-[700px] bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(59,130,246,0.06),transparent)] pointer-events-none" />
+
+        <div className="max-w-5xl mx-auto relative">
+          {/* Logo */}
+          <div className="flex justify-center mb-6 sm:mb-8">
             <Image
               src="/web-app-manifest-512x512.png"
-              alt="Huginn — Odin's Raven of Thought"
-              width={120}
-              height={120}
-              className="opacity-85 mb-4"
+              alt="HUGININ"
+              width={80}
+              height={80}
+              className="opacity-80"
               priority
             />
-            <p className="font-mono text-[10px] text-neutral-400 tracking-[0.25em] uppercase">Huginn · 생각 · Odin&apos;s Raven</p>
           </div>
 
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-600 mb-6">
-            AI 의사결정 버전 관리
-          </p>
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-neutral-900 leading-[1.05] tracking-tight mb-8">
-            Git이 코드 이력을
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 bg-neutral-100 rounded-full px-4 py-1.5 mb-8 sm:mb-10">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
+            <span className="text-xs text-neutral-600 font-medium">Claude Code 전용 · 무료</span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-[52px] sm:text-7xl lg:text-[88px] font-bold text-neutral-900 leading-[1.05] tracking-tight mb-5 break-keep">
+            코드는 남아도,
             <br />
-            <span className="text-neutral-400">남기듯,</span>
-            <br />
-            AI 결정 이력을 남긴다.
+            <span className="text-neutral-300">결정은 사라진다.</span>
           </h1>
-          <p className="text-lg text-neutral-500 max-w-2xl mx-auto leading-relaxed mb-4">
-            Claude Code 세션마다 <span className="text-neutral-900 font-medium">무엇을, 왜, 어떻게 결정했는지</span>가
-            커밋과 함께 자동으로 쌓인다.
+
+          {/* Sub-headline */}
+          <p className="text-xl sm:text-2xl lg:text-3xl font-semibold text-neutral-800 mb-5 break-keep">
+            당신이 쓰지 않은 것까지.
           </p>
-          <p className="text-base text-neutral-400 max-w-xl mx-auto leading-relaxed mb-10">
-            지금 쌓지 않으면 6개월 뒤에도 없다.
+
+          {/* Body */}
+          <p className="text-sm sm:text-base lg:text-lg text-neutral-500 max-w-xl mx-auto leading-relaxed mb-10 break-keep">
+            DECISIONS.md에 적지 않은 것, 대화 중 기각한 대안, 당시 제약 조건 —
+            Claude Code 세션마다 결정 맥락이 커밋과 함께 자동으로 쌓인다.
           </p>
-          <div className="flex items-center justify-center gap-3">
-            <StartButton className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-7 py-3.5 rounded-xl transition-colors text-sm">
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 mb-14 sm:mb-16">
+            <StartButton className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-neutral-900 hover:bg-neutral-700 text-white font-semibold px-7 py-3.5 rounded-xl transition-all text-sm shadow-sm">
               무료로 시작하기
-              <ArrowRight size={16} />
+              <ArrowRight size={15} />
             </StartButton>
-            <a href="#how"
-              className="inline-flex items-center gap-2 border border-neutral-200 hover:border-neutral-400 text-neutral-700 font-medium px-7 py-3.5 rounded-xl transition-colors text-sm">
+            <a
+              href="#how"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-neutral-200 hover:border-neutral-400 hover:bg-neutral-50 text-neutral-600 font-medium px-7 py-3.5 rounded-xl transition-all text-sm"
+            >
               설치 방법
             </a>
           </div>
-          <p className="text-xs text-neutral-400 mt-5 font-mono">git hook 설치 1분 · 별도 입력 없음 · 무료</p>
+          <p className="text-xs text-neutral-400 mb-12 font-mono">git hook 설치 1분 · 별도 입력 없음 · 무료</p>
+
+          {/* Dashboard preview */}
+          <div className="relative mx-auto max-w-3xl">
+            <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-white via-white/60 to-transparent z-10 pointer-events-none rounded-b-2xl" />
+            <DashboardPreview />
+          </div>
         </div>
       </section>
 
-      {/* Git analogy */}
-      <section className="bg-[#f5f4ef] py-20 px-6">
+      {/* Comparison */}
+      <section id="why" className="pt-28 sm:pt-36 pb-20 sm:pb-28 px-5 sm:px-6 bg-white">
         <div className="max-w-4xl mx-auto">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400 mb-3 text-center">Why HUGININ</p>
-          <h2 className="text-3xl font-bold text-neutral-900 text-center mb-4 tracking-tight">
-            코드 이력은 Git이 관리한다.
-            <br />AI 결정 이력은?
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-neutral-400 mb-4 text-center font-mono">Why HUGININ</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-neutral-900 text-center mb-4 tracking-tight leading-tight break-keep">
+            Same question.
+            <br /><span className="text-neutral-300">Very different answer.</span>
           </h2>
-          <p className="text-sm text-neutral-500 text-center mb-14 max-w-xl mx-auto">
-            커밋 diff는 무엇이 바뀌었는지만 보여준다. 왜 그 결정을 내렸는지, AI와 어떻게 만들었는지는 사라진다.
+          <p className="text-sm sm:text-base text-neutral-500 text-center mb-12 sm:mb-16 max-w-lg mx-auto leading-relaxed break-keep">
+            코드 분석 AI는 지금 코드에 있는 것만 읽는다.
+            HUGININ은 결정이 내려진 순간을 기록한다.
           </p>
 
-          <div className="grid sm:grid-cols-3 gap-4 mb-10">
-            {[
-              {
-                label: "Git",
-                role: "코드 이력",
-                example: "어떤 코드가 언제 바뀌었나",
-                color: "border-neutral-200 bg-white",
-                tag: "text-neutral-500 bg-neutral-100 border-neutral-200",
-              },
-              {
-                label: "HUGININ",
-                role: "AI 결정 이력",
-                example: "왜 그렇게 만들었나, AI가 어떻게 기여했나",
-                color: "border-blue-200 bg-white",
-                tag: "text-blue-600 bg-blue-50 border-blue-100",
-                highlight: true,
-              },
-              {
-                label: "Claude Skill / ChatGPT",
-                role: "지금 이 순간 분석",
-                example: "물어볼 때만. 과거 데이터 없음",
-                color: "border-neutral-100 bg-neutral-50",
-                tag: "text-neutral-400 bg-neutral-100 border-neutral-200",
-              },
-            ].map(({ label, role, example, color, tag, highlight }) => (
-              <div key={label} className={`rounded-2xl border p-6 ${color} ${highlight ? "ring-2 ring-blue-200" : ""}`}>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border font-mono ${tag}`}>{label}</span>
-                <p className="text-sm font-bold text-neutral-900 mt-3 mb-1">{role}</p>
-                <p className="text-xs text-neutral-500 leading-relaxed">{example}</p>
-              </div>
-            ))}
+          {/* Question card */}
+          <div className="bg-neutral-50 rounded-2xl border border-neutral-200 px-6 py-5 mb-3 text-center">
+            <p className="text-[10px] text-neutral-400 font-mono mb-2 uppercase tracking-widest">A new engineer asks</p>
+            <p className="text-base sm:text-lg font-semibold text-neutral-900">&ldquo;Why did we build auth this way?&rdquo;</p>
           </div>
 
-          <div className="bg-white rounded-2xl border border-neutral-200 p-6">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-neutral-400 mb-4">역추적 예시</p>
-            <div className="grid sm:grid-cols-2 gap-6">
+          {/* Side by side */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            {/* Code AI */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-5 sm:p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-[10px] font-bold px-2 py-1 rounded-md border font-mono text-neutral-500 bg-neutral-100 border-neutral-200">
+                  Code Analysis AI
+                </span>
+                <span className="text-[10px] text-neutral-400">Claude · Cursor</span>
+              </div>
+              <div className="bg-neutral-50 rounded-xl p-4 border border-neutral-100 mb-4 min-h-[80px] flex items-start">
+                <p className="text-sm text-neutral-500 leading-relaxed">
+                  &ldquo;Uses JWT with argon2 hashing. Refresh tokens are stored in the database.&rdquo;
+                </p>
+              </div>
+              <p className="text-xs text-neutral-400 leading-relaxed">코드에 있는 것만. 왜 그 선택을 했는지는 모른다.</p>
+            </div>
+
+            {/* HUGININ */}
+            <div className="rounded-2xl border-2 border-neutral-900 bg-white p-5 sm:p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-[10px] font-bold px-2 py-1 rounded-md border font-mono text-neutral-900 bg-neutral-100 border-neutral-300">
+                  HUGININ MCP
+                </span>
+                <span className="text-[10px] text-neutral-400">결정 당시 맥락</span>
+              </div>
+              <div className="flex flex-col gap-3 bg-neutral-50 rounded-xl p-4 border border-neutral-200 mb-4">
+                {[
+                  { label: "Why", text: "OAuth session expiry broke UX → needed silent auto-renewal", color: "text-neutral-400" },
+                  { label: "Rejected", text: "Redis session → Railway memory cost ruled it out", color: "text-red-500" },
+                  { label: "Constraint", text: "Mobile client required stateless auth", color: "text-neutral-400" },
+                ].map((row, i, arr) => (
+                  <div key={row.label}>
+                    <div className="flex gap-3">
+                      <span className={`text-[9px] font-bold uppercase w-[60px] shrink-0 mt-0.5 font-mono ${row.color}`}>{row.label}</span>
+                      <span className="text-sm text-neutral-700 leading-relaxed">{row.text}</span>
+                    </div>
+                    {i < arr.length - 1 && <div className="h-px bg-neutral-100 mt-3" />}
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-neutral-500 leading-relaxed">코드에 없는 것. 결정 당시에만 존재했던 맥락.</p>
+            </div>
+          </div>
+
+          {/* Trace example */}
+          <div className="bg-neutral-50 rounded-2xl border border-neutral-200 p-5 sm:p-6">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-5 font-mono">Trace example · 역추적 예시</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-neutral-400 font-mono mb-2">6개월 전 커밋</p>
-                <div className="font-mono text-[13px] text-neutral-500 bg-neutral-50 rounded-xl p-4 border border-neutral-100">
-                  <span className="text-neutral-400">$</span> git log --oneline<br />
-                  <span className="text-neutral-700">a3f2c1d refactor: simplify auth</span><br />
-                  <span className="text-neutral-400 text-[11px]">6 months ago · dongkyu</span>
+                <p className="text-[10px] text-neutral-400 font-mono mb-2 uppercase tracking-wider">6개월 전 커밋</p>
+                <div className="font-mono text-[11px] sm:text-[12px] text-neutral-500 bg-white rounded-xl p-4 border border-neutral-200 leading-relaxed">
+                  <span className="text-neutral-400">$ </span>git log --oneline<br />
+                  <span className="text-neutral-800 font-medium">a3f2c1d refactor: simplify auth</span><br />
+                  <span className="text-neutral-400 text-[10px]">6 months ago · dongkyu</span>
                 </div>
               </div>
               <div>
-                <p className="text-xs text-neutral-400 font-mono mb-2">HUGININ 역추적</p>
-                <div className="flex flex-col gap-2 bg-neutral-50 rounded-xl p-4 border border-blue-100">
-                  <div className="flex gap-2">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase w-6 shrink-0 mt-0.5">왜</span>
-                    <span className="text-[13px] text-neutral-700 leading-relaxed">OAuth 세션 만료로 UX 깨짐 → 자동 갱신 필요</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase w-6 shrink-0 mt-0.5">AI</span>
-                    <span className="text-[13px] text-neutral-700 leading-relaxed">refresh token rotation + silent renewal 구현 주도</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-[10px] font-bold text-neutral-400 uppercase w-6 shrink-0 mt-0.5">vs</span>
-                    <span className="text-[13px] text-neutral-700 leading-relaxed">cookie session 유지 방안 검토했으나 CORS 이슈로 제외</span>
-                  </div>
+                <p className="text-[10px] text-neutral-400 font-mono mb-2 uppercase tracking-wider">HUGININ recall</p>
+                <div className="flex flex-col gap-2.5 bg-white rounded-xl p-4 border border-neutral-200">
+                  {[
+                    { label: "Why", text: "OAuth 세션 만료로 UX 깨짐 → 자동 갱신 필요", color: "text-neutral-400" },
+                    { label: "AI", text: "refresh token rotation + silent renewal 구현 주도", color: "text-neutral-400" },
+                    { label: "Rejected", text: "cookie session — CORS 이슈로 제외", color: "text-red-500" },
+                  ].map((r) => (
+                    <div key={r.label} className="flex gap-2.5">
+                      <span className={`text-[9px] font-bold uppercase w-12 shrink-0 mt-0.5 font-mono ${r.color}`}>{r.label}</span>
+                      <span className="text-xs text-neutral-700 leading-relaxed">{r.text}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -149,48 +277,23 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="features" className="py-24 px-6 bg-white">
+      <section id="features" className="py-20 sm:py-28 px-5 sm:px-6 bg-neutral-50 border-y border-neutral-100">
         <div className="max-w-5xl mx-auto">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400 mb-3 text-center">Features</p>
-          <h2 className="text-3xl font-bold text-neutral-900 text-center mb-14 tracking-tight">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-neutral-400 mb-4 text-center font-mono">Features</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-neutral-900 text-center mb-14 sm:mb-16 tracking-tight break-keep">
             쌓고, 찾고, 이어간다
           </h2>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-px bg-neutral-100 rounded-2xl overflow-hidden border border-neutral-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {[
-              {
-                icon: "⚡",
-                title: "자동 수집 — 별도 입력 없음",
-                desc: "git commit 하는 순간 Claude Code 세션이 자동으로 기록된다. 따로 할 일이 없다.",
-              },
-              {
-                icon: "🔍",
-                title: "의미 기반 역추적",
-                desc: '"auth 관련 결정", "Redis 도입 이유" — 키워드가 달라도 의미로 과거 판단을 찾는다.',
-              },
-              {
-                icon: "🧠",
-                title: "팀 AI 지식베이스",
-                desc: "쌓인 결정 이력이 팀의 자산이 된다. 새 팀원이 합류해도 과거 맥락을 그대로 넘겨받는다.",
-              },
-              {
-                icon: "📊",
-                title: "AI 기여도 자동 측정",
-                desc: "Human-led · AI-assisted · AI-led · Automated — 이 결정에서 AI가 실제로 얼마나 기여했는지 자동 분류.",
-              },
-              {
-                icon: "🤖",
-                title: "MCP 컨텍스트 주입",
-                desc: "새 Claude 세션 시작 전 과거 팀 결정이 자동으로 참조된다. 같은 실수를 반복하지 않는다.",
-              },
-              {
-                icon: "📈",
-                title: "AI 투자 ROI 가시화",
-                desc: "AI 기여도가 높은 날 커밋 속도가 실제로 빠른가? 팀 AI 도입 효과를 데이터로 보여준다.",
-              },
+              { title: "자동 수집", sub: "별도 입력 없음", desc: "git commit 하는 순간 Claude Code 세션이 자동으로 기록된다. 따로 할 일이 없다." },
+              { title: "의미 기반 역추적", sub: "시맨틱 검색", desc: '"auth 관련 결정", "Redis 도입 이유" — 키워드가 달라도 의미로 과거 판단을 찾는다.' },
+              { title: "프로젝트 온보딩", sub: "결정 이력 = 지식", desc: '"왜 이렇게 만들었어?"를 코드 대신 결정 이력으로 답한다. 쌓인 맥락이 프로젝트 지식이 된다.' },
+              { title: "AI 기여도 측정", sub: "Frame A / B / C / D", desc: "Human-led → AI-led — 이 결정에서 AI가 실제로 얼마나 기여했는지 자동 분류." },
+              { title: "MCP 자동 주입", sub: "파일 기반 컨텍스트", desc: "수정 중인 파일의 과거 결정이 새 Claude 세션에 자동으로 주입된다." },
+              { title: "AI 투자 ROI", sub: "팀 생산성 데이터", desc: "AI 기여도가 높은 날 커밋 속도가 실제로 빠른가? 데이터로 확인한다." },
             ].map((f) => (
-              <div key={f.title} className="bg-white p-8">
-                <div className="text-2xl mb-4">{f.icon}</div>
+              <div key={f.title} className="bg-white rounded-2xl border border-neutral-200 p-5 sm:p-6 hover:border-neutral-300 hover:shadow-sm transition-all">
+                <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider mb-1.5 font-mono">{f.sub}</p>
                 <h3 className="text-base font-bold text-neutral-900 mb-2">{f.title}</h3>
                 <p className="text-sm text-neutral-500 leading-relaxed">{f.desc}</p>
               </div>
@@ -200,23 +303,22 @@ export default function LandingPage() {
       </section>
 
       {/* Urgency */}
-      <section className="bg-[#f5f4ef] py-20 px-6">
+      <section className="py-20 sm:py-28 px-5 sm:px-6 bg-white">
         <div className="max-w-3xl mx-auto text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400 mb-6">지금 시작해야 하는 이유</p>
-          <h2 className="text-3xl font-bold text-neutral-900 mb-4 tracking-tight">
-            AI 결정 이력은 소급 적용이 안 된다
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-neutral-400 mb-4 font-mono">지금 시작해야 하는 이유</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-5 tracking-tight break-keep">
+            AI 결정 이력은<br />소급 적용이 안 된다
           </h2>
-          <p className="text-neutral-500 mb-10 text-base max-w-xl mx-auto leading-relaxed">
+          <p className="text-neutral-500 mb-12 text-sm sm:text-base max-w-xl mx-auto leading-relaxed break-keep">
             Git을 뒤늦게 도입하면 과거 이력이 없듯, HUGININ도 지금부터 쌓은 것만 역추적할 수 있다.
-            AI로 개발하는 커밋이 하루에 하나라도 있다면, 오늘부터 쌓을수록 나중의 자산이 커진다.
           </p>
-          <div className="grid sm:grid-cols-3 gap-4 text-left">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
             {[
               { period: "1개월 후", value: "패턴 파악", desc: "내가 AI를 어디에 주로 쓰는지 보인다" },
-              { period: "3개월 후", value: "팀 지식베이스", desc: "왜 이런 구조가 됐는지 역추적 가능" },
+              { period: "3개월 후", value: "프로젝트 지식베이스", desc: "왜 이런 구조가 됐는지 역추적 가능" },
               { period: "6개월 후", value: "AI 투자 증명", desc: "팀 생산성 변화를 데이터로 보여줄 수 있다" },
             ].map(({ period, value, desc }) => (
-              <div key={period} className="bg-white rounded-2xl border border-neutral-200 p-5">
+              <div key={period} className="bg-neutral-50 rounded-2xl border border-neutral-200 p-5">
                 <p className="text-[10px] font-mono text-neutral-400 mb-2">{period}</p>
                 <p className="text-sm font-bold text-neutral-900 mb-1">{value}</p>
                 <p className="text-xs text-neutral-500 leading-relaxed">{desc}</p>
@@ -227,10 +329,10 @@ export default function LandingPage() {
       </section>
 
       {/* Install */}
-      <section id="how" className="py-24 px-6 bg-white">
+      <section id="how" className="py-20 sm:py-28 px-5 sm:px-6 bg-neutral-50 border-y border-neutral-100">
         <div className="max-w-5xl mx-auto">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-400 mb-3 text-center">Quick Start</p>
-          <h2 className="text-3xl font-bold text-neutral-900 text-center mb-3 tracking-tight">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-neutral-400 mb-4 text-center font-mono">Quick Start</p>
+          <h2 className="text-4xl sm:text-5xl font-bold text-neutral-900 text-center mb-3 tracking-tight break-keep">
             4단계, 1분이면 끝
           </h2>
           <p className="text-sm text-neutral-500 text-center mb-12">이후 Claude Code로 커밋할 때마다 자동으로 기록된다</p>
@@ -239,15 +341,14 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section className="bg-neutral-900 py-24 px-6">
+      <section className="bg-neutral-900 py-24 sm:py-32 px-5 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-blue-400 mb-6">Claude Code 사용자 전용</p>
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight leading-tight">
-            지금 커밋이
-            <br />6개월 뒤 자산이 된다.
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-neutral-600 mb-6 font-mono">Claude Code 사용자 전용</p>
+          <h2 className="text-5xl sm:text-6xl font-bold text-white mb-5 tracking-tight leading-[1.05] break-keep">
+            지금 커밋이<br />6개월 뒤 자산이 된다.
           </h2>
-          <p className="text-neutral-400 mb-10 text-base">git hook 설치 1분 · 별도 입력 없음 · 무료</p>
-          <StartButton className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-8 py-4 rounded-xl transition-colors text-base">
+          <p className="text-neutral-500 mb-10 text-sm sm:text-base">git hook 설치 1분 · 별도 입력 없음 · 무료</p>
+          <StartButton className="inline-flex items-center gap-2 bg-white hover:bg-neutral-100 text-neutral-900 font-semibold px-8 py-4 rounded-xl transition-all text-base shadow-sm">
             무료로 시작하기
             <ArrowRight size={18} />
           </StartButton>
@@ -255,7 +356,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-neutral-900 border-t border-neutral-800 px-6 py-6">
+      <footer className="bg-neutral-900 border-t border-white/5 px-5 sm:px-6 py-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-xs text-neutral-600 font-mono">
           <span className="tracking-widest uppercase">HUGININ</span>
           <span>© 2026</span>
