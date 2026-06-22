@@ -45,10 +45,10 @@ Analyze the conversation above and return JSON:
   "ai_contribution": <float 0.0–1.0, how much of the actual implementation AI did>,
   "decision_type": "feature" | "bugfix" | "refactor" | "config" | "infrastructure" | "docs" | "test" | "other",
   "what_was_built": "<1줄. 커밋의 기술적 결과물. 예: 'ETL 파이프라인에 rejected_alternatives 필드 추가'>",
-  "problem_solved": "<DEV의 실제 발화에서 드러난 의도나 문제. 예: 'DEV가 \"코드 분석 AI와 차별점이 명확해야 한다\"고 했음 → 대화 맥락에서만 나온 제품 방향 결정'. null if not in conversation>",
-  "tradeoffs": "<대화에서 실제로 저울질된 선택. DEV나 AI가 명시적으로 비교한 것. null if not discussed>",
-  "rejected_alternatives": "<대화에서 DEV나 AI가 검토했다가 명시적으로 버린 접근법. 반드시 대화에 근거. null if absent>",
-  "implicit_constraints": "<대화에서 언급된 제약 — 비용, 배포 환경, 기존 코드 호환성, 일정 등. null if not mentioned>"
+  "problem_solved": "<DEV의 실제 발화에서 드러난 의도나 문제. 예: 'DEV가 \"코드 분석 AI와 차별점이 명확해야 한다\"고 했음'. null if not in conversation>",
+  "tradeoffs": "<대화에서 실제로 논의된 의사결정 과정을 하나의 흐름으로. 어떤 대안을 검토했다가 왜 기각했는지, 어떤 제약이 있었는지, 최종적으로 어떤 이유로 이 방향을 선택했는지 — 대화에 근거해서 서술. null if not discussed>",
+  "rejected_alternatives": "<대화에서 명시적으로 버린 접근법 목록 (내부 DB용). null if absent>",
+  "implicit_constraints": "<대화에서 언급된 제약 목록 (내부 DB용) — 비용, 배포 환경, 호환성, 일정 등. null if not mentioned>"
 }}
 
 Frame:

@@ -468,33 +468,27 @@ function TimelineEntry({ item, workspaceId, graphMeta, isLast }: {
 
         {/* Expanded */}
         {expanded && (
-          <div className="mt-4 flex flex-col gap-2.5">
-            {/* 왜 만들었나 */}
-            {item.problemSolved && (
-              <div className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
-                <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1.5">왜 만들었나</p>
-                <p className="text-sm text-blue-900 leading-relaxed">{item.problemSolved}</p>
-              </div>
-            )}
-
-            {/* 선택 이유 — 왜 이 방향인가 (커밋 메시지에 있을 수 있지만 요약) */}
-            {item.tradeoffs && (
-              <p className="text-xs text-neutral-500 leading-relaxed px-0.5">{item.tradeoffs}</p>
-            )}
-
-            {/* 기각된 대안 — git에 없는 것, 핵심 차별점 */}
-            {item.rejectedAlternatives && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
-                <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1.5">× 고려했지만 선택 안 한 것</p>
-                <p className="text-sm text-red-900 leading-relaxed">{item.rejectedAlternatives}</p>
-              </div>
-            )}
-
-            {/* 암묵적 제약 — 코드 어디에도 없는 당시 맥락 */}
-            {item.implicitConstraints && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest mb-1.5">당시 제약</p>
-                <p className="text-sm text-amber-900 leading-relaxed">{item.implicitConstraints}</p>
+          <div className="mt-4 flex flex-col gap-3">
+            {(item.problemSolved || item.whatWasBuilt || item.tradeoffs) && (
+              <div className="flex flex-col gap-2.5 border border-neutral-100 rounded-xl px-4 py-3">
+                {item.problemSolved && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest mb-1">왜</p>
+                    <p className="text-sm text-neutral-700 leading-relaxed">{item.problemSolved}</p>
+                  </div>
+                )}
+                {item.whatWasBuilt && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest mb-1">무엇</p>
+                    <p className="text-sm text-neutral-700 leading-relaxed">{item.whatWasBuilt}</p>
+                  </div>
+                )}
+                {item.tradeoffs && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest mb-1">트레이드오프</p>
+                    <p className="text-sm text-neutral-700 leading-relaxed">{item.tradeoffs}</p>
+                  </div>
+                )}
               </div>
             )}
 
