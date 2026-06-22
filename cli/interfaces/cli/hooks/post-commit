@@ -74,8 +74,8 @@ CLAUDE_LOG_DIR="$HOME/.claude/projects"
 PROMPT=""
 RESPONSE=""
 if [ -d "$CLAUDE_LOG_DIR" ]; then
-  # 최근 8시간 이내 수정된 가장 최신 JSONL 파일 선택 (긴 세션 대응)
-  LATEST=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -mmin -480 2>/dev/null \
+  # 최근 24시간 이내 수정된 가장 최신 JSONL 파일 선택 (인프라 작업은 며칠에 걸쳐 진행)
+  LATEST=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -mmin -1440 2>/dev/null \
     | xargs ls -t 2>/dev/null | head -1 || true)
   if [ -n "$LATEST" ]; then
     PROMPT=$(python3 -c "

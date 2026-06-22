@@ -10,7 +10,7 @@ _PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"(?i)(?:password|passwd|pwd)\s*[:=]\s*\S+"), "[PASSWORD]"),
     (re.compile(r"(?i)(?:token|bearer)\s*[:=]\s*[A-Za-z0-9\-_.]{16,}"), "[TOKEN]"),
     (re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Z|a-z]{2,}"), "[EMAIL]"),
-    (re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b"), "[IP_ADDRESS]"),
+    # IP 주소는 인프라 컨텍스트(CIDR 블록 등)에서 핵심 정보이므로 마스킹하지 않음
 ]
 
 

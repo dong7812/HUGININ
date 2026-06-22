@@ -148,6 +148,8 @@ class PgEventRepository(EventRepository):
                 e.problem_solved,
                 e.ai_role,
                 e.tradeoffs,
+                e.rejected_alternatives,
+                e.implicit_constraints,
                 e.event_type,
                 e.pr_number,
                 e.pr_url,
@@ -222,6 +224,7 @@ class PgEventRepository(EventRepository):
                 e.branch, e.prompt_tokens, e.response_tokens,
                 e.frame, e.ai_contribution, e.decision_summary, e.decision_type,
                 e.what_was_built, e.problem_solved, e.ai_role, e.tradeoffs,
+                e.rejected_alternatives, e.implicit_constraints,
                 e.event_type, e.pr_number, e.pr_url, e.github_author,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
@@ -281,6 +284,7 @@ class PgEventRepository(EventRepository):
                 e.branch, e.prompt_tokens, e.response_tokens,
                 e.frame, e.ai_contribution, e.decision_summary, e.decision_type,
                 e.what_was_built, e.problem_solved, e.ai_role, e.tradeoffs,
+                e.rejected_alternatives, e.implicit_constraints,
                 e.event_type, e.pr_number, e.pr_url, e.github_author,
                 (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
             FROM decision_events e
@@ -462,6 +466,8 @@ class PgEventRepository(EventRepository):
         problem_solved: str = "",
         ai_role: str = "",
         tradeoffs: str | None = None,
+        rejected_alternatives: str | None = None,
+        implicit_constraints: str | None = None,
     ) -> None:
         await self._pool.execute(
             """
@@ -474,11 +480,14 @@ class PgEventRepository(EventRepository):
                 what_was_built = $6,
                 problem_solved = $7,
                 ai_role = $8,
-                tradeoffs = $9
+                tradeoffs = $9,
+                rejected_alternatives = $10,
+                implicit_constraints = $11
             WHERE id = $1
             """,
             id, frame, ai_contribution, decision_summary, decision_type,
             what_was_built, problem_solved, ai_role, tradeoffs,
+            rejected_alternatives, implicit_constraints,
         )
 
     @staticmethod
@@ -499,6 +508,12 @@ class PgEventRepository(EventRepository):
             prompt_tokens=row.get("prompt_tokens"),
             response_tokens=row.get("response_tokens"),
             embedding=list(embedding) if embedding else None,
+            frame=row.get("frame"),
+            ai_contribution=row.get("ai_contribution"),
+            decision_summary=row.get("decision_summary"),
+            decision_type=row.get("decision_type"),
+            rejected_alternatives=row.get("rejected_alternatives"),
+            implicit_constraints=row.get("implicit_constraints"),
         )
 
 
@@ -526,6 +541,8 @@ def _to_feed_item(r: asyncpg.Record) -> "FeedItem":
         problem_solved=r["problem_solved"],
         ai_role=r["ai_role"],
         tradeoffs=r["tradeoffs"],
+        rejected_alternatives=r["rejected_alternatives"],
+        implicit_constraints=r["implicit_constraints"],
         event_type=r["event_type"] or "commit",
         pr_number=r["pr_number"],
         pr_url=r["pr_url"],

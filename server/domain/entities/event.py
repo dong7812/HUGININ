@@ -33,6 +33,8 @@ class DecisionEvent:
     ai_contribution: float | None = field(default=None) # 0.0–1.0
     decision_summary: str | None = field(default=None)
     decision_type: str | None = field(default=None)
+    rejected_alternatives: str | None = field(default=None)
+    implicit_constraints: str | None = field(default=None)
     # GitHub Webhook PR 이벤트
     event_type: str = field(default="commit")          # commit | pr_opened | pr_merged | pr_closed
     pr_number: int | None = field(default=None)

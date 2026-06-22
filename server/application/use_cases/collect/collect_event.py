@@ -119,6 +119,8 @@ class CollectEventUseCase:
                 problem_solved = result.get("problem_solved", "")
                 ai_role = result.get("ai_role", "")
                 tradeoffs = result.get("tradeoffs") or None
+                rejected_alternatives = result.get("rejected_alternatives") or None
+                implicit_constraints = result.get("implicit_constraints") or None
                 try:
                     ai_contribution = float(result.get("ai_contribution", 0.5))
                 except (TypeError, ValueError):
@@ -136,6 +138,8 @@ class CollectEventUseCase:
                     problem_solved=problem_solved,
                     ai_role=ai_role,
                     tradeoffs=tradeoffs,
+                    rejected_alternatives=rejected_alternatives,
+                    implicit_constraints=implicit_constraints,
                 )
                 # 정제된 한국어 내용으로 임베딩 재생성 — 검색 정확도 향상
                 from infrastructure.embedding.embedding_service import EmbeddingService
