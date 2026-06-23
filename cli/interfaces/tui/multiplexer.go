@@ -19,7 +19,7 @@ import (
 	"huginin/infrastructure/config"
 )
 
-const escKey = byte(0x00) // Ctrl+Space
+const escKey = byte(0x1c) // Ctrl+\
 
 const (
 	quietPeriod = 600 * time.Millisecond // 출력 없으면 ready로 판단
