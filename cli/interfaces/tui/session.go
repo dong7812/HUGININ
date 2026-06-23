@@ -186,7 +186,7 @@ func (m *model) dispatch(raw string) tea.Cmd {
 			tea.Println(blue.Render("  agy")+"                  Antigravity CLI 실행"),
 			tea.Println(blue.Render("  codex")+"                Codex CLI 실행"),
 			tea.Println(blue.Render("  pick")+"                 CLI 선택 후 실행"),
-			tea.Println(dim.Render("  실행 중 Ctrl+Space → CLI 전환 (다른 CLI 잠들어 있다 깨어남)")),
+			tea.Println(dim.Render(`  실행 중 Ctrl+\ → CLI 전환 (다른 CLI 잠들어 있다 깨어남)`)),
 			tea.Println(dim.Render("  ──────────────────────────────────────────")),
 			tea.Println(blue.Render("  login")+"               로그인 + 워크스페이스 선택"),
 			tea.Println(blue.Render("  setup")+"               현재 repo 연결 + hook 설치"),
@@ -199,7 +199,7 @@ func (m *model) dispatch(raw string) tea.Cmd {
 
 	case "pick", "claude", "agy", "codex":
 		return tea.Sequence(
-			tea.Println(dim.Render("─ "+verb+" 시작 (Ctrl+Space: CLI 전환) ─")),
+			tea.Println(dim.Render(`─ `+verb+` 시작 (Ctrl+\: CLI 전환) ─`)),
 			tea.ExecProcess(
 				exec.Command(os.Args[0], "__mux", verb),
 				func(err error) tea.Msg { return claudeDoneMsg{name: verb, err: err} },

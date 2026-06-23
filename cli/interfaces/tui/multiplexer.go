@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -9,8 +10,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	"fmt"
 
 	"github.com/creack/pty"
 	"github.com/manifoldco/promptui"
@@ -22,9 +21,9 @@ import (
 const escKey = byte(0x1c) // Ctrl+\
 
 const (
-	quietPeriod = 600 * time.Millisecond // 출력 없으면 ready로 판단
-	maxWait     = 5 * time.Second        // fallback: 최대 대기 시간
-	ctxBufSize  = 4096                   // 컨텍스트 버퍼 (bytes)
+	quietPeriod = 600 * time.Millisecond
+	maxWait     = 5 * time.Second
+	ctxBufSize  = 4096
 )
 
 var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]|\x1b[^[\x1b]`)
@@ -42,8 +41,8 @@ var cliTools = []struct {
 type ptySession struct {
 	pty      *os.File
 	cmd      *exec.Cmd
-	outputCh chan struct{} // 출력 있을 때 신호 (quiet period 감지용)
-	outBuf   []byte       // ANSI 제거된 최근 출력 (컨텍스트 전달용)
+	outputCh chan struct{}
+	outBuf   []byte
 	outMu    sync.Mutex
 }
 
@@ -53,12 +52,19 @@ type Multiplexer struct {
 	paused   bool
 	exitCh   chan string
 	mu       sync.Mutex
+
+	// stdin reader goroutine management
+	stdinCh  chan []byte
+	stopRead chan struct{}
+	stdinDup int
+	readerWg sync.WaitGroup
 }
 
 func RunMultiplexer(initial string) error {
 	m := &Multiplexer{
 		sessions: make(map[string]*ptySession),
 		exitCh:   make(chan string, 8),
+		stdinCh:  make(chan []byte, 64),
 	}
 
 	name := normalizeTool(initial)
@@ -97,26 +103,11 @@ func RunMultiplexer(initial string) error {
 	m.active = name
 	m.saveActiveTool(name)
 
-	stdinCh := make(chan []byte, 64)
-	go func() {
-		buf := make([]byte, 4096)
-		for {
-			n, err := os.Stdin.Read(buf)
-			if n > 0 {
-				cp := make([]byte, n)
-				copy(cp, buf[:n])
-				stdinCh <- cp
-			}
-			if err != nil {
-				close(stdinCh)
-				return
-			}
-		}
-	}()
+	m.startStdinReader()
 
 	for {
 		select {
-		case data, ok := <-stdinCh:
+		case data, ok := <-m.stdinCh:
 			if !ok {
 				return nil
 			}
@@ -125,9 +116,12 @@ func RunMultiplexer(initial string) error {
 				m.paused = true
 				m.mu.Unlock()
 
+				// stdin 고루틴 중지 → promptui가 독점 접근
+				m.stopStdinReader()
 				term.Restore(fd, oldState)
 				next := m.pickUI()
 				oldState, _ = term.MakeRaw(fd)
+				m.startStdinReader() // 재시작
 
 				m.mu.Lock()
 				m.paused = false
@@ -161,9 +155,12 @@ func RunMultiplexer(initial string) error {
 			if remaining == 0 {
 				return nil
 			}
+			m.stopStdinReader()
 			term.Restore(fd, oldState)
 			next := m.pickUI()
 			oldState, _ = term.MakeRaw(fd)
+			m.startStdinReader()
+
 			if next == "" {
 				return nil
 			}
@@ -172,6 +169,51 @@ func RunMultiplexer(initial string) error {
 			go m.injectContext(next, ctx)
 		}
 	}
+}
+
+// startStdinReader: dup한 fd로 고루틴 시작 (promptui와 충돌 방지)
+func (m *Multiplexer) startStdinReader() {
+	m.stopRead = make(chan struct{})
+	dupFd, err := syscall.Dup(int(os.Stdin.Fd()))
+	if err != nil {
+		return
+	}
+	m.stdinDup = dupFd
+	stdinFile := os.NewFile(uintptr(dupFd), "stdin-dup")
+
+	m.readerWg.Add(1)
+	go func() {
+		defer m.readerWg.Done()
+		defer stdinFile.Close()
+		buf := make([]byte, 4096)
+		for {
+			select {
+			case <-m.stopRead:
+				return
+			default:
+			}
+			n, err := stdinFile.Read(buf)
+			if n > 0 {
+				cp := make([]byte, n)
+				copy(cp, buf[:n])
+				select {
+				case m.stdinCh <- cp:
+				case <-m.stopRead:
+					return
+				}
+			}
+			if err != nil {
+				return
+			}
+		}
+	}()
+}
+
+// stopStdinReader: 고루틴 중지 후 완전히 종료될 때까지 대기
+func (m *Multiplexer) stopStdinReader() {
+	close(m.stopRead)
+	syscall.Close(m.stdinDup)
+	m.readerWg.Wait()
 }
 
 func (m *Multiplexer) startCLI(name string) error {
@@ -210,7 +252,6 @@ func (m *Multiplexer) outputLoop(name string, s *ptySession) {
 	for {
 		n, err := s.pty.Read(buf)
 		if n > 0 {
-			// 컨텍스트 버퍼 업데이트 (ANSI 제거)
 			clean := ansiEscape.ReplaceAll(buf[:n], nil)
 			s.outMu.Lock()
 			s.outBuf = append(s.outBuf, clean...)
@@ -219,7 +260,6 @@ func (m *Multiplexer) outputLoop(name string, s *ptySession) {
 			}
 			s.outMu.Unlock()
 
-			// quiet period 감지용 신호
 			select {
 			case s.outputCh <- struct{}{}:
 			default:
@@ -239,9 +279,6 @@ func (m *Multiplexer) outputLoop(name string, s *ptySession) {
 	}
 }
 
-// injectContext: CLI가 준비되면 이전 컨텍스트를 주입한다.
-// Stage 1: 출력이 quietPeriod 동안 없으면 ready로 판단
-// Stage 2: maxWait 초과 시 강제 주입 (fallback)
 func (m *Multiplexer) injectContext(name, ctx string) {
 	if ctx == "" {
 		return
@@ -261,7 +298,6 @@ func (m *Multiplexer) injectContext(name, ctx string) {
 	for {
 		select {
 		case <-s.outputCh:
-			// 출력 감지 → quiet timer 리셋
 			if !quiet.Stop() {
 				select {
 				case <-quiet.C:
@@ -269,15 +305,11 @@ func (m *Multiplexer) injectContext(name, ctx string) {
 				}
 			}
 			quiet.Reset(quietPeriod)
-
 		case <-quiet.C:
-			// 600ms 조용 → ready
 			msg := fmt.Sprintf("[huginin 컨텍스트 전달]\n%s\n", ctx)
 			s.pty.Write([]byte(msg))
 			return
-
 		case <-deadline.C:
-			// 5초 fallback
 			msg := fmt.Sprintf("[huginin 컨텍스트 전달]\n%s\n", ctx)
 			s.pty.Write([]byte(msg))
 			return
@@ -285,7 +317,6 @@ func (m *Multiplexer) injectContext(name, ctx string) {
 	}
 }
 
-// extractContext: 현재 CLI의 최근 출력 버퍼에서 컨텍스트를 추출한다.
 func (m *Multiplexer) extractContext(name string) string {
 	m.mu.Lock()
 	s := m.sessions[name]
@@ -299,7 +330,6 @@ func (m *Multiplexer) extractContext(name string) string {
 		return ""
 	}
 	buf := s.outBuf
-	// 마지막 2000자만 (너무 길면 새 CLI가 소화 못 함)
 	if len(buf) > 2000 {
 		buf = buf[len(buf)-2000:]
 	}
