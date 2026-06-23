@@ -171,7 +171,9 @@ func RunMultiplexer(initial string) error {
 	}
 }
 
-// startStdinReader: dup한 fd로 고루틴 시작 (promptui와 충돌 방지)
+// startStdinReader: dup한 fd로 고루틴 시작.
+// syscall.Select 10ms 폴링으로 stopRead 신호를 빠르게 감지 (macOS에서
+// close(fd)가 블로킹 Read를 깨우지 못하는 문제 우회).
 func (m *Multiplexer) startStdinReader() {
 	m.stopRead = make(chan struct{})
 	dupFd, err := syscall.Dup(int(os.Stdin.Fd()))
@@ -179,20 +181,24 @@ func (m *Multiplexer) startStdinReader() {
 		return
 	}
 	m.stdinDup = dupFd
-	stdinFile := os.NewFile(uintptr(dupFd), "stdin-dup")
 
 	m.readerWg.Add(1)
 	go func() {
 		defer m.readerWg.Done()
-		defer stdinFile.Close()
+		defer syscall.Close(dupFd)
 		buf := make([]byte, 4096)
 		for {
+			// stopRead 확인
 			select {
 			case <-m.stopRead:
 				return
 			default:
 			}
-			n, err := stdinFile.Read(buf)
+			// 10ms 타임아웃으로 폴링 → 블로킹 없이 stop 신호 수신 가능
+			if !stdinReady(dupFd, 10) {
+				continue
+			}
+			n, err := syscall.Read(dupFd, buf)
 			if n > 0 {
 				cp := make([]byte, n)
 				copy(cp, buf[:n])
@@ -209,11 +215,26 @@ func (m *Multiplexer) startStdinReader() {
 	}()
 }
 
-// stopStdinReader: 고루틴 중지 후 완전히 종료될 때까지 대기
+// stdinReady: fd에 읽을 데이터가 있으면 true. timeoutMs 동안 대기.
+func stdinReady(fd int, timeoutMs int) bool {
+	var rfds syscall.FdSet
+	rfds.Bits[fd/32] |= 1 << uint(fd%32)
+	tv := syscall.Timeval{Sec: 0, Usec: int32(timeoutMs * 1000)}
+	// darwin: Select returns only error; ready fds remain set in rfds
+	if err := syscall.Select(fd+1, &rfds, nil, nil, &tv); err != nil {
+		return false
+	}
+	return rfds.Bits[fd/32]&(1<<uint(fd%32)) != 0
+}
+
+// stopStdinReader: stopRead 채널 닫기 → 고루틴이 최대 10ms 내 종료.
 func (m *Multiplexer) stopStdinReader() {
 	close(m.stopRead)
-	syscall.Close(m.stdinDup)
 	m.readerWg.Wait()
+	// 혹시 남은 buffered 입력 drain
+	for len(m.stdinCh) > 0 {
+		<-m.stdinCh
+	}
 }
 
 func (m *Multiplexer) startCLI(name string) error {
