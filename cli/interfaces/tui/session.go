@@ -30,7 +30,10 @@ var (
 
 // ── messages ──────────────────────────────────────────────────────────────────
 
-type claudeDoneMsg struct{ err error }
+type claudeDoneMsg struct {
+	name string
+	err  error
+}
 type loginDoneMsg struct{ err error }
 type setupDoneMsg struct{ err error }
 type backfillDoneMsg struct{ err error }
@@ -62,13 +65,19 @@ func (m model) Init() tea.Cmd {
 	if m.cfg.WorkspaceName != "" {
 		wsLine = green.Render("✓") + " workspace: " + bold.Render(m.cfg.WorkspaceName)
 	}
+	tool := m.cfg.ActiveTool
+	if tool == "" {
+		tool = "claude-code"
+	}
+	toolLine := dim.Render("tool: ") + bold.Render(tool)
 	sep := dim.Render(strings.Repeat("─", 44))
 	return tea.Batch(
 		textinput.Blink,
 		tea.Println(bold.Render("HUGININ")+"  "+dim.Render("v0.1.0")),
 		tea.Println(wsLine),
+		tea.Println(toolLine),
 		tea.Println(""),
-		tea.Println(dim.Render("login · setup · claude · workspace · logout · help · exit")),
+		tea.Println(dim.Render("claude · agy · codex · setup · workspace · help · exit")),
 		tea.Println(sep),
 	)
 }
@@ -106,9 +115,13 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Batch(cmds...)
 
 	case claudeDoneMsg:
-		line := dim.Render("─ claude 세션 종료 ─")
+		name := msg.name
+		if name == "" {
+			name = "claude"
+		}
+		line := dim.Render("─ " + name + " 세션 종료 ─")
 		if msg.err != nil {
-			line = red.Render("claude 종료 (오류): " + msg.err.Error())
+			line = red.Render(name + " 종료 (오류): " + msg.err.Error())
 		}
 		return m, tea.Println(line)
 
@@ -148,6 +161,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tiCmd
 }
 
+// setActiveTool saves the active tool to config without blocking.
+func (m *model) setActiveTool(tool string) {
+	m.cfg.ActiveTool = tool
+	_ = config.Save(m.cfg)
+}
+
 // dispatch returns a tea.Cmd for the given input line.
 func (m *model) dispatch(raw string) tea.Cmd {
 	parts := strings.Fields(raw)
@@ -163,25 +182,27 @@ func (m *model) dispatch(raw string) tea.Cmd {
 	case "help":
 		return tea.Batch(
 			tea.Println(""),
+			tea.Println(blue.Render("  claude")+"               Claude Code 실행"),
+			tea.Println(blue.Render("  agy")+"                  Antigravity CLI 실행"),
+			tea.Println(blue.Render("  codex")+"                Codex CLI 실행"),
+			tea.Println(blue.Render("  pick")+"                 CLI 선택 후 실행"),
+			tea.Println(dim.Render("  실행 중 Ctrl+Space → CLI 전환 (다른 CLI 잠들어 있다 깨어남)")),
+			tea.Println(dim.Render("  ──────────────────────────────────────────")),
 			tea.Println(blue.Render("  login")+"               로그인 + 워크스페이스 선택"),
 			tea.Println(blue.Render("  setup")+"               현재 repo 연결 + hook 설치"),
-			tea.Println(blue.Render("  backfill")+"            누락 커밋 소급 수집 (--count N, --since YYYY-MM-DD)"),
-			tea.Println(blue.Render("  claude")+" [args]        Claude Code 실행"),
-			tea.Println(blue.Render("  workspace")+"           현재 워크스페이스"),
+			tea.Println(blue.Render("  backfill")+"            누락 커밋 소급 수집"),
 			tea.Println(blue.Render("  workspace list")+"      워크스페이스 목록"),
 			tea.Println(blue.Render("  logout")+"              로그아웃"),
-			tea.Println(blue.Render("  uninstall")+"          huginin 바이너리 삭제"),
 			tea.Println(blue.Render("  exit")+"                종료  (Ctrl+C)"),
 			tea.Println(""),
 		)
 
-	case "claude":
-		claudeArgs := args
+	case "pick", "claude", "agy", "codex":
 		return tea.Sequence(
-			tea.Println(dim.Render("─ claude 세션 시작 ─")),
+			tea.Println(dim.Render("─ "+verb+" 시작 (Ctrl+Space: CLI 전환) ─")),
 			tea.ExecProcess(
-				exec.Command("claude", claudeArgs...),
-				func(err error) tea.Msg { return claudeDoneMsg{err: err} },
+				exec.Command(os.Args[0], "__mux", verb),
+				func(err error) tea.Msg { return claudeDoneMsg{name: verb, err: err} },
 			),
 		)
 
