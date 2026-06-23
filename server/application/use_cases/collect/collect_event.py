@@ -28,6 +28,7 @@ class CollectEventInput:
     prompt_tokens: int | None = None
     response_tokens: int | None = None
     committed_at: datetime | None = None
+    ai_tool: str = "claude-code"
 
 
 @dataclass
@@ -87,6 +88,7 @@ class CollectEventUseCase:
             prompt_tokens=input.prompt_tokens,
             response_tokens=input.response_tokens,
             committed_at=input.committed_at,
+            ai_tool=input.ai_tool,
         )
         await self._event_repo.save(event)
         await self._queue_port.publish_event(event.id, input.workspace_id)

@@ -40,6 +40,7 @@ class DecisionEvent:
     pr_number: int | None = field(default=None)
     pr_url: str | None = field(default=None)
     github_author: str | None = field(default=None)
+    ai_tool: str = field(default="claude-code")        # claude-code | codex | gemini
 
     @staticmethod
     def create(
@@ -54,6 +55,7 @@ class DecisionEvent:
         prompt_tokens: int | None = None,
         response_tokens: int | None = None,
         committed_at: datetime | None = None,
+        ai_tool: str = "claude-code",
     ) -> DecisionEvent:
         # 토큰 수 미제공 시 텍스트 길이로 추정 (chars / 4)
         est_prompt = prompt_tokens if prompt_tokens is not None else max(1, len(raw_prompt) // 4)
@@ -73,4 +75,5 @@ class DecisionEvent:
             prompt_tokens=est_prompt,
             response_tokens=est_response,
             embedding=None,
+            ai_tool=ai_tool,
         )

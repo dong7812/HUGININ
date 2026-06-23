@@ -20,14 +20,15 @@ class PgEventRepository(EventRepository):
                 (id, workspace_id, project_id, user_id, commit_hash,
                  raw_prompt, raw_response, diff, status, created_at,
                  branch, prompt_tokens, response_tokens,
-                 event_type, pr_number, pr_url, github_author)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+                 event_type, pr_number, pr_url, github_author, ai_tool)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
             """,
             event.id, event.workspace_id, event.project_id, event.user_id,
             event.commit_hash, event.raw_prompt, event.raw_response,
             event.diff, event.status.value, event.created_at,
             event.branch, event.prompt_tokens, event.response_tokens,
             event.event_type, event.pr_number, event.pr_url, event.github_author,
+            event.ai_tool,
         )
 
     async def find_by_id(self, id: UUID) -> DecisionEvent | None:
@@ -514,6 +515,7 @@ class PgEventRepository(EventRepository):
             decision_type=row.get("decision_type"),
             rejected_alternatives=row.get("rejected_alternatives"),
             implicit_constraints=row.get("implicit_constraints"),
+            ai_tool=row.get("ai_tool") or "claude-code",
         )
 
 

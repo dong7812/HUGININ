@@ -17,6 +17,7 @@ class CollectEventRequest(BaseModel):
     prompt_tokens: int | None = None
     response_tokens: int | None = None
     committed_at: datetime | None = None
+    ai_tool: str = "claude-code"
 
 
 class CollectEventResponse(BaseModel):
