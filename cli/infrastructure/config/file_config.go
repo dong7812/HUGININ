@@ -12,6 +12,7 @@ type Config struct {
 	BaseURL       string `json:"base_url"`
 	WorkspaceID   string `json:"workspace_id,omitempty"`
 	WorkspaceName string `json:"workspace_name,omitempty"`
+	ActiveTool    string `json:"active_tool,omitempty"` // claude-code | codex | gemini
 }
 
 func configPath() (string, error) {

@@ -268,7 +268,7 @@ func (c *Client) GetCommitHashes(token, workspaceID string) ([]string, error) {
 	return result.Hashes, nil
 }
 
-func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch, committedAt string) (string, error) {
+func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt, response, diff, branch, committedAt, tool string) (string, error) {
 	body := map[string]any{
 		"workspace_id": workspaceID,
 		"raw_prompt":   prompt,
@@ -288,6 +288,9 @@ func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt,
 	}
 	if committedAt != "" {
 		body["committed_at"] = committedAt
+	}
+	if tool != "" {
+		body["ai_tool"] = tool
 	}
 	r, err := c.post("/collect/event", token, body)
 	if err != nil {

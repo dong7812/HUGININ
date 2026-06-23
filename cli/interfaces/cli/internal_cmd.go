@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"huginin/application"
+	"huginin/infrastructure/config"
+	"huginin/interfaces/tui"
 )
 
 func newInternalCmds(projUC *application.ProjectUseCase, ks interface {
@@ -43,6 +45,7 @@ func newInternalCmds(projUC *application.ProjectUseCase, ks interface {
 			prompt, _ := cmd.Flags().GetString("prompt")
 			response, _ := cmd.Flags().GetString("response")
 			diff, _ := cmd.Flags().GetString("diff")
+			tool, _ := cmd.Flags().GetString("tool")
 
 			// branch: 플래그 미지정 시 현재 git branch 자동 감지
 			branch, _ := cmd.Flags().GetString("branch")
@@ -55,7 +58,7 @@ func newInternalCmds(projUC *application.ProjectUseCase, ks interface {
 				}
 			}
 
-			eventID, err := projUC.CollectEvent(wsID, projID, commitHash, prompt, response, diff, branch, "")
+			eventID, err := projUC.CollectEvent(wsID, projID, commitHash, prompt, response, diff, branch, "", tool)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "[huginin] collect error: %v\n", err)
 				return nil // 훅 실패가 커밋을 막으면 안 됨
@@ -71,6 +74,42 @@ func newInternalCmds(projUC *application.ProjectUseCase, ks interface {
 	collectCmd.Flags().String("response", "", "")
 	collectCmd.Flags().String("diff", "", "")
 	collectCmd.Flags().String("branch", "", "git branch (미지정 시 자동 감지)")
+	collectCmd.Flags().String("tool", "", "LLM tool (claude-code | codex | gemini)")
 
-	return []*cobra.Command{tokenCmd, collectCmd}
+	// __set-tool: active_tool 강제 갱신 (TUI/tmux hook용)
+	setToolCmd := &cobra.Command{
+		Use:    "__set-tool <tool>",
+		Hidden: true,
+		Args:   cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			tool := args[0]
+			switch tool {
+			case "claude-code", "codex", "antigravity":
+			case "claude":
+				tool = "claude-code"
+			case "agy":
+				tool = "antigravity"
+			default:
+				return fmt.Errorf("unknown tool %q", tool)
+			}
+			cfg, err := config.Load()
+			if err != nil {
+				return err
+			}
+			cfg.ActiveTool = tool
+			return config.Save(cfg)
+		},
+	}
+
+	// __mux: PTY 멀티플렉서 진입점 (TUI에서 claude/agy/codex/pick 실행 시 호출)
+	muxCmd := &cobra.Command{
+		Use:    "__mux <tool>",
+		Hidden: true,
+		Args:   cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return tui.RunMultiplexer(args[0])
+		},
+	}
+
+	return []*cobra.Command{tokenCmd, collectCmd, setToolCmd, muxCmd}
 }

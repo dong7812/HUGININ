@@ -69,19 +69,43 @@ if [ -z "$WORKSPACE_ID" ]; then
   exit 0
 fi
 
-# Claude Code 세션 로그에서 전체 대화 추출 (best-effort)
-# 마지막 1쌍이 아니라 세션 전체 DEV/AI 턴을 포맷해서 넘김
-CLAUDE_LOG_DIR="$HOME/.claude/projects"
+# 활성 LLM 툴 읽기 (huginin use <tool> 로 설정)
+ACTIVE_TOOL=$(python3 -c "
+import json, os
+try:
+    d = json.load(open(os.path.expanduser('~/.huginin/config.json')))
+    print(d.get('active_tool', 'claude-code'))
+except Exception:
+    print('claude-code')
+" 2>/dev/null || echo "claude-code")
+
 PROMPT=""
 RESPONSE=""
-if [ -d "$CLAUDE_LOG_DIR" ]; then
-  LATEST=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -mmin -1440 2>/dev/null \
-    | xargs ls -t 2>/dev/null | head -1 || true)
-  if [ -n "$LATEST" ]; then
-    PROMPT=$(python3 -c "
+
+# ── Claude Code 세션 추출 ──────────────────────────────────────────────────
+if [ "$ACTIVE_TOOL" = "claude-code" ]; then
+  CLAUDE_LOG_DIR="$HOME/.claude/projects"
+  if [ -d "$CLAUDE_LOG_DIR" ]; then
+    LATEST=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -mmin -1440 2>/dev/null \
+      | xargs ls -t 2>/dev/null | head -1 || true)
+    if [ -n "$LATEST" ]; then
+      PROMPT=$(python3 -c "
 import json, sys
 
-lines = [json.loads(l) for l in open('$LATEST') if l.strip()]
+latest_path = sys.argv[1]
+lines = []
+try:
+    with open(latest_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                lines.append(json.loads(line))
+            except:
+                continue
+except:
+    pass
 
 turns = []
 for l in lines:
@@ -98,7 +122,6 @@ for l in lines:
         for c in content:
             if not isinstance(c, dict):
                 continue
-            # tool_use / tool_result 제외, 순수 텍스트만
             if c.get('type') == 'text':
                 t = c.get('text', '').strip()
                 if t:
@@ -110,7 +133,6 @@ for l in lines:
     if text and len(text) > 10:
         turns.append((role, text))
 
-# 연속 같은 role 병합
 merged = []
 for role, text in turns:
     if merged and merged[-1][0] == role:
@@ -118,18 +140,136 @@ for role, text in turns:
     else:
         merged.append([role, text])
 
-# DEV/AI 레이블로 대화 포맷팅, 각 턴 600자 제한
 out = []
 for role, text in merged:
     label = 'DEV' if role == 'user' else 'AI'
     out.append(f'[{label}] {text[:600]}')
 
-conversation = '\n\n'.join(out)
-# 최근 8000자 (가장 의사결정이 많은 최신 맥락)
-print(conversation[-8000:])
-" 2>/dev/null || true)
-    # RESPONSE는 더 이상 별도로 추출하지 않음 (PROMPT에 전체 대화 포함)
-    RESPONSE=""
+print('\n\n'.join(out)[-8000:])
+" "$LATEST" 2>/dev/null || true)
+      RESPONSE=""
+    fi
+  fi
+fi
+
+# ── Codex CLI 세션 추출 ────────────────────────────────────────────────────
+# ~/.codex/sessions/YYYY/MM/DD/rollout-<ts>-<id>.jsonl
+if [ "$ACTIVE_TOOL" = "codex" ]; then
+  CODEX_SESSION_DIR="$HOME/.codex/sessions"
+  if [ -d "$CODEX_SESSION_DIR" ]; then
+    LATEST=$(find "$CODEX_SESSION_DIR" -name "rollout-*.jsonl" -mmin -1440 2>/dev/null \
+      | xargs ls -t 2>/dev/null | head -1 || true)
+    if [ -n "$LATEST" ]; then
+      PROMPT=$(python3 -c "
+import json, sys
+
+latest_path = sys.argv[1]
+turns = []
+try:
+    with open(latest_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                obj = json.loads(line)
+            except Exception:
+                continue
+            if obj.get('type') != 'response_item':
+                continue
+            payload = obj.get('payload', {})
+            if payload.get('type') != 'message':
+                continue
+            role = payload.get('role', '')
+            if role not in ('user', 'assistant'):
+                continue
+            content = payload.get('content')
+            if not isinstance(content, list):
+                continue
+            parts = []
+            for c in content:
+                if isinstance(c, dict) and c.get('type') in ('input_text', 'output_text', 'text'):
+                    t = c.get('text', '').strip()
+                    if t and len(t) > 5:
+                        parts.append(t)
+            text = '\n'.join(parts)
+            if text:
+                turns.append((role, text))
+except:
+    pass
+
+merged = []
+for role, text in turns:
+    if merged and merged[-1][0] == role:
+        merged[-1][1] += '\n' + text
+    else:
+        merged.append([role, text])
+
+out = []
+for role, text in merged:
+    label = 'DEV' if role == 'user' else 'AI'
+    out.append(f'[{label}] {text[:600]}')
+
+print('\n\n'.join(out)[-8000:])
+" "$LATEST" 2>/dev/null || true)
+      RESPONSE=""
+    fi
+  fi
+fi
+
+# ── Antigravity CLI (agy) 세션 추출 ──────────────────────────────────────
+# ~/.gemini/antigravity-cli/brain/<id>/.system_generated/logs/transcript.jsonl
+if [ "$ACTIVE_TOOL" = "antigravity" ]; then
+  AGY_BRAIN_DIR="$HOME/.gemini/antigravity-cli/brain"
+  if [ -d "$AGY_BRAIN_DIR" ]; then
+    LATEST=$(find "$AGY_BRAIN_DIR" -name "transcript.jsonl" -mmin -1440 2>/dev/null \
+      | xargs ls -t 2>/dev/null | head -1 || true)
+    if [ -n "$LATEST" ]; then
+      PROMPT=$(python3 -c "
+import json, sys, re
+
+latest_path = sys.argv[1]
+turns = []
+try:
+    with open(latest_path) as f:
+        for line in f:
+            line = line.strip()
+            if not line: continue
+            try: obj = json.loads(line)
+            except: continue
+            src = obj.get('source', '')
+            typ = obj.get('type', '')
+            content = obj.get('content', '') or ''
+
+            if src == 'USER_EXPLICIT' and typ == 'USER_INPUT':
+                # <USER_REQUEST>...</USER_REQUEST> 태그 안의 실제 요청만 추출
+                m = re.search(r'<USER_REQUEST>(.*?)</USER_REQUEST>', content, re.DOTALL)
+                text = m.group(1).strip() if m else content.strip()
+                if text:
+                    turns.append(('user', text))
+            elif src == 'MODEL' and typ == 'PLANNER_RESPONSE':
+                text = content.strip()
+                if text:
+                    turns.append(('model', text))
+except:
+    pass
+
+merged = []
+for role, text in turns:
+    if merged and merged[-1][0] == role:
+        merged[-1][1] += '\n' + text
+    else:
+        merged.append([role, text])
+
+out = []
+for role, text in merged:
+    label = 'DEV' if role == 'user' else 'AI'
+    out.append(f'[{label}] {text[:600]}')
+
+print('\n\n'.join(out)[-8000:])
+" "$LATEST" 2>/dev/null || true)
+      RESPONSE=""
+    fi
   fi
 fi
 
@@ -146,6 +286,7 @@ fi
   --prompt "$PROMPT" \
   --response "$RESPONSE" \
   --diff "$DIFF" \
+  --tool "$ACTIVE_TOOL" \
   2>>"$HUGININ_DIR/collect.log" || true) &
 
 echo "[huginin] event queued for commit $COMMIT_HASH"

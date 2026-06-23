@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"huginin/application"
+	"huginin/infrastructure/config"
 )
 
 func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
@@ -27,6 +29,15 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 			wsID, projID, err := loadProjectsJSON(".")
 			if err != nil {
 				return fmt.Errorf("프로젝트 미연결 — 먼저 huginin setup을 실행하세요")
+			}
+
+			// 활성 툴 읽기
+			cfg, err := config.Load()
+			var activeTool string
+			if err == nil && cfg != nil && cfg.ActiveTool != "" {
+				activeTool = cfg.ActiveTool
+			} else {
+				activeTool = "claude-code"
 			}
 
 			// 1. 서버에 이미 있는 commit hash 목록 조회
@@ -84,7 +95,7 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 				}
 			}
 
-			fmt.Printf("누락 커밋 %d개 발견 (branch: %s):\n", len(missing), missing[0].branch)
+			fmt.Printf("누락 커밋 %d개 발견 (branch: %s, active_tool: %s):\n", len(missing), missing[0].branch, activeTool)
 			for _, c := range missing {
 				msg := firstLine(c.msg)
 				if len(msg) > 60 {
@@ -100,7 +111,7 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 			for i := len(missing) - 1; i >= 0; i-- {
 				c := missing[i]
 				diff := gitDiff(c.hash)
-				prompt, response := findClaudeSession(c.ts)
+				prompt, response := findSession(activeTool, c.ts)
 				if prompt == "" {
 					prompt = "[git commit] " + c.msg
 				}
@@ -109,7 +120,7 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 				}
 
 				committedAt := c.ts.UTC().Format(time.RFC3339)
-				_, err := projUC.CollectEvent(wsID, projID, c.hash, prompt, response, diff, c.branch, committedAt)
+				_, err := projUC.CollectEvent(wsID, projID, c.hash, prompt, response, diff, c.branch, committedAt, activeTool)
 				msg := firstLine(c.msg)
 				if len(msg) > 50 {
 					msg = msg[:50] + "…"
@@ -198,7 +209,71 @@ func gitDiff(hash string) string {
 	return strings.Join(lines, "\n")
 }
 
-// ── Claude session JSONL 매칭 ───────────────────────────────────────────────
+// ── Multi-LLM session 매칭 ───────────────────────────────────────────────
+
+var userRequestRegex = regexp.MustCompile(`(?s)<USER_REQUEST>(.*?)</USER_REQUEST>`)
+
+func findSession(tool string, commitTime time.Time) (prompt, response string) {
+	var baseDir string
+	var pattern string
+
+	switch tool {
+	case "codex":
+		baseDir = filepath.Join(os.Getenv("HOME"), ".codex", "sessions")
+		pattern = "rollout-"
+	case "antigravity":
+		baseDir = filepath.Join(os.Getenv("HOME"), ".gemini", "antigravity-cli", "brain")
+		pattern = "transcript.jsonl"
+	default:
+		// claude-code
+		return findClaudeSession(commitTime)
+	}
+
+	if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+		return "", ""
+	}
+
+	var bestFile string
+	var bestDelta time.Duration = 1<<62 - 1
+
+	_ = filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		if info.IsDir() {
+			return nil
+		}
+		name := info.Name()
+		matched := false
+		if tool == "codex" {
+			matched = strings.HasPrefix(name, pattern) && strings.HasSuffix(name, ".jsonl")
+		} else if tool == "antigravity" {
+			matched = name == pattern
+		}
+		if matched {
+			delta := info.ModTime().Sub(commitTime)
+			if delta < 0 {
+				delta = -delta
+			}
+			if delta < 30*time.Minute && delta < bestDelta {
+				bestDelta = delta
+				bestFile = path
+			}
+		}
+		return nil
+	})
+
+	if bestFile == "" {
+		return "", ""
+	}
+
+	if tool == "codex" {
+		return parseCodexJSONL(bestFile)
+	} else if tool == "antigravity" {
+		return parseAntigravityJSONL(bestFile)
+	}
+	return "", ""
+}
 
 func findClaudeSession(commitTime time.Time) (prompt, response string) {
 	claudeDir := filepath.Join(os.Getenv("HOME"), ".claude", "projects")
@@ -235,10 +310,10 @@ func findClaudeSession(commitTime time.Time) (prompt, response string) {
 	if bestFile == "" {
 		return "", ""
 	}
-	return parseJSONL(bestFile)
+	return parseClaudeJSONL(bestFile)
 }
 
-func parseJSONL(path string) (prompt, response string) {
+func parseClaudeJSONL(path string) (prompt, response string) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", ""
@@ -293,6 +368,117 @@ func parseJSONL(path string) (prompt, response string) {
 		}
 		if e.Type == "assistant" && response == "" {
 			response = extractText(e.Message.Content)
+		}
+		if prompt != "" && response != "" {
+			break
+		}
+	}
+	return prompt, response
+}
+
+func parseCodexJSONL(path string) (prompt, response string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", ""
+	}
+	defer f.Close()
+
+	type contentBlock struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+	type payload struct {
+		Type    string            `json:"type"`
+		Role    string            `json:"role"`
+		Content []json.RawMessage `json:"content"`
+	}
+	type entry struct {
+		Type    string  `json:"type"`
+		Payload payload `json:"payload"`
+	}
+
+	var entries []entry
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 4*1024*1024), 4*1024*1024)
+	for sc.Scan() {
+		var e entry
+		if json.Unmarshal(sc.Bytes(), &e) == nil {
+			entries = append(entries, e)
+		}
+	}
+
+	extractText := func(raw []json.RawMessage) string {
+		var parts []string
+		for _, r := range raw {
+			var s string
+			if json.Unmarshal(r, &s) == nil {
+				if s != "" {
+					parts = append(parts, s)
+				}
+				continue
+			}
+			var b contentBlock
+			if json.Unmarshal(r, &b) == nil {
+				if (b.Type == "text" || b.Type == "input_text" || b.Type == "output_text") && b.Text != "" {
+					parts = append(parts, b.Text)
+				}
+			}
+		}
+		return strings.Join(parts, "\n")
+	}
+
+	for i := len(entries) - 1; i >= 0; i-- {
+		e := entries[i]
+		if e.Type != "response_item" || e.Payload.Type != "message" {
+			continue
+		}
+		if e.Payload.Role == "user" && prompt == "" {
+			prompt = truncate(extractText(e.Payload.Content), 2000)
+		}
+		if e.Payload.Role == "assistant" && response == "" {
+			response = truncate(extractText(e.Payload.Content), 2000)
+		}
+		if prompt != "" && response != "" {
+			break
+		}
+	}
+	return prompt, response
+}
+
+func parseAntigravityJSONL(path string) (prompt, response string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", ""
+	}
+	defer f.Close()
+
+	type entry struct {
+		Source  string `json:"source"`
+		Type    string `json:"type"`
+		Content string `json:"content"`
+	}
+
+	var entries []entry
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 4*1024*1024), 4*1024*1024)
+	for sc.Scan() {
+		var e entry
+		if json.Unmarshal(sc.Bytes(), &e) == nil {
+			entries = append(entries, e)
+		}
+	}
+
+	for i := len(entries) - 1; i >= 0; i-- {
+		e := entries[i]
+		if e.Source == "USER_EXPLICIT" && e.Type == "USER_INPUT" && prompt == "" {
+			text := e.Content
+			if m := userRequestRegex.FindStringSubmatch(text); len(m) > 1 {
+				text = m[1]
+			}
+			prompt = truncate(strings.TrimSpace(text), 2000)
+		}
+		if e.Source == "MODEL" && e.Type == "PLANNER_RESPONSE" && response == "" {
+			response = truncate(strings.TrimSpace(e.Content), 2000)
 		}
 		if prompt != "" && response != "" {
 			break

@@ -86,13 +86,16 @@ func newSetupCmd(wsUC *application.WorkspaceUseCase, projUC *application.Project
 				return err
 			}
 
+			// tmux 설치 여부 확인 및 자동 설치
+			ensureTmuxInstalled()
+
 			fmt.Println()
 			fmt.Println("✓ 설정 완료")
 			fmt.Printf("  워크스페이스: %s\n", cfg.WorkspaceName)
 			fmt.Printf("  프로젝트:     %s\n", projectName)
 			fmt.Println()
 			fmt.Println("이제 커밋하면 자동으로 HUGININ에 기록됩니다.")
-			fmt.Println("claude를 입력해 코드 작업을 시작하세요.")
+			fmt.Println("claude 또는 multiplex를 입력해 코드 작업을 시작하세요.")
 			return nil
 		},
 	}
@@ -101,4 +104,49 @@ func newSetupCmd(wsUC *application.WorkspaceUseCase, projUC *application.Project
 // runSetupAsProcess는 TUI에서 huginin setup을 서브프로세스로 실행할 때 쓰는 helper다.
 func runSetupAsProcess() *exec.Cmd {
 	return exec.Command(os.Args[0], "setup")
+}
+
+func ensureTmuxInstalled() {
+	_, err := exec.LookPath("tmux")
+	if err == nil {
+		return
+	}
+
+	fmt.Println("\nHUGININ 멀티플렉서 기능에는 tmux가 필요합니다.")
+	prompt := promptui.Prompt{
+		Label:     "tmux를 설치하시겠습니까 (y/N)",
+		Default:   "N",
+		IsConfirm: true,
+	}
+	_, err = prompt.Run()
+	if err != nil {
+		fmt.Println("  → tmux 설치를 건너뜁니다. (멀티플렉서 기능을 사용하려면 수동 설치: brew install tmux)")
+		return
+	}
+
+	fmt.Println("tmux 설치 중...")
+	var cmd *exec.Cmd
+	if _, err := exec.LookPath("brew"); err == nil {
+		cmd = exec.Command("brew", "install", "tmux")
+	} else if _, err := exec.LookPath("apt-get"); err == nil {
+		// apt-get은 update와 install을 하나의 shell 명령어로 묶어서 쉘에서 작동하도록 함
+		cmd = exec.Command("sudo", "sh", "-c", "apt-get update && apt-get install -y tmux")
+	} else if _, err := exec.LookPath("yum"); err == nil {
+		cmd = exec.Command("sudo", "yum", "install", "-y", "tmux")
+	}
+
+	if cmd != nil {
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Stdin = os.Stdin
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("✗ tmux 설치 실패: %v\n", err)
+			fmt.Println("수동으로 설치해주세요.")
+		} else {
+			fmt.Println("✓ tmux 설치 완료!")
+		}
+	} else {
+		fmt.Println("✗ 사용 가능한 패키지 매니저(brew, apt-get, yum)를 찾을 수 없습니다.")
+		fmt.Println("수동으로 tmux를 설치해 주세요.")
+	}
 }
