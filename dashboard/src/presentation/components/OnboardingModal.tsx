@@ -60,27 +60,39 @@ export function OnboardingModal() {
   const [visible, setVisible] = useState(false);
   const rafRef = useRef<number>(0);
 
-  const measureTarget = useCallback((stepIdx: number) => {
+  const measureTarget = useCallback((stepIdx: number): boolean => {
     const el = document.querySelector(`[data-tour="${STEPS[stepIdx].target}"]`);
-    if (!el) { setRect(null); return; }
+    if (!el) return false;
     const r = el.getBoundingClientRect();
     setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+    return true;
   }, []);
 
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
-    // slight delay so layout settles
-    const t = setTimeout(() => { setVisible(true); measureTarget(0); }, 600);
+    const t = setTimeout(() => setVisible(true), 600);
     return () => clearTimeout(t);
-  }, [measureTarget]);
+  }, []);
 
   useEffect(() => {
     if (!visible) return;
-    measureTarget(step);
+
+    // 즉시 측정 시도, 실패하면 DOM에 요소가 나타날 때까지 polling
+    if (measureTarget(step)) return;
+
+    const interval = setInterval(() => {
+      if (measureTarget(step)) clearInterval(interval);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [visible, step, measureTarget]);
+
+  useEffect(() => {
+    if (!visible || !rect) return;
     const onResize = () => measureTarget(step);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [visible, step, measureTarget]);
+  }, [visible, rect, step, measureTarget]);
 
   if (!visible) return null;
 
