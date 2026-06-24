@@ -109,6 +109,7 @@ func RunMultiplexer(initial string) error {
 	}
 	m.active = name
 	m.saveActiveTool(name)
+	showBanner(name)
 
 	m.startStdinReader()
 
@@ -128,16 +129,31 @@ func RunMultiplexer(initial string) error {
 				term.Restore(fd, oldState)
 				next := m.pickUI()
 				oldState, _ = term.MakeRaw(fd)
-				m.startStdinReader() // 재시작
+				m.startStdinReader()
+
+				if next == "" {
+					// 취소: 화면 건드리지 않고 현재 CLI 복귀
+					m.mu.Lock()
+					m.paused = false
+					m.mu.Unlock()
+					continue
+				}
+				// switchTo 먼저(paused=true 상태) → clearScreen → paused=false 순으로
+				// active 교체와 화면 정리가 완전히 끝난 뒤 새 CLI 출력 허용
+				var ctx string
+				if next != m.active {
+					ctx = m.extractContext(m.active)
+					m.switchTo(next)
+				}
+				clearScreen()
+				showBanner(m.active)
 
 				m.mu.Lock()
 				m.paused = false
 				m.mu.Unlock()
 
-				if next != "" && next != m.active {
-					ctx := m.extractContext(m.active)
-					m.switchTo(next)
-					go m.injectContext(next, ctx)
+				if ctx != "" {
+					go m.injectContext(m.active, ctx)
 				}
 				continue
 			}
@@ -171,9 +187,21 @@ func RunMultiplexer(initial string) error {
 			if next == "" {
 				return nil
 			}
-			ctx := m.extractContext(m.active)
-			m.switchTo(next)
-			go m.injectContext(next, ctx)
+			var ctx string
+			if next != m.active {
+				ctx = m.extractContext(m.active)
+				m.switchTo(next)
+			}
+			clearScreen()
+			showBanner(next)
+
+			m.mu.Lock()
+			m.paused = false
+			m.mu.Unlock()
+
+			if ctx != "" {
+				go m.injectContext(next, ctx)
+			}
 		}
 	}
 }
@@ -458,4 +486,22 @@ func toolBinary(name string) string {
 	default:
 		return name
 	}
+}
+
+// clearScreen erases the terminal and moves the cursor to the top-left.
+func clearScreen() {
+	os.Stdout.Write([]byte("\x1b[2J\x1b[H"))
+}
+
+// showBanner prints a one-line header identifying the active CLI.
+// Written while paused=true so it appears before any CLI output.
+func showBanner(name string) {
+	label := name
+	for _, t := range cliTools {
+		if t.name == name {
+			label = t.label
+			break
+		}
+	}
+	fmt.Fprintf(os.Stdout, "\r\x1b[36m── huginin ▸ %s ──\x1b[0m  \x1b[2mCtrl+\\: 전환\x1b[0m\r\n\r\n", label)
 }
