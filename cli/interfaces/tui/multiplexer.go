@@ -26,7 +26,13 @@ const (
 	ctxBufSize  = 4096
 )
 
-var ansiEscape = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]|\x1b[^[\x1b]`)
+// Matches CSI (including private-mode params like ?/>/<), OSC, and 2-char escapes.
+var ansiEscape = regexp.MustCompile(
+	`\x1b\[[\x30-\x3f]*[\x20-\x2f]*[\x40-\x7e]` + // CSI: ESC [ params final
+		`|\x1b][^\a\x1b]*(?:\a|\x1b\\)` + // OSC: ESC ] ... BEL/ST
+		`|\x1b[^\[^\]]` + // 2-char escape sequences
+		`|\x07|\x0d`, // lone BEL, CR
+)
 
 var cliTools = []struct {
 	name   string
