@@ -1,10 +1,6 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getDashboardOverview } from "@/application/use-cases/getDashboardOverview";
-import { getEventFeed } from "@/application/use-cases/getEventFeed";
-import { getActivity } from "@/application/use-cases/getActivity";
-import { getTokenStats } from "@/application/use-cases/getTokenStats";
 import { createDashboardRepository } from "@/infrastructure/http/dashboardRepository";
 import { createCommentRepository } from "@/infrastructure/http/commentRepository";
 import { useAuthStore } from "@/application/stores/authStore";
@@ -35,7 +31,7 @@ export function useOverviewQuery(workspaceId: string) {
   const repo = createDashboardRepository(token);
   return useQuery({
     queryKey: ["overview", workspaceId],
-    queryFn: () => getDashboardOverview(repo, workspaceId),
+    queryFn: () => repo.getOverview(workspaceId),
     enabled: !!token && !!workspaceId,
     staleTime: 30_000,
   });
@@ -46,7 +42,7 @@ export function useFeedQuery(workspaceId: string, page = 0, limit = 15, branch?:
   const repo = createDashboardRepository(token);
   return useQuery({
     queryKey: ["feed", workspaceId, page, branch, dateFrom, frame],
-    queryFn: () => getEventFeed(repo, workspaceId, limit, page * limit, branch, dateFrom, frame),
+    queryFn: () => repo.getFeed(workspaceId, limit, page * limit, branch, dateFrom, frame),
     enabled: !!token && !!workspaceId,
     staleTime: 15_000,
   });
@@ -90,7 +86,7 @@ export function useActivityQuery(workspaceId: string, days = 30) {
   const repo = createDashboardRepository(token);
   return useQuery({
     queryKey: ["activity", workspaceId, days],
-    queryFn: () => getActivity(repo, workspaceId, days),
+    queryFn: () => repo.getActivity(workspaceId, days),
     enabled: !!token && !!workspaceId,
     staleTime: 60_000,
   });
@@ -123,7 +119,7 @@ export function useTokenStatsQuery(workspaceId: string, days = 30, branch?: stri
   const repo = createDashboardRepository(token);
   return useQuery({
     queryKey: ["tokenStats", workspaceId, days, branch],
-    queryFn: () => getTokenStats(repo, workspaceId, days, branch),
+    queryFn: () => repo.getTokenStats(workspaceId, days, branch),
     enabled: !!token && !!workspaceId,
     staleTime: 60_000,
   });
