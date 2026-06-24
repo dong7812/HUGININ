@@ -53,11 +53,12 @@ type ptySession struct {
 }
 
 type Multiplexer struct {
-	sessions map[string]*ptySession
-	active   string
-	paused   bool
-	exitCh   chan string
-	mu       sync.Mutex
+	sessions    map[string]*ptySession
+	active      string
+	paused      bool
+	suppressing bool // suppress PTY output briefly during context injection echo
+	exitCh      chan string
+	mu          sync.Mutex
 
 	// stdin reader goroutine management
 	stdinCh  chan []byte
@@ -293,7 +294,7 @@ func (m *Multiplexer) outputLoop(name string, s *ptySession) {
 			}
 
 			m.mu.Lock()
-			write := m.active == name && !m.paused
+			write := m.active == name && !m.paused && !m.suppressing
 			m.mu.Unlock()
 			if write {
 				os.Stdout.Write(buf[:n])
@@ -333,15 +334,31 @@ func (m *Multiplexer) injectContext(name, ctx string) {
 			}
 			quiet.Reset(quietPeriod)
 		case <-quiet.C:
-			msg := fmt.Sprintf("[huginin 컨텍스트 전달]\n%s\n", ctx)
-			s.pty.Write([]byte(msg))
+			m.injectSilent(s, ctx)
 			return
 		case <-deadline.C:
-			msg := fmt.Sprintf("[huginin 컨텍스트 전달]\n%s\n", ctx)
-			s.pty.Write([]byte(msg))
+			m.injectSilent(s, ctx)
 			return
 		}
 	}
+}
+
+// injectSilent writes context to the session's PTY stdin while suppressing
+// stdout output so the PTY echo never reaches the user's terminal.
+func (m *Multiplexer) injectSilent(s *ptySession, ctx string) {
+	m.mu.Lock()
+	m.suppressing = true
+	m.mu.Unlock()
+
+	msg := fmt.Sprintf("[huginin 컨텍스트 전달]\n%s\n", ctx)
+	s.pty.Write([]byte(msg))
+
+	// Wait for echo to flush through the PTY before restoring output.
+	time.Sleep(300 * time.Millisecond)
+
+	m.mu.Lock()
+	m.suppressing = false
+	m.mu.Unlock()
 }
 
 func (m *Multiplexer) extractContext(name string) string {
