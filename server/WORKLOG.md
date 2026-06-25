@@ -8,3 +8,7 @@
 2026-06-17 17:11 | commit | 4c21cf6 | branch:main | Fix pm_briefer: format string KeyError on curly braces in decision content
 2026-06-18 10:05 | commit | 3ba7554 | branch:main | Shorten chat replies: 3 sentences max, max_tokens 800→300
 2026-06-18 21:21 | commit | 5672071 | branch:main | Add workspace delete + invite code popup (dashboard & CLI)
+2026-06-18 23:20 | commit | 98ddbc2 | branch:main | Fix 500 on workspace join: offset-naive vs aware datetime
+2026-06-18 23:41 | commit | e429e7a | branch:main | Add Bubble Tea TUI session: huginin enters interactive REPL on bare invocation
+2026-06-19 19:58 | commit | 09c4983 | branch:main | Fix healthcheck timeout: pre-download embedding model in Dockerfile
+2026-06-19 20:02 | commit | 6af703e | branch:main | Fix: pre-download embedding model in correct root Dockerfile

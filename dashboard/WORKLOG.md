@@ -22,3 +22,11 @@
 2026-06-16 21:54 | commit | 7d71cf5 | branch:main | Fix refine_event: max_tokens 512→1024 + truncation recovery
 2026-06-16 21:57 | commit | 17204ef | branch:main | Fix Railway startup crash: DB connect retry with backoff
 2026-06-17 01:54 | commit | aaf9139 | branch:main | Fix search: semantic vector search + fix workspace creation button
+2026-06-17 10:49 | commit | 1c05cfa | branch:main | Logo: remove circle bg, hero 52→120px, nav icon 22→40px
+2026-06-18 23:55 | commit | b155f2c | branch:main | Fix TUI session: remove alt screen, add login/logout commands
+2026-06-22 17:54 | commit | 9aff557 | branch:main | ETL: add rejected_alternatives + implicit_constraints fields
+2026-06-22 19:46 | commit | 52b51fd | branch:main | Redesign timeline card: REJECTED/CONSTRAINT front, drop what/how grid
+2026-06-22 20:14 | commit | de6aafa | branch:main | Fix decision card: restore tradeoffs as core rationale row
+2026-06-22 20:17 | commit | 7e2474a | branch:main | Simplify expanded card: no grid, lead with rejected/constraint blocks
+2026-06-22 20:38 | commit | 65c4084 | branch:main | Fix: add rejected_alternatives + implicit_constraints to API response schema
+2026-06-22 21:24 | commit | 59894db | branch:main | Redesign card: clean why/what/tradeoff sections, no colored blocks

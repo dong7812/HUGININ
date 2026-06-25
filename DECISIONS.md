@@ -2,6 +2,66 @@
 
 ---
 
+## [2026-06-24] PTY 멀티플렉서: huginin TUI 구조 전환
+
+**Context**: `huginin` 단독 실행 시 Bubble Tea REPL로 claude 세션 진입했으나, 멀티 CLI(agy, codex) 지원과 Ctrl+\ 전환 UX를 위해 PTY 멀티플렉서 구조로 전환.
+
+**Decision**: Bubble Tea REPL 대신 직접 PTY 관리. `creack/pty`로 각 CLI(claude · agy · codex)를 별도 PTY로 실행, stdin goroutine이 syscall.Select polling으로 Ctrl+\ 감지.
+
+**Alternatives considered**:
+- tmux/screen 래핑 — 외부 의존성 추가, UX 제어 불가
+- Bubble Tea ExecProcess 유지 — 멀티 PTY 동시 관리 불가
+
+**Reasoning**:
+- macOS에서 fd close 시 goroutine 내 Read()가 unblock되지 않음 (OS 레벨 제약)
+- syscall.Select 10ms timeout polling이 산업 표준 terminal non-blocking I/O 접근법
+- `darwin syscall.FdSet{Bits [32]int32}` — linux와 달리 int32 배열 bit 조작 필요
+
+**Intent class**: FEATURE_BUILDING
+**Signal score**: HIGH
+**Outcome**: implemented (cli/interfaces/tui/multiplexer.go)
+
+---
+
+## [2026-06-24] CLI 전환 UX: clearScreen + showBanner 순서
+
+**Context**: CLI 전환 시 이전 CLI 출력이 새 CLI 화면에 overlap되거나, 어떤 CLI가 활성인지 구별 불가.
+
+**Decision**: 전환 순서를 `switchTo → clearScreen → showBanner → paused=false`로 고정. paused=true 상태 유지 중에 clearScreen, banner 출력 후 paused 해제.
+
+**Reasoning**:
+- paused=true로 이전 CLI output을 outputLoop에서 차단
+- clearScreen 먼저 실행해 깨끗한 slate 보장
+- showBanner로 현재 활성 CLI(claude · agy · codex) 명시
+- paused=false 후 context injection은 별도 goroutine
+
+**Intent class**: FEATURE_BUILDING
+**Signal score**: HIGH
+**Outcome**: implemented
+
+---
+
+## [2026-06-24] 검색 고도화 방향: MMR + 하이브리드
+
+**Context**: 현재 검색은 pgvector cosine similarity top-K → LLM 합성. 결과가 중복되거나 다양성 부족.
+
+**Decision**: Phase 3에 MMR(Maximal Marginal Relevance) 리랭킹과 BM25+pgvector 하이브리드 검색 추가 예정.
+
+**Alternatives considered**:
+- Google Information Gain (InfoGain-RAG, arxiv 2509.12765) — LLM 신뢰도 델타 기반, +17.9% 성능 향상. 단, LLM 추가 호출 비용 발생
+- MMR — 기존 임베딩 재활용, 추가 LLM 호출 없음, 다양성·관련성 균형 λ로 조정 가능
+
+**Reasoning**:
+- MMR은 post-retrieval에서 기존 pgvector 결과에 적용 → 추가 인프라 없이 구현 가능
+- `score = λ·sim(doc,query) − (1−λ)·max_sim(doc,selected)` 단순 수식
+- 현재 pgvector top-K 이후 Python 레이어에서 추가 연산만 필요
+
+**Intent class**: EXPLORING
+**Signal score**: MEDIUM
+**Outcome**: backlogged (Phase 3)
+
+---
+
 ## [2026-06-15] 핵심 방향: AI 협업 가시화 + Frame A/B/C/D 팀 스케일 확장
 
 **Context**: "MD 파일과 뭐가 달라?"라는 외부 피드백과, Frame A/B/C/D가 서버에 구현돼 있지 않다는 사실 확인. 제품의 핵심을 재정의할 필요가 생김.
@@ -408,6 +468,124 @@
 **Intent class**: EXPLORING
 **Signal score**: HIGH
 **Outcome**: implemented (방향 확정)
+
+## [2026-06-19] CLI TUI 접근법 — alt screen vs REPL-style
+
+**Context**: `huginin` 단독 실행 시 Claude Code처럼 세션 안에 머무는 UI 구현. Bubble Tea 라이브러리 도입 후 `tea.WithAltScreen()`으로 풀스크린 TUI 구현 → claude subprocess가 즉시 종료되는 버그 발생.
+
+**Decision**: alt screen 제거, `tea.Println` 기반 REPL-style 인라인 출력으로 전환. `tea.ExecProcess`로 claude/login subprocess 핸드오프.
+
+**Alternatives considered**:
+- Option A — 풀스크린 TUI (alt screen + viewport) — 시각적으로 완성도 높으나 Claude Code의 터미널 제어와 충돌
+- Option B — 별도 pane/split — 구현 복잡도 대폭 증가
+- Option C — REPL-style (선택) — 진입 후 컨텍스트 유지, `tea.ExecProcess`로 서브프로세스 정상 핸드오프
+
+**Reasoning**: `tea.WithAltScreen()`이 Claude Code 자체의 터미널 관리와 충돌해 claude subprocess가 시작하자마자 종료됨. alt screen 없이도 `tea.Println`으로 REPL 패턴 구현 가능 — 기능 손실 없음. `tea.ExecProcess`가 stdin/stdout을 서브프로세스에 완전 위임하므로 claude 세션이 정상 작동.
+
+**AI contribution**:
+  - Identified: `tea.WithAltScreen()`이 Claude Code 터미널 제어와 충돌하는 것을 근본 원인으로 진단
+  - Suggested: alt screen 제거 + `tea.Println` REPL 패턴으로 전환
+  - Developer-driven: "진입 후 컨텍스트 유지되는 프롬프트로" 방향 제시, Option C 선택
+
+**Intent class**: FEATURE_BUILDING (runner-up: BUG_FIXING)
+**Signal score**: HIGH
+**Outcome**: implemented (`cli/interfaces/tui/session.go`, commit b155f2c)
+
+---
+
+## [2026-06-19] AI 브리핑 캐시 전략 — Redis vs Postgres vs in-memory
+
+**Context**: AI 브리핑/채팅 답변을 실시간 반영하기 위해 이전 답변을 참조하는 캐시 구조 검토. 현재 Railway 단일 인스턴스, 수백 워크스페이스 규모.
+
+**Decision**: Python in-memory dict (`briefing_cache: dict[str, dict]`) 채택. Railway 단일 인스턴스 환경에서 재시작 간 캐시 소멸을 허용.
+
+**Alternatives considered**:
+- Redis Plugin (Railway) — 영속성 있는 캐시, 수평 확장 지원, 그러나 $10–20/월 추가 비용
+- Redis in Docker (`--network host`) — 비용 절감, 그러나 Railway Docker 내장은 별도 사이드카 필요
+- PostgreSQL 캐시 테이블 — 비용 0, 그러나 "테이블로 캐시인척"은 스케일업 구조와 불일치
+- in-memory dict (선택) — 비용 0, 수백 워크스페이스 수용 가능, 재시작 소멸 허용
+
+**Reasoning**: 단일 Railway 인스턴스에서 수백 워크스페이스 AI 브리핑 캐시는 in-memory로 충분. 재시작 시 캐시 소멸은 "첫 요청만 느림"으로 허용 가능. 사용자 100명 이상 & 수평 확장 필요 시점에 Redis로 교체 — 코드 변경 최소화.
+
+**AI contribution**:
+  - Identified: Postgres 캐시 테이블이 스케일업 구조와 맞지 않음을 지적
+  - Suggested: in-memory dict가 현재 규모에서 충분함을 비용/복잡도 기준으로 제시
+  - Developer-driven: "캐시 추가가 실용적이지만 스케일업 상황에서 어울리지 않는다" 문제 제기
+
+**Intent class**: EXPLORING
+**Signal score**: HIGH
+**Outcome**: implemented (brief_cache in-memory, Redis는 100명+ 시점에 재검토)
+
+---
+
+## [2026-06-19] 100명 기준 인프라 비용 — Railway vs EC2/RDS vs ECS vs EKS
+
+**Context**: 프롬프트 암호화(AES-256-GCM) 논의 중 AWS 이전 타당성 검토. 현재 Railway($25/월) 대비 AWS 비용 비교.
+
+**Decision**: Railway 유지 (MVP 단계). AWS 이전 시점은 사용자 규모 및 보안 요구사항 기준으로 재결정.
+
+**Alternatives considered**:
+- Railway — 현재: ~$25/월 (서버+DB 통합), 단순, 단일 인스턴스 제한
+- EC2(t3.small) + RDS(db.t3.micro) — ~$33/월, 수동 관리, Kafka 미사용이면 충분
+- ECS Fargate — ~$31–63/월 (컨테이너 수 따라), 서버리스 컨테이너, 설정 복잡도 중간
+- EKS — ~$159/월 (control plane $0.10/hr + 노드), Kafka·Neo4j 필요 단계에 적합, 현재는 과비용
+
+**Reasoning**: 100명 규모에서 Railway가 가장 저렴하고 운영 부담 최소. EKS는 Kafka/Neo4j 도입(Phase 3) 이전에는 비용 대비 효용 없음. ECS Fargate는 중간 단계 옵션으로 유효하나 현재 불필요. AWS 이전은 보안 요구사항(암호화 의무화)이나 수평 확장 필요 시점에 재검토.
+
+**AI contribution**:
+  - Suggested: 4개 옵션 구체 비용 산출 ($25 / $33 / $31–63 / $159) + EKS subnet/RDS 구조 설명
+  - Identified: EKS가 현재 규모에서 6배 비싼 과잉 투자임을 지적
+  - Developer-driven: AWS 이전 검토 자체 제기, 프롬프트 암호화 요구사항 제시
+
+**Intent class**: EXPLORING
+**Signal score**: HIGH
+**Outcome**: pending (Railway 유지, AWS 이전 시점 미확정)
+
+---
+
+## [2026-06-19] datetime timezone-naive vs aware 버그 — workspace join 500
+
+**Root cause**: Python `datetime.utcnow()`는 timezone-naive datetime 반환. PostgreSQL(Railway)은 `TIMESTAMP WITH TIME ZONE`으로 저장 → timezone-aware datetime 반환. `is_expired()` 메서드에서 naive(`datetime.utcnow()`)와 aware(DB 조회값)를 비교 시 `TypeError: can't compare offset-naive and offset-aware datetimes` 발생.
+
+**Symptom**: `/workspace/join` 엔드포인트 호출 시 500 Internal Server Error. CLI에서 초대코드로 워크스페이스 참가 불가.
+
+**Fix**: 9개 서버 파일 전체에서 `datetime.utcnow()` → `datetime.now(timezone.utc)` 교체. `from datetime import datetime, timezone` import 추가.
+
+**Why this fix**: `datetime.now(timezone.utc)`는 UTC timezone-aware datetime을 반환하므로 DB 조회값과 비교 가능. `datetime.utcnow()`는 deprecated이며 timezone-naive라는 함정이 있음 — 프로젝트 전체에 일관 적용.
+
+**Alternative fixes considered**: `invite.expires_at.replace(tzinfo=None)`으로 DB 값을 naive로 변환 — 가능하나 근본 해결이 아니며 모든 비교 지점마다 적용해야 함.
+
+**AI contribution**:
+  - Identified: 에러 메시지 `can't compare offset-naive and offset-aware datetimes`에서 즉시 근본 원인 진단
+  - Suggested: 9개 파일 전체 일괄 교체 (spot fix 아닌 글로벌 수정)
+  - Developer-driven: 500 에러 출력 제공, 수정 범위 확인
+
+**Intent class**: BUG_FIXING
+**Signal score**: HIGH
+**Outcome**: fixed (commit 98ddbc2)
+
+---
+
+## [2026-06-19] TanStack Query stale cache — 삭제된 워크스페이스 사이드바 잔존
+
+**Root cause**: `useWorkspacesQuery`에 `staleTime: 60_000` (1분) 설정. 워크스페이스 삭제 후 `queryClient.invalidateQueries` 없이 컴포넌트가 마운트되면 TanStack Query가 1분간 캐시된 목록을 그대로 반환 → 삭제된 워크스페이스가 사이드바에 계속 표시.
+
+**Symptom**: 워크스페이스 삭제 → 대시보드 이동 → 왼쪽 사이드바에 삭제된 워크스페이스 계속 표시.
+
+**Fix**: `WorkspaceSettings.tsx`의 `deleteWorkspace` 함수에서 API 호출 성공 후 `queryClient.invalidateQueries({ queryKey: ["workspaces"] })` 추가. 이후 남은 워크스페이스 조회 → 있으면 첫 번째로 리다이렉트, 없으면 `/workspace/new`.
+
+**Why this fix**: `invalidateQueries`는 해당 쿼리 키를 "stale"로 표시해 다음 마운트 시 즉시 리페치 트리거. 삭제 직후 사이드바가 새 데이터를 받아 렌더링.
+
+**AI contribution**:
+  - Identified: `staleTime: 60_000` 설정이 캐시 만료를 1분 지연시키는 원인임을 진단
+  - Suggested: `invalidateQueries` 패턴으로 즉시 무효화
+  - Developer-driven: "렌더링이 제대로 안 되는 것 같다" 증상 보고
+
+**Intent class**: BUG_FIXING
+**Signal score**: HIGH
+**Outcome**: fixed (commit 3c687fd)
+
+---
 
 ## [2026-06-16] 첫 사용자 전략 — AURA 팀원 직접 설치
 

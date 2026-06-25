@@ -1,97 +1,113 @@
 # HUGININ
 
-Claude Code 세션마다 무엇을 만들었고, 왜 그렇게 결정했는지를 git commit과 함께 자동으로 기록한다.
+**Git이 코드 이력을 남기듯, HUGININ은 AI 결정 이력을 남긴다.**
 
-> **"AI로 만들기는 쉽다. 추적 관리하기는 어렵다."**
+Claude Code · agy · codex로 커밋할 때마다 무엇을, 왜, 어떻게 결정했는지가 자동으로 쌓인다.  
+지금 쌓지 않으면 6개월 뒤에도 없다.
+
+→ **[huginin.com](https://huginin.com)**
 
 ---
 
 ## 문제
 
-Claude Code로 개발하면 결정이 빠르다. 그만큼 "왜 이렇게 됐지?"도 빠르게 사라진다.
+```
+git log --oneline
 
-- 커밋 메시지는 WHAT만 담는다 — WHY는 Claude 대화창 안에 있다
-- 3주 뒤 같은 시도를 다시 한다 — 당시 시도한 걸 기억 못해서
-- 팀이 있으면 더 심하다 — 팀원이 어떤 결정을 AI와 함께 내렸는지 서로 모른다
+a3f2c1d  refactor: simplify auth          ← 6개월 전
+```
+
+커밋 diff는 무엇이 바뀌었는지만 보여준다.  
+**왜 그 결정을 내렸는지, Claude가 어떻게 기여했는지는 사라진다.**
+
+---
+
+## HUGININ이 남기는 것
+
+```
+같은 커밋, HUGININ 역추적 결과
+
+왜    OAuth 세션 만료로 UX 깨짐 → 자동 갱신 필요
+AI    refresh token rotation + silent renewal 구현 주도
+검토  cookie session 유지 방안 → CORS 이슈로 제외
+기여  AI-led (ai_contribution: 0.82)
+```
+
+---
+
+## 비교
+
+|  | Git | HUGININ | Claude Skill |
+|---|---|---|---|
+| 무엇을 저장 | 코드 변경 | AI 결정 이력 | — |
+| 언제 | 커밋마다 자동 | 커밋마다 자동 | 물어볼 때만 |
+| 역추적 | diff 수준 | 왜 그 결정인지까지 | 과거 데이터 없음 |
+| 팀 누적 | ✅ | ✅ | ❌ |
+
+"Grill Me 쓰면 되지 않나?" → Grill Me는 지금 분석. HUGININ은 과거 역추적.
 
 ---
 
 ## 작동 방식
 
 ```
-git commit
+huginin               ← TUI 실행 (PTY 멀티플렉서)
     │
-    └─ post-commit hook (huginin hook install로 설치)
-         │  Claude Code 세션 감지 → prompt + response + diff
+    ├─ Claude Code · agy · codex 중 하나를 PTY로 실행
+    │   Ctrl+\  →  CLI 전환 (컨텍스트 자동 이어받기)
+    │
+    └─ git commit 시 post-commit hook 자동 실행
+         │  tool별 세션 JSONL → 실제 대화 추출 (8시간 윈도우)
+         │  prompt + response + diff + tool
          ▼
-    POST /collect/event  →  DB 저장  →  Claude Haiku로 정제
-         │
-         ▼
-    결정 타임라인 (huginin.vercel.app/workspace/...)
-         ├─ 무엇을 만들었나
-         ├─ 왜 필요했나
-         ├─ AI vs 나의 역할 분담
-         └─ 트레이드오프 (미룬 것, 선택한 이유)
+    POST /collect/event → DB 저장 → Claude Haiku ETL
+
+    ETL 추출 결과:
+    ├─ what_was_built   — 무엇을 만들었나
+    ├─ problem_solved   — 왜 필요했나
+    ├─ ai_role          — AI가 어떤 역할을 했나
+    ├─ tradeoffs        — 검토했으나 버린 대안
+    ├─ frame            — A(Human-led) / B(AI-assisted) / C(AI-led) / D(Automated)
+    └─ ai_contribution  — 0.0–1.0
 ```
-
----
-
-## 기능
-
-| 기능 | 설명 |
-|------|------|
-| **자동 수집** | git commit 시 Claude Code 세션 자동 감지 — 별도 입력 없음 |
-| **Frame 분류** | A(인간 주도) / B(AI 보조) / C(AI 주도) / D(자동화) 자동 분류 |
-| **AI 기여도** | 결정마다 AI 기여 % 자동 측정 |
-| **결정 정제** | what_was_built / problem_solved / ai_role / tradeoffs 추출 |
-| **시맨틱 검색** | "Redis 관련 결정 전부", "인증 방식 바꾼 이유" — 의미로 검색 |
-| **AI 브리핑** | 전체 결정 데이터 분석 → 패턴, 미해결 트레이드오프, 다음 포커스 제안 |
-| **MCP 연동** | Claude가 구현 전 과거 결정을 자동 참조 |
-| **캐시 제안** | 반복 프롬프트 감지 → CLAUDE.md 최적화 제안 |
-| **팀 댓글** | 각 결정에 팀 코멘트 |
 
 ---
 
 ## 시작하기
 
-### 1. 회원가입
-
-[huginin.vercel.app](https://huginin.vercel.app) → 회원가입 또는 Google로 가입
-
-### 2. CLI 설치
-
 ```bash
-curl -sSL https://huginin.vercel.app/install.sh | bash
-```
+# 1. CLI 설치
+curl -sSL https://huginin.com/install.sh | bash
 
-### 3. 로그인
-
-```bash
+# 2. 로그인
 huginin login
-# 브라우저가 열립니다 — 로그인 후 자동으로 CLI에 토큰이 전달됩니다
-```
 
-### 4. 프로젝트 연결 + Hook 설치
-
-```bash
+# 3. 레포 연결 + git hook 설치 (한 번에)
 cd your-project
-huginin project link
-huginin hook install
+huginin setup
+
+# 4. TUI 진입 — Claude · agy · codex 중 선택, Ctrl+\로 전환
+huginin
+
+# 이후 커밋할 때마다 자동 기록
 ```
 
-이후 Claude Code로 커밋할 때마다 자동으로 기록됩니다.
+과거 커밋 소급 수집:
+```bash
+huginin backfill
+```
 
 ---
 
-## MCP 연결 (선택)
+## MCP 연결
 
-Claude가 구현 시작 전 과거 결정을 자동으로 참조하게 만들려면:
+새 Claude 세션 시작 전 과거 팀 결정이 자동으로 참조된다.
 
 ```json
 {
   "mcpServers": {
     "huginin": {
-      "url": "https://huginin-server-production.up.railway.app/mcp",
+      "url": "https://api.huginin.com/mcp",
       "type": "sse",
       "headers": { "Authorization": "Bearer <service-token>" }
     }
@@ -99,103 +115,79 @@ Claude가 구현 시작 전 과거 결정을 자동으로 참조하게 만들려
 }
 ```
 
-서비스 토큰 발급:
-
 ```bash
-huginin login mcp-token
+huginin service-token
 ```
 
 ---
 
-## 로컬 개발
+## 기능 현황
 
-### 사전 요구사항
-
-- Docker & Docker Compose
-- Python 3.12+
-- Node.js 20+
-- Go 1.22+
-
-### 실행
-
-```bash
-# DB
-docker-compose up -d postgres
-
-# 서버
-cd server
-cp .env.example .env
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-
-# 대시보드
-cd dashboard
-npm install
-npm run dev   # http://localhost:3000
-
-# CLI (로컬 빌드)
-cd cli
-go build -o huginin .
-./huginin login --server http://localhost:8000 --password
-```
+| 기능 | 상태 |
+|---|---|
+| git commit 시 AI 대화 자동 수집 (claude · agy · codex) | ✅ |
+| huginin TUI — PTY 멀티플렉서 (Ctrl+\ CLI 전환) | ✅ |
+| Claude Haiku ETL (7개 필드 자동 추출) | ✅ |
+| Frame A/B/C/D 자동 분류 | ✅ |
+| 결정 타임라인 (팀 피드 + 필터) | ✅ |
+| 시맨틱 검색 (pgvector + LLM) | ✅ |
+| MCP recall_decisions | ✅ |
+| AI 브리핑 | ✅ |
+| 컨텍스트 추출 (3단계 Markdown 다운로드) | ✅ |
+| huginin setup (연결 + hook 한 번에) | ✅ |
+| huginin backfill (과거 커밋 소급) | ✅ |
+| 파일 기반 역추적 | Phase 2 |
+| 검색 고도화 (MMR + 하이브리드) | Phase 3 |
+| 결정 그래프 시각화 | Phase 3 |
 
 ---
 
 ## 아키텍처
 
 ```
-[Claude Code]
+[huginin TUI — PTY 멀티플렉서]
+    │  Ctrl+\: claude ↔ agy ↔ codex 전환 (컨텍스트 이어받기)
     │
-    ├─ post-commit hook → POST /collect/event
-    └─ MCP recall_decisions  ← 구현 전 자동 참조
-              │
-              ▼
-       [FastAPI Server — Railway]
-              ├─ PostgreSQL + pgvector (시맨틱 검색)
-              ├─ Claude Haiku (결정 정제 + AI 브리핑)
-              └─ Clean Architecture
-              │
-              ▼
-       [Next.js Dashboard — Vercel]
-              ├─ 결정 타임라인 (Frame / AI기여도 / what/why/how/tradeoffs)
-              ├─ 시맨틱 + 텍스트 검색
-              ├─ Frame A/B/C/D 필터
-              ├─ AI 브리핑 슬라이드오버
-              └─ 캐시 최적화 제안
+    ├─ [Claude Code PTY]   ─┐
+    ├─ [agy PTY]            ├─ post-commit hook → POST /collect/event
+    └─ [codex PTY]         ─┘   └─ MCP recall_decisions
+                                         │
+                                         ▼
+                                  [FastAPI — Railway]
+                                         ├─ PostgreSQL + pgvector
+                                         ├─ Claude Haiku ETL
+                                         └─ Clean Architecture
+                                         │
+                                         ▼
+                                  [Next.js — Vercel]
 ```
-
----
-
-## 기술 스택
 
 | | |
 |---|---|
 | 서버 | FastAPI + asyncpg (Python 3.12) |
 | DB | PostgreSQL + pgvector (384-dim HNSW cosine) |
 | 임베딩 | fastembed BAAI/bge-small-en-v1.5 (CPU-only) |
-| LLM | Claude Haiku (결정 정제, AI 브리핑) |
-| 대시보드 | Next.js 16, React 19, TanStack Query 5, Zustand 5, Tailwind |
-| CLI | Go 1.22 (darwin/linux amd64/arm64) |
-| 배포 | Railway (서버) + Vercel (프론트) |
+| LLM | Claude Haiku (ETL) · Claude Sonnet (브리핑) |
+| 대시보드 | Next.js 16, React 19, TanStack Query 5 |
+| CLI | Go 1.22 + Bubble Tea (darwin/linux arm64/amd64) |
+| 배포 | Railway + Vercel |
 
 ---
 
-## 환경변수 (서버)
+## 로컬 개발
 
-```env
-DATABASE_URL=postgresql://...
-JWT_SECRET=...
-ANTHROPIC_API_KEY=...
+```bash
+# DB
+docker-compose up -d postgres
 
-# 이메일 인증
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your@email.com
-SMTP_PASSWORD=...
+# 서버
+cd server && pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
 
-# Google OAuth
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=https://<server>/auth/google/callback
-FRONTEND_URL=https://huginin.vercel.app
+# 대시보드
+cd dashboard && npm install && npm run dev
+
+# CLI
+cd cli && go build -o huginin .
+./huginin login --server http://localhost:8000
 ```
