@@ -136,7 +136,7 @@ export default function LandingPage() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 bg-neutral-100 rounded-full px-4 py-1.5 mb-8 sm:mb-10">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
-            <span className="text-xs text-neutral-600 font-medium">Claude · agy · codex 지원 · 무료</span>
+            <span className="text-xs text-neutral-600 font-medium">Claude · agy · codex 지원 · 문서 임포트 · 무료</span>
           </div>
 
           {/* Headline */}
@@ -285,12 +285,42 @@ export default function LandingPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {[
-              { title: "자동 수집", sub: "별도 입력 없음", desc: "git commit 하는 순간 사용 중인 AI CLI(Claude · agy · codex) 세션이 자동으로 기록된다. 따로 할 일이 없다.", soon: false },
-              { title: "의미 기반 역추적", sub: "시맨틱 검색", desc: '"auth 관련 결정", "Redis 도입 이유" — 키워드가 달라도 의미로 과거 판단을 찾는다.', soon: false },
-              { title: "컨텍스트 추출", sub: "3단계 상세도", desc: "전체 의사결정 히스토리를 Markdown으로 다운로드. 새 AI 세션에 컨텍스트로 붙여넣거나 팀 온보딩 문서로 활용한다.", soon: false },
-              { title: "AI 기여도 측정", sub: "Frame A / B / C / D", desc: "Human-led → AI-led — 이 결정에서 AI가 실제로 얼마나 기여했는지 자동 분류. 트렌드 차트로 패턴을 확인한다.", soon: false },
-              { title: "MCP recall_decisions", sub: "Coming soon", desc: "Claude Code에 .mcp.json 한 줄로 등록하면 Claude가 새 세션에서 팀 과거 결정을 직접 검색한다. 파일 기반 자동 주입 준비 중.", soon: true },
-              { title: "멀티 CLI 전환", sub: "huginin TUI", desc: "huginin 안에서 claude · agy · codex를 Ctrl+\\로 자유롭게 전환. 비활성 CLI는 백그라운드에서 잠들어 있다가 전환 즉시 깨어난다.", soon: false },
+              {
+                title: "자동 수집",
+                sub: "별도 입력 없음",
+                desc: "git commit 하는 순간 사용 중인 AI CLI(Claude · agy · codex) 세션이 자동으로 기록된다. 따로 할 일이 없다.",
+                soon: false,
+              },
+              {
+                title: "문서 임포트",
+                sub: "콜드스타트 해결",
+                desc: "huginin import DECISIONS.md — 기존 ADR·README를 Haiku ETL로 구조화해 임베딩. 프로젝트 중간 도입해도 과거 맥락을 복구한다.",
+                soon: false,
+              },
+              {
+                title: "의미 기반 역추적",
+                sub: "시맨틱 검색",
+                desc: '"auth 관련 결정", "Redis 도입 이유" — 키워드가 달라도 의미로 과거 판단을 찾는다. 커밋과 문서 레코드를 함께 검색한다.',
+                soon: false,
+              },
+              {
+                title: "컨텍스트 추출",
+                sub: "3단계 상세도",
+                desc: "전체 의사결정 히스토리를 Markdown으로 다운로드. 새 AI 세션에 컨텍스트로 붙여넣거나 팀 온보딩 문서로 활용한다.",
+                soon: false,
+              },
+              {
+                title: "AI 기여도 측정",
+                sub: "Frame A / B / C / D",
+                desc: "Human-led → AI-led — 이 결정에서 AI가 실제로 얼마나 기여했는지 자동 분류. 트렌드 차트로 패턴을 확인한다.",
+                soon: false,
+              },
+              {
+                title: "멀티 CLI 전환",
+                sub: "huginin TUI",
+                desc: "huginin 안에서 claude · agy · codex를 Ctrl+\\로 자유롭게 전환. 비활성 CLI는 백그라운드에서 잠들어 있다가 전환 즉시 깨어난다.",
+                soon: false,
+              },
             ].map((f) => (
               <div key={f.title} className={`bg-white rounded-2xl border p-5 sm:p-6 transition-all ${f.soon ? "border-neutral-100 opacity-60" : "border-neutral-200 hover:border-neutral-300 hover:shadow-sm"}`}>
                 <div className="flex items-center gap-2 mb-1.5">
@@ -314,11 +344,12 @@ export default function LandingPage() {
           </h2>
           <p className="text-neutral-500 mb-12 text-sm sm:text-base max-w-xl mx-auto leading-relaxed break-keep">
             Git을 뒤늦게 도입하면 과거 이력이 없듯, HUGININ도 지금부터 쌓은 것만 역추적할 수 있다.
+            단, 기존 ADR·README는 <span className="font-mono text-neutral-700">huginin import</span>로 소급 복구할 수 있다.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
             {[
-              { period: "1개월 후", value: "패턴 파악", desc: "내가 AI를 어디에 주로 쓰는지 보인다" },
-              { period: "3개월 후", value: "프로젝트 지식베이스", desc: "왜 이런 구조가 됐는지 역추적 가능" },
+              { period: "설치 직후", value: "과거 문서 복구", desc: "huginin import로 기존 ADR·README를 구조화해 임베딩" },
+              { period: "3개월 후", value: "프로젝트 지식베이스", desc: "커밋 + 문서 결정이 쌓여 왜 이런 구조가 됐는지 역추적 가능" },
               { period: "6개월 후", value: "AI 투자 증명", desc: "팀 생산성 변화를 데이터로 보여줄 수 있다" },
             ].map(({ period, value, desc }) => (
               <div key={period} className="bg-neutral-50 rounded-2xl border border-neutral-200 p-5">

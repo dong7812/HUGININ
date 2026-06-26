@@ -44,8 +44,6 @@ AI    refresh token rotation + silent renewal 구현 주도
 | 역추적 | diff 수준 | 왜 그 결정인지까지 | 과거 데이터 없음 |
 | 팀 누적 | ✅ | ✅ | ❌ |
 
-"Grill Me 쓰면 되지 않나?" → Grill Me는 지금 분석. HUGININ은 과거 역추적.
-
 ---
 
 ## 작동 방식
@@ -71,6 +69,25 @@ huginin               ← TUI 실행 (PTY 멀티플렉서)
     └─ ai_contribution  — 0.0–1.0
 ```
 
+### 문서 임포트 (콜드스타트 해결)
+
+```
+huginin import DECISIONS.md
+    │
+    ├─ # ## ### 헤딩 기준 섹션 분리
+    ├─ 코드베이스 grep → 관련 스니펫 추출
+    │
+    ▼
+POST /workspace/{id}/import-doc
+    │
+    └─ 백그라운드: Claude Haiku ETL + 임베딩
+         ├─ what_was_decided / why / alternatives / constraints
+         ├─ validation_status (consistent | outdated | unverifiable)
+         └─ pgvector 저장 → MCP 검색 대상에 포함
+```
+
+프로젝트 중간에 HUGININ을 도입해도 기존 ADR·README·DECISIONS.md를 임포트하면 이전 결정 맥락을 복구할 수 있다.
+
 ---
 
 ## 시작하기
@@ -95,6 +112,12 @@ huginin
 과거 커밋 소급 수집:
 ```bash
 huginin backfill
+```
+
+기존 문서 임포트:
+```bash
+huginin import DECISIONS.md
+huginin import README.md
 ```
 
 ---
@@ -130,13 +153,14 @@ huginin service-token
 | Claude Haiku ETL (7개 필드 자동 추출) | ✅ |
 | Frame A/B/C/D 자동 분류 | ✅ |
 | 결정 타임라인 (팀 피드 + 필터) | ✅ |
-| 시맨틱 검색 (pgvector + LLM) | ✅ |
+| 시맨틱 검색 (pgvector + LLM 합성) | ✅ |
 | MCP recall_decisions | ✅ |
 | AI 브리핑 | ✅ |
 | 컨텍스트 추출 (3단계 Markdown 다운로드) | ✅ |
 | huginin setup (연결 + hook 한 번에) | ✅ |
 | huginin backfill (과거 커밋 소급) | ✅ |
-| 파일 기반 역추적 | Phase 2 |
+| huginin import (문서 ETL + 코드 검증) | ✅ |
+| 문서 검토 큐 (대시보드 인라인 카드뷰) | ✅ |
 | 검색 고도화 (MMR + 하이브리드) | Phase 3 |
 | 결정 그래프 시각화 | Phase 3 |
 
@@ -150,24 +174,31 @@ huginin service-token
     │
     ├─ [Claude Code PTY]   ─┐
     ├─ [agy PTY]            ├─ post-commit hook → POST /collect/event
-    └─ [codex PTY]         ─┘   └─ MCP recall_decisions
-                                         │
-                                         ▼
-                                  [FastAPI — Railway]
-                                         ├─ PostgreSQL + pgvector
-                                         ├─ Claude Haiku ETL
-                                         └─ Clean Architecture
-                                         │
-                                         ▼
-                                  [Next.js — Vercel]
+    └─ [codex PTY]         ─┘
+    │
+    └─ huginin import → POST /workspace/{id}/import-doc
+                              │
+                              ▼
+                       [FastAPI — Railway]
+                              ├─ PostgreSQL + pgvector
+                              ├─ Claude Haiku ETL (commit + doc)
+                              ├─ fastembed (384-dim, 로컬 CPU)
+                              ├─ MCP recall_decisions
+                              └─ Clean Architecture
+                              │
+                              ▼
+                       [Next.js — Vercel]
+                              ├─ 결정 타임라인 (코드 이력 탭)
+                              ├─ 문서 탭 (인라인 카드뷰 + 검토 큐)
+                              └─ 시맨틱 검색 + AI 브리핑
 ```
 
 | | |
 |---|---|
 | 서버 | FastAPI + asyncpg (Python 3.12) |
 | DB | PostgreSQL + pgvector (384-dim HNSW cosine) |
-| 임베딩 | fastembed BAAI/bge-small-en-v1.5 (CPU-only) |
-| LLM | Claude Haiku (ETL) · Claude Sonnet (브리핑) |
+| 임베딩 | fastembed paraphrase-multilingual-MiniLM-L12-v2 (CPU-only) |
+| LLM | Claude Haiku (ETL) · Claude Sonnet (브리핑·검색) |
 | 대시보드 | Next.js 16, React 19, TanStack Query 5 |
 | CLI | Go 1.22 + Bubble Tea (darwin/linux arm64/amd64) |
 | 배포 | Railway + Vercel |

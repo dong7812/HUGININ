@@ -12,8 +12,6 @@ import { DecisionChat } from "./DecisionChat";
 import { WorkspaceSettings } from "./WorkspaceSettings";
 import { OnboardingModal } from "./OnboardingModal";
 import { useWorkspaceStore } from "@/application/stores/workspaceStore";
-import { useDocPendingQuery } from "@/application/queries/dashboardQueries";
-import Link from "next/link";
 
 interface Props {
   workspaceId: string;
@@ -37,8 +35,6 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
   const [timeRange, setTimeRange] = useState<TimeRange>("all");
   const [submittedQuery, setSubmittedQuery] = useState("");
   const workspaceName = useWorkspaceStore((s) => s.workspaceName);
-  const { data: docItems = [] } = useDocPendingQuery(workspaceId);
-  const pendingDocCount = docItems.filter((i) => i.validation_status === "pending").length;
 
   const dateFrom = useMemo(() => toDateFrom(timeRange), [timeRange]);
 
@@ -54,17 +50,6 @@ export function WorkspaceDashboard({ workspaceId }: Props) {
           <p className="text-sm text-neutral-400 mt-0.5">AI Decision Journal</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href={`/workspace/${workspaceId}/docs`}
-            className="relative flex items-center gap-1.5 text-xs text-neutral-500 border border-neutral-200 hover:border-neutral-400 hover:text-neutral-800 rounded-lg px-2.5 py-1.5 transition-colors"
-          >
-            문서 검토
-            {pendingDocCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full bg-yellow-400 text-[10px] font-bold text-white flex items-center justify-center">
-                {pendingDocCount}
-              </span>
-            )}
-          </Link>
           <PmBriefingButton workspaceId={workspaceId} />
           <WorkspaceSettings workspaceId={workspaceId} />
         </div>

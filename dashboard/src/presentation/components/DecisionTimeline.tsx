@@ -19,8 +19,8 @@ import {
   ExternalLink,
   Download,
 } from "lucide-react";
-import { useFeedQuery, useBranchesQuery, useSearchQuery, useSuggestQuery, useSmartSearchQuery } from "@/application/queries/dashboardQueries";
-import type { SmartSearchEvent } from "@/infrastructure/http/dashboardRepository";
+import { useFeedQuery, useBranchesQuery, useSearchQuery, useSuggestQuery, useSmartSearchQuery, useDocPendingQuery } from "@/application/queries/dashboardQueries";
+import type { SmartSearchEvent, DocItem } from "@/infrastructure/http/dashboardRepository";
 import { createDashboardRepository } from "@/infrastructure/http/dashboardRepository";
 import { useAuthStore } from "@/application/stores/authStore";
 import { CommentSection } from "./CommentSection";
@@ -219,6 +219,7 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
   const [debouncedInput, setDebouncedInput] = useState(submittedQuery);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showExport, setShowExport] = useState(false);
+  const [view, setView] = useState<"feed" | "docs">("feed");
   const inputRef = useRef<HTMLInputElement>(null);
   const limit = 15;
 
@@ -234,11 +235,13 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
   const smartResult = useSmartSearchQuery(workspaceId, submittedQuery);
   const { data: suggestions } = useSuggestQuery(workspaceId, debouncedInput);
   const { data: branches } = useBranchesQuery(workspaceId);
+  const { data: docItems = [] } = useDocPendingQuery(workspaceId);
 
   const { data, isLoading } = isSearching ? searchResult : feedResult;
   const totalPages = !isSearching && data ? Math.ceil(data.total / limit) : 0;
-  const items = data?.items ?? [];
+  const items = (data?.items ?? []).filter((i) => i.eventType !== "doc_import" && i.sourceType !== "doc");
   const graphLayout = useMemo(() => computeGraphLayout(items), [items]);
+  const pendingDocCount = docItems.filter((d) => d.validation_status === "pending").length;
 
   if (isLoading) {
     return (
@@ -264,7 +267,28 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2.5" data-tour="timeline">
             <h2 className="text-base font-bold text-neutral-900">결정 타임라인</h2>
-            <span className="text-sm text-neutral-400 font-mono">{data?.total ?? 0}</span>
+            {/* 탭 */}
+            <div className="flex items-center gap-0.5 bg-neutral-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setView("feed")}
+                className={`text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors ${view === "feed" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}
+              >
+                코드 이력
+              </button>
+              <button
+                onClick={() => setView("docs")}
+                className={`relative text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors ${view === "docs" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}
+              >
+                문서
+                {pendingDocCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[14px] h-3.5 px-0.5 rounded-full bg-yellow-400 text-[9px] font-bold text-white flex items-center justify-center">
+                    {pendingDocCount}
+                  </span>
+                )}
+              </button>
+            </div>
+            {view === "feed" && <span className="text-sm text-neutral-400 font-mono">{data?.total ?? 0}</span>}
+            {view === "docs" && <span className="text-sm text-neutral-400 font-mono">{docItems.length}</span>}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -373,8 +397,11 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
         </div>
       )}
 
+      {/* 문서 뷰 */}
+      {view === "docs" && <DocListView items={docItems} workspaceId={workspaceId} />}
+
       {/* Smart Search Panel */}
-      {isSearching && (
+      {view === "feed" && isSearching && (
         <SmartSearchPanel
           query={submittedQuery}
           synthesis={smartResult.data?.synthesis}
@@ -383,7 +410,7 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
         />
       )}
 
-      {items.length === 0 && !isSearching ? (
+      {view === "feed" && items.length === 0 && !isSearching ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3 text-neutral-400">
           <GitCommit size={28} className="opacity-30" />
           <p className="text-sm font-medium text-neutral-500">아직 수집된 AI 결정이 없습니다</p>
@@ -392,7 +419,7 @@ export function DecisionTimeline({ workspaceId, dateFrom, submittedQuery, onSear
           </p>
         </div>
       ) : (
-        <div className="flex flex-col">
+        view === "feed" && <div className="flex flex-col">
           {items.map((item, idx) => (
             <TimelineEntry
               key={item.eventId}
@@ -470,80 +497,128 @@ function PrCard({ item, graphMeta, isLast }: { item: FeedItem; graphMeta: GraphR
   );
 }
 
-const VALIDATION_COLOR: Record<string, string> = {
-  pending: "text-yellow-700 bg-yellow-50",
-  consistent: "text-green-700 bg-green-50",
-  outdated: "text-red-600 bg-red-50",
-  unverifiable: "text-neutral-500 bg-neutral-100",
-  reviewed: "text-blue-700 bg-blue-50",
-  rejected: "text-neutral-400 bg-neutral-100",
+const VS_COLOR: Record<string, string> = {
+  pending: "text-yellow-700 bg-yellow-50 border-yellow-200",
+  consistent: "text-green-700 bg-green-50 border-green-200",
+  outdated: "text-red-600 bg-red-50 border-red-200",
+  unverifiable: "text-neutral-500 bg-neutral-100 border-neutral-200",
+  reviewed: "text-blue-700 bg-blue-50 border-blue-200",
+  rejected: "text-neutral-400 bg-neutral-100 border-neutral-200",
 };
-const VALIDATION_LABEL: Record<string, string> = {
+const VS_LABEL: Record<string, string> = {
   pending: "검토 대기", consistent: "일치", outdated: "불일치",
   unverifiable: "확인 불가", reviewed: "승인됨", rejected: "거부됨",
 };
 
-function DocCard({ item, graphMeta, isLast }: { item: FeedItem; graphMeta: GraphRowMeta; isLast: boolean }) {
-  const [expanded, setExpanded] = useState(false);
-  const date = new Date(item.createdAt);
-  const vsKey = item.validationStatus ?? "pending";
+function DocListView({ items, workspaceId }: { items: DocItem[]; workspaceId: string }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [filter, setFilter] = useState<string>("all");
+
+  const filtered = filter === "all" ? items : items.filter((i) => i.validation_status === filter);
+
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 gap-3 text-neutral-400">
+        <p className="text-sm font-medium text-neutral-500">임포트된 문서가 없습니다</p>
+        <p className="text-xs text-neutral-400 text-center max-w-xs leading-relaxed font-mono">
+          huginin import &lt;파일&gt;
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className={`flex hover:bg-neutral-50 transition-colors ${!isLast ? "border-b border-neutral-100" : ""}`}>
-      <GraphCell meta={graphMeta} isLastOverall={isLast} />
-      <div className="flex-1 py-4 pr-5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-neutral-800 text-white font-mono">문서</span>
-              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${VALIDATION_COLOR[vsKey]}`}>
-                {VALIDATION_LABEL[vsKey]}
-              </span>
-              {item.docPath && (
-                <span className="text-[10px] text-neutral-400 font-mono truncate">{item.docPath.split("/").pop()}</span>
-              )}
-            </div>
-            <p className="text-sm font-semibold text-neutral-900 line-clamp-1 leading-snug">
-              {item.whatWasBuilt || item.promptPreview}
-            </p>
-            {item.problemSolved && !expanded && (
-              <p className="text-xs text-neutral-500 line-clamp-1 mt-0.5">{item.problemSolved}</p>
-            )}
-          </div>
-          <button onClick={() => setExpanded((v) => !v)}
-            className="shrink-0 p-1 rounded-lg text-neutral-300 hover:text-neutral-600 hover:bg-neutral-100 transition-colors">
-            {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+    <div className="flex flex-col">
+      {/* 필터 */}
+      <div className="px-5 py-3 flex items-center gap-1.5 border-b border-neutral-100 flex-wrap">
+        {(["all", "pending", "reviewed", "outdated"] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setFilter(s)}
+            className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors ${
+              filter === s ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
+            }`}
+          >
+            {s === "all" ? "전체" : VS_LABEL[s]}
+            <span className="ml-1 opacity-60 font-mono">
+              {s === "all" ? items.length : items.filter((i) => i.validation_status === s).length}
+            </span>
           </button>
-        </div>
-        <div className="flex items-center gap-2 mt-1.5">
-          <span className="text-[10px] text-neutral-300 ml-auto">
-            <Clock size={9} className="inline mr-0.5 -mt-0.5" />
-            {date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" })} {date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
-          </span>
-        </div>
-        {expanded && (
-          <div className="mt-4 flex flex-col gap-2.5 border border-neutral-100 rounded-xl px-4 py-3">
-            {item.problemSolved && (
-              <div>
-                <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest mb-1">이유</p>
-                <p className="text-sm text-neutral-700 leading-relaxed">{item.problemSolved}</p>
+        ))}
+        <a
+          href={`/workspace/${workspaceId}/docs`}
+          className="ml-auto text-[11px] text-neutral-400 hover:text-neutral-700 transition-colors underline-offset-2 hover:underline"
+        >
+          전체 검토 페이지 →
+        </a>
+      </div>
+
+      {/* 카드 목록 */}
+      {filtered.map((item, i) => {
+        const vsKey = item.validation_status ?? "pending";
+        const isOpen = expanded === item.event_id;
+        const fileName = item.doc_path?.split("/").pop() ?? "";
+        return (
+          <div
+            key={item.event_id}
+            className={`border-b border-neutral-100 last:border-0 ${isOpen ? "bg-neutral-50" : "hover:bg-neutral-50"} transition-colors`}
+          >
+            <button
+              onClick={() => setExpanded(isOpen ? null : item.event_id)}
+              className="w-full text-left px-5 py-3.5 flex items-start gap-3"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${VS_COLOR[vsKey]}`}>
+                    {VS_LABEL[vsKey]}
+                  </span>
+                  <span className="text-[10px] text-neutral-400 font-mono">{fileName}</span>
+                </div>
+                <p className="text-sm font-medium text-neutral-900 leading-snug line-clamp-1">
+                  {item.what_was_decided ?? "(추출 대기 중)"}
+                </p>
+                {item.why && !isOpen && (
+                  <p className="text-xs text-neutral-500 mt-0.5 line-clamp-1">{item.why}</p>
+                )}
               </div>
-            )}
-            {item.tradeoffs && (
-              <div>
-                <p className="text-[10px] font-semibold text-violet-400 uppercase tracking-widest mb-1">대안</p>
-                <p className="text-sm text-neutral-700 leading-relaxed">{item.tradeoffs}</p>
-              </div>
-            )}
-            {item.implicitConstraints && (
-              <div>
-                <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-widest mb-1">제약</p>
-                <p className="text-sm text-neutral-700 leading-relaxed">{item.implicitConstraints}</p>
+              <span className="shrink-0 text-neutral-300 mt-0.5">
+                {isOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              </span>
+            </button>
+
+            {isOpen && (
+              <div className="px-5 pb-4 flex flex-col gap-3">
+                {item.why && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest mb-1">이유</p>
+                    <p className="text-sm text-neutral-700 leading-relaxed">{item.why}</p>
+                  </div>
+                )}
+                {item.alternatives && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-red-400 uppercase tracking-widest mb-1">검토된 대안</p>
+                    <p className="text-sm text-neutral-700 leading-relaxed">{item.alternatives}</p>
+                  </div>
+                )}
+                {item.constraints && (
+                  <div>
+                    <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-widest mb-1">제약</p>
+                    <p className="text-sm text-neutral-700 leading-relaxed">{item.constraints}</p>
+                  </div>
+                )}
+                {item.section_content && (
+                  <details className="mt-1">
+                    <summary className="text-[10px] text-neutral-400 cursor-pointer hover:text-neutral-600 select-none">원본 섹션 보기</summary>
+                    <pre className="mt-2 text-[11px] text-neutral-500 bg-white border border-neutral-200 rounded-lg p-3 whitespace-pre-wrap font-mono leading-relaxed max-h-48 overflow-y-auto">
+                      {item.section_content}
+                    </pre>
+                  </details>
+                )}
               </div>
             )}
           </div>
-        )}
-      </div>
+        );
+      })}
     </div>
   );
 }
@@ -552,7 +627,6 @@ function TimelineEntry({ item, workspaceId, graphMeta, isLast }: {
   item: FeedItem; workspaceId: string; graphMeta: GraphRowMeta; isLast: boolean;
 }) {
   if (item.eventType?.startsWith("pr_")) return <PrCard item={item} graphMeta={graphMeta} isLast={isLast} />;
-  if (item.eventType === "doc_import" || item.sourceType === "doc") return <DocCard item={item} graphMeta={graphMeta} isLast={isLast} />;
 
   const [expanded, setExpanded] = useState(false);
   const [diffExpanded, setDiffExpanded] = useState(false);
