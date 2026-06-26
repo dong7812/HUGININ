@@ -191,6 +191,7 @@ func (m *model) dispatch(raw string) tea.Cmd {
 			tea.Println(blue.Render("  login")+"               로그인 + 워크스페이스 선택"),
 			tea.Println(blue.Render("  setup")+"               현재 repo 연결 + hook 설치"),
 			tea.Println(blue.Render("  backfill")+"            누락 커밋 소급 수집"),
+			tea.Println(blue.Render("  import <file>")+"      문서 임포트 (ETL + 코드 검증)"),
 			tea.Println(blue.Render("  workspace list")+"      워크스페이스 목록"),
 			tea.Println(blue.Render("  logout")+"              로그아웃"),
 			tea.Println(blue.Render("  exit")+"                종료  (Ctrl+C)"),
@@ -223,6 +224,21 @@ func (m *model) dispatch(raw string) tea.Cmd {
 		return tea.ExecProcess(
 			exec.Command(os.Args[0], backfillArgs...),
 			func(err error) tea.Msg { return backfillDoneMsg{err: err} },
+		)
+
+	case "import":
+		if len(args) == 0 {
+			return tea.Println(red.Render("사용법: import <파일경로>"))
+		}
+		importArgs := append([]string{"import"}, args...)
+		return tea.ExecProcess(
+			exec.Command(os.Args[0], importArgs...),
+			func(err error) tea.Msg {
+				if err != nil {
+					return asyncLinesMsg{lines: []string{red.Render("✗ import 실패: " + err.Error())}}
+				}
+				return asyncLinesMsg{lines: []string{green.Render("✓ import 완료")}}
+			},
 		)
 
 	case "logout":
