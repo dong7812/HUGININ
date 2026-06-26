@@ -2,6 +2,7 @@ package application
 
 import (
 	"fmt"
+
 	"huginin/domain"
 )
 
@@ -52,4 +53,12 @@ func (uc *ProjectUseCase) FixCommitTimestamps(workspaceID string, timestamps map
 		return 0, err
 	}
 	return uc.api.FixCommitTimestamps(t, workspaceID, timestamps)
+}
+
+func (uc *ProjectUseCase) ImportDoc(workspaceID, projectID, docPath string, sections []domain.DocSection) ([]string, int, error) {
+	t, err := uc.token()
+	if err != nil {
+		return nil, 0, err
+	}
+	return uc.api.ImportDoc(t, workspaceID, projectID, docPath, sections)
 }

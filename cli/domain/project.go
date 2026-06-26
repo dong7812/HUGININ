@@ -25,6 +25,14 @@ type APIClient interface {
 	CreateServiceToken(token string) (serviceToken string, err error)
 	CreateCLISession() (sessionID, authURL string, err error)
 	PollCLISession(sessionID string) (status, token, userID string, err error)
+	ImportDoc(token, workspaceID, projectID, docPath string, sections []DocSection) (eventIDs []string, sectionCount int, err error)
+}
+
+// DocSection 문서 임포트 섹션.
+type DocSection struct {
+	Heading          string
+	Content          string
+	CodebaseSnippets string
 }
 
 // Member 워크스페이스 멤버.

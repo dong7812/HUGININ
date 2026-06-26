@@ -21,6 +21,7 @@ from infrastructure.security.pii_masker import RegexPiiMasker
 from application.use_cases.auth.login import LoginUseCase
 from application.use_cases.auth.register import RegisterUseCase
 from application.use_cases.collect.collect_event import CollectEventUseCase
+from application.use_cases.collect.import_doc import ImportDocUseCase
 from application.use_cases.project.link_project import LinkProjectUseCase
 from application.use_cases.project.set_permission import SetPermissionUseCase
 from application.use_cases.workspace.change_role import ChangeRoleUseCase
@@ -48,6 +49,7 @@ from interfaces.http.routers.workspace_router import router as workspace_router
 from interfaces.http.routers.webhook_router import router as webhook_router
 from interfaces.http.routers.pm_brief_router import router as pm_brief_router
 from interfaces.http.routers.chat_router import router as chat_router
+from interfaces.http.routers.import_router import router as import_router
 from interfaces.mcp.mcp_adapter import mount_mcp
 
 logger = logging.getLogger("huginin")
@@ -138,6 +140,9 @@ async def lifespan(app: FastAPI):
     )
     app.state.event_repo = event_repo
     app.state.anthropic_api_key = settings.anthropic_api_key
+    app.state.import_doc_uc = ImportDocUseCase(
+        event_repo, workspace_repo, anthropic_api_key=settings.anthropic_api_key
+    )
     app.state.github_webhook_secret = settings.github_webhook_secret
     app.state.get_overview_uc = GetOverviewUseCase(workspace_repo, project_repo, event_repo)
     app.state.get_feed_uc = GetFeedUseCase(event_repo)
@@ -191,6 +196,7 @@ app.include_router(memory_router)
 app.include_router(webhook_router)
 app.include_router(pm_brief_router)
 app.include_router(chat_router)
+app.include_router(import_router)
 
 mount_mcp(app)
 

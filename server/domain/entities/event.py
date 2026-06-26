@@ -36,11 +36,15 @@ class DecisionEvent:
     rejected_alternatives: str | None = field(default=None)
     implicit_constraints: str | None = field(default=None)
     # GitHub Webhook PR 이벤트
-    event_type: str = field(default="commit")          # commit | pr_opened | pr_merged | pr_closed
+    event_type: str = field(default="commit")          # commit | pr_opened | pr_merged | pr_closed | doc_import
     pr_number: int | None = field(default=None)
     pr_url: str | None = field(default=None)
     github_author: str | None = field(default=None)
     ai_tool: str = field(default="claude-code")        # claude-code | codex | gemini
+    # 문서 임포트
+    source_type: str = field(default="commit")         # commit | doc
+    validation_status: str | None = field(default=None) # pending | consistent | outdated | unverifiable | reviewed | rejected
+    doc_path: str | None = field(default=None)
 
     @staticmethod
     def create(

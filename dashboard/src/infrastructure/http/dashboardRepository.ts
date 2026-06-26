@@ -303,6 +303,41 @@ class DashboardApiRepository implements IDashboardRepository {
       },
     );
   }
+
+  async listDocPending(workspaceId: string): Promise<DocItem[]> {
+    const data = await apiFetch<{ items: DocItem[] }>(
+      `/workspace/${workspaceId}/docs/pending`,
+      this.token,
+    );
+    return data.items;
+  }
+
+  async reviewDoc(
+    workspaceId: string,
+    eventId: string,
+    body: { validation_status: string; what_was_decided?: string; why?: string },
+  ): Promise<void> {
+    await apiFetch<{ ok: boolean }>(
+      `/workspace/${workspaceId}/docs/${eventId}/review`,
+      this.token,
+      { method: "PATCH", body: JSON.stringify(body) },
+    );
+  }
+}
+
+export interface DocItem {
+  event_id: string;
+  doc_path: string;
+  validation_status: string | null;
+  created_at: string;
+  what_was_decided: string | null;
+  why: string | null;
+  alternatives: string | null;
+  constraints: string | null;
+  validation_note: string | null;
+  decision_type: string | null;
+  status: string;
+  section_content: string;
 }
 
 export interface ChatHistoryItem {
@@ -329,6 +364,8 @@ export function createDashboardRepository(token: string): IDashboardRepository &
   getPmBrief(workspaceId: string): Promise<PmBriefResult>;
   chat(workspaceId: string, message: string, history: ChatHistoryItem[]): Promise<ChatResult>;
   exportContext(workspaceId: string, level: 1 | 2 | 3): Promise<string>;
+  listDocPending(workspaceId: string): Promise<DocItem[]>;
+  reviewDoc(workspaceId: string, eventId: string, body: { validation_status: string; what_was_decided?: string; why?: string }): Promise<void>;
 } {
   return new DashboardApiRepository(token);
 }

@@ -166,6 +166,34 @@ export function usePmBriefMutation(workspaceId: string) {
   });
 }
 
+export function useDocPendingQuery(workspaceId: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  return useQuery({
+    queryKey: ["docPending", workspaceId],
+    queryFn: () => repo.listDocPending(workspaceId),
+    enabled: !!token && !!workspaceId,
+    staleTime: 10_000,
+  });
+}
+
+export function useDocReviewMutation(workspaceId: string) {
+  const token = useAuthStore((s) => s.token) ?? "";
+  const repo = createDashboardRepository(token);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { eventId: string; validation_status: string; what_was_decided?: string; why?: string }) =>
+      repo.reviewDoc(workspaceId, vars.eventId, {
+        validation_status: vars.validation_status,
+        what_was_decided: vars.what_was_decided,
+        why: vars.why,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["docPending", workspaceId] });
+    },
+  });
+}
+
 export function useAddCommentMutation(eventId: string, workspaceId: string) {
   const token = useAuthStore((s) => s.token) ?? "";
   const repo = createCommentRepository(token);

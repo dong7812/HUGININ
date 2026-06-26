@@ -299,6 +299,46 @@ func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt,
 	return r["event_id"].(string), nil
 }
 
+func (c *Client) ImportDoc(token, workspaceID, projectID, docPath string, sections []domain.DocSection) ([]string, int, error) {
+	type sectionPayload struct {
+		Heading          string `json:"heading"`
+		Content          string `json:"content"`
+		CodebaseSnippets string `json:"codebase_snippets"`
+	}
+	payload := make([]sectionPayload, len(sections))
+	for i, s := range sections {
+		payload[i] = sectionPayload{Heading: s.Heading, Content: s.Content, CodebaseSnippets: s.CodebaseSnippets}
+	}
+	body := map[string]any{
+		"doc_path": docPath,
+		"sections": payload,
+	}
+	if projectID != "" {
+		body["project_id"] = projectID
+	}
+	r, err := c.post("/workspace/"+workspaceID+"/import-doc", token, body)
+	if err != nil {
+		return nil, 0, err
+	}
+	count := 0
+	if v, ok := r["section_count"]; ok {
+		if f, ok := v.(float64); ok {
+			count = int(f)
+		}
+	}
+	var ids []string
+	if v, ok := r["event_ids"]; ok {
+		if arr, ok := v.([]any); ok {
+			for _, x := range arr {
+				if s, ok := x.(string); ok {
+					ids = append(ids, s)
+				}
+			}
+		}
+	}
+	return ids, count, nil
+}
+
 func (c *Client) FixCommitTimestamps(token, workspaceID string, timestamps map[string]string) (int, error) {
 	body := map[string]any{"timestamps": timestamps}
 	r, err := c.patch("/dashboard/"+workspaceID+"/fix-commit-timestamps", token, body)

@@ -1,0 +1,4 @@
+ALTER TABLE decision_events
+  ADD COLUMN IF NOT EXISTS source_type  VARCHAR NOT NULL DEFAULT 'commit',
+  ADD COLUMN IF NOT EXISTS validation_status VARCHAR,
+  ADD COLUMN IF NOT EXISTS doc_path     TEXT;

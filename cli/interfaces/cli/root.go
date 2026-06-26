@@ -52,6 +52,7 @@ func Execute() {
 	root.AddCommand(newHookCmd(wsUC, projUC, ks, cfg))
 	root.AddCommand(newUseCmd())
 	root.AddCommand(newPickCmd())
+	root.AddCommand(newImportCmd(projUC, cfg))
 	for _, cmd := range newInternalCmds(projUC, ks) {
 		root.AddCommand(cmd)
 	}

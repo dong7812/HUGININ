@@ -20,16 +20,91 @@ class PgEventRepository(EventRepository):
                 (id, workspace_id, project_id, user_id, commit_hash,
                  raw_prompt, raw_response, diff, status, created_at,
                  branch, prompt_tokens, response_tokens,
-                 event_type, pr_number, pr_url, github_author, ai_tool)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+                 event_type, pr_number, pr_url, github_author, ai_tool,
+                 source_type, validation_status, doc_path)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
             """,
             event.id, event.workspace_id, event.project_id, event.user_id,
             event.commit_hash, event.raw_prompt, event.raw_response,
             event.diff, event.status.value, event.created_at,
             event.branch, event.prompt_tokens, event.response_tokens,
             event.event_type, event.pr_number, event.pr_url, event.github_author,
-            event.ai_tool,
+            event.ai_tool, event.source_type, event.validation_status, event.doc_path,
         )
+
+    async def save_doc(self, event: DecisionEvent) -> None:
+        """문서 임포트 전용 save — source_type/validation_status/doc_path 포함."""
+        await self.save(event)
+
+    async def update_doc_refined(
+        self,
+        event_id,
+        what_was_decided: str,
+        why: str,
+        alternatives: str | None,
+        constraints: str | None,
+        decision_type: str,
+        validation_status: str,
+        validation_note: str,
+    ) -> None:
+        await self._pool.execute(
+            """
+            UPDATE decision_events
+            SET status = 'refined',
+                what_was_built = $2,
+                problem_solved = $3,
+                rejected_alternatives = $4,
+                implicit_constraints = $5,
+                decision_type = $6,
+                validation_status = $7,
+                tradeoffs = $8
+            WHERE id = $1
+            """,
+            event_id, what_was_decided, why, alternatives, constraints,
+            decision_type, validation_status, validation_note,
+        )
+
+    async def list_doc_pending(self, workspace_id: UUID) -> list[dict]:
+        """검토 대기 중인 문서 레코드 목록."""
+        rows = await self._pool.fetch(
+            """
+            SELECT
+                e.id, e.doc_path, e.validation_status, e.created_at,
+                e.what_was_built, e.problem_solved, e.tradeoffs,
+                e.rejected_alternatives, e.implicit_constraints,
+                e.decision_type, e.status,
+                LEFT(e.raw_prompt, 2000) AS section_content
+            FROM decision_events e
+            WHERE e.workspace_id = $1
+              AND e.source_type = 'doc'
+            ORDER BY e.doc_path, e.created_at
+            """,
+            workspace_id,
+        )
+        return [dict(r) for r in rows]
+
+    async def update_doc_review(
+        self, event_id: UUID, validation_status: str,
+        what_was_decided: str | None = None,
+        why: str | None = None,
+    ) -> None:
+        """사람 검토 결과 반영 — reviewed / rejected / outdated."""
+        if what_was_decided is not None:
+            await self._pool.execute(
+                """
+                UPDATE decision_events
+                SET validation_status = $2,
+                    what_was_built = COALESCE($3, what_was_built),
+                    problem_solved = COALESCE($4, problem_solved)
+                WHERE id = $1
+                """,
+                event_id, validation_status, what_was_decided, why,
+            )
+        else:
+            await self._pool.execute(
+                "UPDATE decision_events SET validation_status = $2 WHERE id = $1",
+                event_id, validation_status,
+            )
 
     async def find_by_id(self, id: UUID) -> DecisionEvent | None:
         row = await self._pool.fetchrow(
@@ -293,6 +368,7 @@ class PgEventRepository(EventRepository):
             LEFT JOIN projects p ON p.id = e.project_id
             JOIN workspace_members wm ON wm.workspace_id = e.workspace_id AND wm.user_id = $1
             WHERE e.embedding IS NOT NULL
+              AND (e.validation_status IS NULL OR e.validation_status NOT IN ('outdated', 'rejected', 'pending'))
             ORDER BY e.embedding <=> $2::vector
             LIMIT $3
             """,
@@ -516,6 +592,9 @@ class PgEventRepository(EventRepository):
             rejected_alternatives=row.get("rejected_alternatives"),
             implicit_constraints=row.get("implicit_constraints"),
             ai_tool=row.get("ai_tool") or "claude-code",
+            source_type=row.get("source_type") or "commit",
+            validation_status=row.get("validation_status"),
+            doc_path=row.get("doc_path"),
         )
 
 

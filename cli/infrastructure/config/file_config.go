@@ -49,6 +49,10 @@ func Load() (*Config, error) {
 	return &cfg, nil
 }
 
+func (c *Config) FrontendURL() string {
+	return "https://huginin.com"
+}
+
 func Save(cfg *Config) error {
 	path, err := configPath()
 	if err != nil {
