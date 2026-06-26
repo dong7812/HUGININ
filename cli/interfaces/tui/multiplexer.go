@@ -250,17 +250,7 @@ func (m *Multiplexer) startStdinReader() {
 	}()
 }
 
-// stdinReady: fd에 읽을 데이터가 있으면 true. timeoutMs 동안 대기.
-func stdinReady(fd int, timeoutMs int) bool {
-	var rfds syscall.FdSet
-	rfds.Bits[fd/32] |= 1 << uint(fd%32)
-	tv := syscall.Timeval{Sec: 0, Usec: int32(timeoutMs * 1000)}
-	// darwin: Select returns only error; ready fds remain set in rfds
-	if err := syscall.Select(fd+1, &rfds, nil, nil, &tv); err != nil {
-		return false
-	}
-	return rfds.Bits[fd/32]&(1<<uint(fd%32)) != 0
-}
+// stdinReady is defined in stdin_darwin.go / stdin_linux.go
 
 // stopStdinReader: stopRead 채널 닫기 → 고루틴이 최대 10ms 내 종료.
 func (m *Multiplexer) stopStdinReader() {
