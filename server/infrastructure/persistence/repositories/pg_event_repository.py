@@ -236,6 +236,7 @@ class PgEventRepository(EventRepository):
             JOIN users u ON u.id = e.user_id
             LEFT JOIN projects p ON p.id = e.project_id
             WHERE e.workspace_id = $1
+              AND e.source_type != 'doc'
               AND ($4::text IS NULL OR e.branch = $4)
               AND ($5::timestamptz IS NULL OR e.created_at >= $5)
               AND ($6::text IS NULL OR e.frame = $6)
@@ -248,6 +249,7 @@ class PgEventRepository(EventRepository):
             """
             SELECT COUNT(*) FROM decision_events
             WHERE workspace_id = $1
+              AND source_type != 'doc'
               AND ($2::text IS NULL OR branch = $2)
               AND ($3::timestamptz IS NULL OR created_at >= $3)
               AND ($4::text IS NULL OR frame = $4)
