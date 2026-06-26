@@ -51,6 +51,9 @@ interface RawFeedItem {
   pr_number: number | null;
   pr_url: string | null;
   github_author: string | null;
+  source_type: string;
+  validation_status: string | null;
+  doc_path: string | null;
 }
 
 function mapFeedItem(i: RawFeedItem): FeedItem {
@@ -83,6 +86,9 @@ function mapFeedItem(i: RawFeedItem): FeedItem {
     prNumber: i.pr_number ?? null,
     prUrl: i.pr_url ?? null,
     githubAuthor: i.github_author ?? null,
+    sourceType: i.source_type ?? "commit",
+    validationStatus: i.validation_status ?? null,
+    docPath: i.doc_path ?? null,
   };
 }
 

@@ -36,6 +36,10 @@ class FeedItem:
     pr_number: int | None = None
     pr_url: str | None = None
     github_author: str | None = None
+    # 문서 임포트
+    source_type: str = "commit"
+    validation_status: str | None = None
+    doc_path: str | None = None
 
 
 @dataclass

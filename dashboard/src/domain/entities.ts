@@ -38,6 +38,10 @@ export interface FeedItem {
   prNumber: number | null;
   prUrl: string | null;
   githubAuthor: string | null;
+  // 문서 임포트
+  sourceType: string;
+  validationStatus: string | null;
+  docPath: string | null;
 }
 
 export interface Comment {

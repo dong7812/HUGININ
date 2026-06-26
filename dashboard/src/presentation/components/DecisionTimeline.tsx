@@ -470,10 +470,89 @@ function PrCard({ item, graphMeta, isLast }: { item: FeedItem; graphMeta: GraphR
   );
 }
 
+const VALIDATION_COLOR: Record<string, string> = {
+  pending: "text-yellow-700 bg-yellow-50",
+  consistent: "text-green-700 bg-green-50",
+  outdated: "text-red-600 bg-red-50",
+  unverifiable: "text-neutral-500 bg-neutral-100",
+  reviewed: "text-blue-700 bg-blue-50",
+  rejected: "text-neutral-400 bg-neutral-100",
+};
+const VALIDATION_LABEL: Record<string, string> = {
+  pending: "검토 대기", consistent: "일치", outdated: "불일치",
+  unverifiable: "확인 불가", reviewed: "승인됨", rejected: "거부됨",
+};
+
+function DocCard({ item, graphMeta, isLast }: { item: FeedItem; graphMeta: GraphRowMeta; isLast: boolean }) {
+  const [expanded, setExpanded] = useState(false);
+  const date = new Date(item.createdAt);
+  const vsKey = item.validationStatus ?? "pending";
+
+  return (
+    <div className={`flex hover:bg-neutral-50 transition-colors ${!isLast ? "border-b border-neutral-100" : ""}`}>
+      <GraphCell meta={graphMeta} isLastOverall={isLast} />
+      <div className="flex-1 py-4 pr-5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-neutral-800 text-white font-mono">문서</span>
+              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${VALIDATION_COLOR[vsKey]}`}>
+                {VALIDATION_LABEL[vsKey]}
+              </span>
+              {item.docPath && (
+                <span className="text-[10px] text-neutral-400 font-mono truncate">{item.docPath.split("/").pop()}</span>
+              )}
+            </div>
+            <p className="text-sm font-semibold text-neutral-900 line-clamp-1 leading-snug">
+              {item.whatWasBuilt || item.promptPreview}
+            </p>
+            {item.problemSolved && !expanded && (
+              <p className="text-xs text-neutral-500 line-clamp-1 mt-0.5">{item.problemSolved}</p>
+            )}
+          </div>
+          <button onClick={() => setExpanded((v) => !v)}
+            className="shrink-0 p-1 rounded-lg text-neutral-300 hover:text-neutral-600 hover:bg-neutral-100 transition-colors">
+            {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          </button>
+        </div>
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="text-[10px] text-neutral-300 ml-auto">
+            <Clock size={9} className="inline mr-0.5 -mt-0.5" />
+            {date.toLocaleDateString("ko-KR", { month: "short", day: "numeric" })} {date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
+        {expanded && (
+          <div className="mt-4 flex flex-col gap-2.5 border border-neutral-100 rounded-xl px-4 py-3">
+            {item.problemSolved && (
+              <div>
+                <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest mb-1">이유</p>
+                <p className="text-sm text-neutral-700 leading-relaxed">{item.problemSolved}</p>
+              </div>
+            )}
+            {item.tradeoffs && (
+              <div>
+                <p className="text-[10px] font-semibold text-violet-400 uppercase tracking-widest mb-1">대안</p>
+                <p className="text-sm text-neutral-700 leading-relaxed">{item.tradeoffs}</p>
+              </div>
+            )}
+            {item.implicitConstraints && (
+              <div>
+                <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-widest mb-1">제약</p>
+                <p className="text-sm text-neutral-700 leading-relaxed">{item.implicitConstraints}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function TimelineEntry({ item, workspaceId, graphMeta, isLast }: {
   item: FeedItem; workspaceId: string; graphMeta: GraphRowMeta; isLast: boolean;
 }) {
   if (item.eventType?.startsWith("pr_")) return <PrCard item={item} graphMeta={graphMeta} isLast={isLast} />;
+  if (item.eventType === "doc_import" || item.sourceType === "doc") return <DocCard item={item} graphMeta={graphMeta} isLast={isLast} />;
 
   const [expanded, setExpanded] = useState(false);
   const [diffExpanded, setDiffExpanded] = useState(false);

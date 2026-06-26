@@ -230,7 +230,8 @@ class PgEventRepository(EventRepository):
                 e.pr_number,
                 e.pr_url,
                 e.github_author,
-                (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
+                (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count,
+                e.source_type, e.validation_status, e.doc_path
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
             LEFT JOIN projects p ON p.id = e.project_id
@@ -302,7 +303,8 @@ class PgEventRepository(EventRepository):
                 e.what_was_built, e.problem_solved, e.ai_role, e.tradeoffs,
                 e.rejected_alternatives, e.implicit_constraints,
                 e.event_type, e.pr_number, e.pr_url, e.github_author,
-                (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
+                (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count,
+                e.source_type, e.validation_status, e.doc_path
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
             LEFT JOIN projects p ON p.id = e.project_id
@@ -362,7 +364,8 @@ class PgEventRepository(EventRepository):
                 e.what_was_built, e.problem_solved, e.ai_role, e.tradeoffs,
                 e.rejected_alternatives, e.implicit_constraints,
                 e.event_type, e.pr_number, e.pr_url, e.github_author,
-                (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count
+                (SELECT COUNT(*) FROM decision_comments dc WHERE dc.event_id = e.id)::int AS comment_count,
+                e.source_type, e.validation_status, e.doc_path
             FROM decision_events e
             JOIN users u ON u.id = e.user_id
             LEFT JOIN projects p ON p.id = e.project_id
@@ -628,4 +631,7 @@ def _to_feed_item(r: asyncpg.Record) -> "FeedItem":
         pr_number=r["pr_number"],
         pr_url=r["pr_url"],
         github_author=r["github_author"],
+        source_type=r.get("source_type") or "commit",
+        validation_status=r.get("validation_status"),
+        doc_path=r.get("doc_path"),
     )
