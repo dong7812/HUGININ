@@ -68,6 +68,26 @@ Phase 3     결정 그래프 + MCP 고도화 + 검색 고도화 (MMR)
 
 ### 구현 항목
 
+**문서 임포트 (cold-start 해결)**
+- [ ] `huginin import <path|glob>` — 기존 문서(ADR, README, 설계 문서 등)를 Haiku ETL로 정제 → `doc_chunks` 테이블에 저장
+  - raw 청크 임베딩 대신 ETL 구조화 추출: `what_was_decided / why / alternatives / constraints`
+  - commit 기반 결정 레코드와 동일 스키마 → MCP recall, 대시보드 검색 통합
+  - cold-start 문제 해결: HUGININ 설치 이전 2년치 결정을 문서로 소급 입력 가능
+- [ ] `huginin setup` 시 `/docs`, `CLAUDE.md`, `*.md` 자동 감지 + 초기 임포트
+- [ ] git hook에서 MD 파일 변경 감지 → 자동 재임포트 (문서 최신화)
+
+**문서-코드 일관성 검증 (doc validation)**
+- [ ] 임포트 후 2단계 검증 파이프라인 (백그라운드 비동기)
+  1. ETL 추출된 `what_was_decided` 클레임 → 코드베이스 grep/search (관련 파일 탐색)
+  2. LLM 비교: 문서 클레임 vs 실제 코드 → `consistent / outdated / unverifiable` 판정
+- [ ] `outdated` 레코드만 대시보드에 플래그 — 사람 검토 요청
+- [ ] `consistent` 레코드는 자동 validated 처리 → 검토 부담 최소화
+- [ ] 문서가 harness: MD 파일 변경 시 해당 doc record 재검증 (git hook, 이미 재임포트 트리거 있음)
+- [ ] 대시보드 "문서 상태" 뷰 — validated / outdated / unverifiable 현황 한눈에
+
+**MCP 필터**
+- [ ] `recall_decisions` 쿼리에 `validation_status != 'outdated'` 필터 — outdated 문서 레코드가 Claude 컨텍스트에 주입되지 않도록
+
 **역추적 인터페이스**
 - [ ] 파일/함수 기반 역추적 — 특정 파일 경로 입력 → 이 파일을 건드린 AI 결정들 타임라인
 - [ ] 결정 검색 결과 개선 — 현재 검색은 있으나 "역추적" 목적으로 설계 안 됨. 관련 결정 + 당시 맥락을 한 화면에

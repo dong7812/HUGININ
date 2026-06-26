@@ -2,6 +2,30 @@
 
 ---
 
+## [2026-06-26] 문서 임포트 ETL: cold-start 문제 + KB 차별화
+
+**Context**: HUGININ은 설치 시점부터 AI 결정을 수집하기 때문에 프로젝트 중간에 도입하면 이전 결정 이력이 없다. 또한 오픈소스 KB(Outline, Danswer 등)는 날 문서 청크를 임베딩해 검색 품질이 낮고 사람이 재검토해야 하는 문제가 있다.
+
+**Decision**: Phase 2에 `huginin import` 추가. 기존 Haiku ETL 파이프라인을 문서에도 동일하게 적용 — raw 청크 임베딩 대신 `what_was_decided / why / alternatives / constraints` 구조로 정제 후 저장. 임포트 후 코드베이스와 자동 비교 검증.
+
+**Alternatives considered**:
+- 날 문서 청크 임베딩 — 구현 단순하나 검색 품질 낮음, 재검토 부담 발생 (KB와 동일 문제)
+- 별도 문서 스키마 — 결정 레코드와 스키마 분리 시 MCP recall에서 통합 검색 불가
+- 전체 문서 사람 검토 — 임포트 의미 없음, 마찰 그대로
+
+**Reasoning**:
+- HUGININ의 핵심 자산은 ETL로 정제된 구조화된 결정 레코드. 문서도 같은 파이프라인을 태우면 품질 균일화
+- cold-start 해결: 설치 이전 ADR, README, 설계 문서를 소급 입력 → 팀 전체 결정 이력 완성
+- **코드가 source of truth**: ETL 추출 클레임을 코드베이스와 대조 → consistent/outdated/unverifiable 판정. outdated만 사람 검토 → 검토 부담 최소화
+- KB와의 명확한 차별점: "날 문서 저장"이 아닌 "결정 단위 정제 + 코드 검증 후 저장"
+- setup 자동 감지 + git hook 재임포트로 수동 입력 마찰 최소화
+
+**Intent class**: FEATURE_BUILDING
+**Signal score**: HIGH
+**Outcome**: backlogged (Phase 2)
+
+---
+
 ## [2026-06-24] PTY 멀티플렉서: huginin TUI 구조 전환
 
 **Context**: `huginin` 단독 실행 시 Bubble Tea REPL로 claude 세션 진입했으나, 멀티 CLI(agy, codex) 지원과 Ctrl+\ 전환 UX를 위해 PTY 멀티플렉서 구조로 전환.
