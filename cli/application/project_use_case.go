@@ -39,6 +39,14 @@ func (uc *ProjectUseCase) CollectEvent(workspaceID, projectID, commitHash, promp
 	return uc.api.CollectEvent(t, workspaceID, projectID, commitHash, prompt, response, diff, branch, committedAt, tool)
 }
 
+func (uc *ProjectUseCase) RerefinEvent(workspaceID, commitHash, prompt, response, diff string) error {
+	t, err := uc.token()
+	if err != nil {
+		return err
+	}
+	return uc.api.RerefinEvent(t, workspaceID, commitHash, prompt, response, diff)
+}
+
 func (uc *ProjectUseCase) GetCommitHashes(workspaceID string) ([]string, error) {
 	t, err := uc.token()
 	if err != nil {

@@ -531,6 +531,16 @@ class PgEventRepository(EventRepository):
         )
         return [DayCount(date=r["date"], count=r["count"]) for r in rows]
 
+    async def update_raw_and_reset(self, event_id: UUID, raw_prompt: str, raw_response: str, diff: str | None) -> None:
+        await self._pool.execute(
+            """
+            UPDATE decision_events
+            SET raw_prompt = $2, raw_response = $3, diff = $4, status = 'pending'
+            WHERE id = $1
+            """,
+            event_id, raw_prompt, raw_response, diff,
+        )
+
     async def update_status(self, id: UUID, status: EventStatus) -> None:
         await self._pool.execute(
             "UPDATE decision_events SET status = $1 WHERE id = $2",

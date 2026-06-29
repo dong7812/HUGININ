@@ -49,6 +49,7 @@ func Execute() {
 	root.AddCommand(newProjectCmd(projUC))
 	root.AddCommand(newSetupCmd(wsUC, projUC, ks, cfg))
 	root.AddCommand(newBackfillCmd(projUC))
+	root.AddCommand(newRerefinCmd(projUC))
 	root.AddCommand(newHookCmd(wsUC, projUC, ks, cfg))
 	root.AddCommand(newUseCmd())
 	root.AddCommand(newPickCmd())

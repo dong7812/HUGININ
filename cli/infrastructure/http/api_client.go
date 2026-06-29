@@ -299,6 +299,20 @@ func (c *Client) CollectEvent(token, workspaceID, projectID, commitHash, prompt,
 	return r["event_id"].(string), nil
 }
 
+func (c *Client) RerefinEvent(token, workspaceID, commitHash, prompt, response, diff string) error {
+	body := map[string]any{
+		"workspace_id": workspaceID,
+		"commit_hash":  commitHash,
+		"raw_prompt":   prompt,
+		"raw_response": response,
+	}
+	if diff != "" {
+		body["diff"] = diff
+	}
+	_, err := c.post("/collect/event/rerefine", token, body)
+	return err
+}
+
 func (c *Client) ImportDoc(token, workspaceID, projectID, docPath string, sections []domain.DocSection) ([]string, int, error) {
 	type sectionPayload struct {
 		Heading          string `json:"heading"`

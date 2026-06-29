@@ -26,6 +26,7 @@ type APIClient interface {
 	CreateCLISession() (sessionID, authURL string, err error)
 	PollCLISession(sessionID string) (status, token, userID string, err error)
 	ImportDoc(token, workspaceID, projectID, docPath string, sections []DocSection) (eventIDs []string, sectionCount int, err error)
+	RerefinEvent(token, workspaceID, commitHash, prompt, response, diff string) error
 }
 
 // DocSection 문서 임포트 섹션.

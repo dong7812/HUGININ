@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel
 
 from application.exceptions import DuplicateEventError, NotFoundError, PermissionDeniedError
 from application.use_cases.collect.collect_event import CollectEventInput
@@ -9,6 +10,14 @@ from interfaces.http.schemas.event_schema import CollectEventRequest, CollectEve
 from domain.repositories.user_repository import UserRepository
 
 router = APIRouter(prefix="/collect", tags=["collect"])
+
+
+class RerefinRequest(BaseModel):
+    workspace_id: UUID
+    commit_hash: str
+    raw_prompt: str
+    raw_response: str
+    diff: str | None = None
 
 
 @router.post("/event", response_model=CollectEventResponse, status_code=status.HTTP_202_ACCEPTED)
@@ -50,3 +59,37 @@ async def collect_event(
     except PermissionDeniedError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     return CollectEventResponse(event_id=result.event_id, status=result.status)
+
+
+@router.post("/event/rerefine", status_code=status.HTTP_202_ACCEPTED)
+async def rerefine_event(
+    body: RerefinRequest,
+    request: Request,
+    user_id: UUID = Depends(get_current_user_id),
+):
+    """기존 이벤트의 raw 데이터를 교체하고 refinement 재실행."""
+    event_repo = request.app.state.event_repo
+    collect_uc = request.app.state.collect_event_uc
+
+    event = await event_repo.find_by_commit_hash(body.commit_hash, body.workspace_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+
+    pii = collect_uc._pii_port
+    masked_prompt = pii.mask(body.raw_prompt)
+    masked_response = pii.mask(body.raw_response)
+    masked_diff = pii.mask(body.diff) if body.diff else None
+
+    await event_repo.update_raw_and_reset(event.id, masked_prompt, masked_response, masked_diff)
+
+    user_repo: UserRepository = request.app.state.user_repo
+    user = await user_repo.find_by_id(user_id)
+    user_name = user.name if user else ""
+
+    import asyncio
+    if collect_uc._anthropic_api_key:
+        asyncio.create_task(
+            collect_uc._refine_async(event.id, masked_prompt, masked_response, masked_diff, user_name)
+        )
+
+    return {"event_id": str(event.id), "status": "pending"}
