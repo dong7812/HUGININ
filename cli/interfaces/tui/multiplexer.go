@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -290,7 +291,63 @@ func (m *Multiplexer) startCLI(name string) error {
 	m.mu.Unlock()
 
 	go m.outputLoop(name, s)
+	if name == "claude-code" {
+		go trackActiveJsonl(s)
+	}
 	return nil
+}
+
+// trackActiveJsonl detects which JSONL file Claude Code creates for this session
+// and writes its path to .huginin/active-jsonl so the post-commit hook uses it.
+func trackActiveJsonl(s *ptySession) {
+	projectDir := claudeProjectDir()
+	if projectDir == "" {
+		return
+	}
+	before := jsonlSnapshot(projectDir)
+	// wait for first output (up to 15s)
+	select {
+	case <-s.outputCh:
+	case <-time.After(15 * time.Second):
+	}
+	// small buffer for file creation to complete
+	time.Sleep(300 * time.Millisecond)
+
+	after := jsonlSnapshot(projectDir)
+	for path := range after {
+		if !before[path] {
+			_ = os.MkdirAll(".huginin", 0755)
+			_ = os.WriteFile(".huginin/active-jsonl", []byte(path), 0644)
+			return
+		}
+	}
+}
+
+func claudeProjectDir() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	encoded := strings.ReplaceAll(cwd, "/", "-")
+	return filepath.Join(home, ".claude", "projects", encoded)
+}
+
+func jsonlSnapshot(dir string) map[string]bool {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	m := make(map[string]bool, len(entries))
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), ".jsonl") {
+			m[filepath.Join(dir, e.Name())] = true
+		}
+	}
+	return m
 }
 
 func (m *Multiplexer) outputLoop(name string, s *ptySession) {
