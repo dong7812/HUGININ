@@ -71,15 +71,17 @@ async def recall_decisions(
         "results": [
             {
                 "event_id": str(item.event_id),
+                "source": item.source_type,  # "commit" | "doc"
                 "when": item.created_at.isoformat(),
                 "who": item.user_email,
                 "project": item.project_name,
+                "decision": item.what_was_built or item.prompt_preview,
+                "why": item.problem_solved,
+                "alternatives_considered": item.rejected_alternatives,
                 "branch": item.branch,
-                "prompt_summary": item.prompt_preview,
-                "ai_response_preview": (item.raw_response or "")[:400],
-                "had_diff": item.diff is not None,
                 "commit": item.commit_hash,
-                "status": item.status,
+                "had_diff": item.diff is not None,
+                "ai_response_preview": (item.raw_response or "")[:400],
                 "team_comments": item.comment_count,
             }
             for item in items

@@ -6,10 +6,10 @@ import { useDocPendingQuery, useDocReviewMutation } from "@/application/queries/
 import type { DocItem } from "@/infrastructure/http/dashboardRepository";
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "검토 대기",
-  consistent: "일치",
-  outdated: "불일치",
-  unverifiable: "확인 불가",
+  pending: "처리 중",
+  consistent: "코드베이스: 일치",
+  outdated: "코드베이스: 불일치 ⚠",
+  unverifiable: "코드베이스: 없음",
   reviewed: "승인됨",
   rejected: "거부됨",
 };
@@ -18,7 +18,7 @@ const STATUS_COLOR: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
   consistent: "bg-green-100 text-green-800",
   outdated: "bg-red-100 text-red-800",
-  unverifiable: "bg-gray-100 text-gray-600",
+  unverifiable: "bg-neutral-100 text-neutral-500",
   reviewed: "bg-blue-100 text-blue-800",
   rejected: "bg-gray-200 text-gray-500",
 };
@@ -30,7 +30,7 @@ export default function DocsReviewPage() {
   const [selected, setSelected] = useState<DocItem | null>(null);
   const [editWhat, setEditWhat] = useState("");
   const [editWhy, setEditWhy] = useState("");
-  const [filter, setFilter] = useState<string>("pending");
+  const [filter, setFilter] = useState<string>("all");
 
   const filtered = filter === "all" ? items : items.filter((i) => i.validation_status === filter);
 
@@ -58,12 +58,12 @@ export default function DocsReviewPage() {
       {/* 목록 */}
       <aside className="w-80 border-r border-gray-200 flex flex-col overflow-hidden">
         <div className="p-4 border-b border-gray-200">
-          <h1 className="font-semibold text-gray-900">문서 검토 큐</h1>
+          <h1 className="font-semibold text-gray-900">임포트된 문서</h1>
           {pending > 0 && (
-            <p className="text-sm text-yellow-700 mt-1">{pending}개 검토 대기 중</p>
+            <p className="text-sm text-yellow-700 mt-1">{pending}개 처리 중...</p>
           )}
           <div className="flex gap-1 mt-3 flex-wrap">
-            {["pending", "consistent", "outdated", "reviewed", "all"].map((s) => (
+            {["all", "consistent", "unverifiable", "outdated", "reviewed", "rejected"].map((s) => (
               <button
                 key={s}
                 onClick={() => setFilter(s)}
@@ -73,7 +73,7 @@ export default function DocsReviewPage() {
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                {s === "all" ? "전체" : STATUS_LABEL[s]}
+                {s === "all" ? "전체" : STATUS_LABEL[s] ?? s}
               </button>
             ))}
           </div>
@@ -122,22 +122,20 @@ export default function DocsReviewPage() {
           </div>
         ) : (
           <div className="max-w-3xl mx-auto p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500 font-mono">{selected.doc_path}</p>
+            <div className="space-y-1.5">
+              <p className="text-xs text-gray-500 font-mono">{selected.doc_path}</p>
+              <div className="flex items-center gap-2 flex-wrap">
                 <span
-                  className={`inline-block mt-1 text-xs px-2 py-0.5 rounded font-medium ${
+                  className={`text-xs px-2 py-0.5 rounded font-medium ${
                     STATUS_COLOR[selected.validation_status ?? "pending"]
                   }`}
                 >
                   {STATUS_LABEL[selected.validation_status ?? "pending"]}
                 </span>
+                {selected.validation_note && (
+                  <span className="text-xs text-gray-400">— {selected.validation_note}</span>
+                )}
               </div>
-              {selected.validation_note && (
-                <p className="text-xs text-gray-500 max-w-xs text-right">
-                  {selected.validation_note}
-                </p>
-              )}
             </div>
 
             {/* 원본 섹션 */}
@@ -198,27 +196,27 @@ export default function DocsReviewPage() {
             </section>
 
             {/* 액션 버튼 */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-2 flex-wrap">
               <button
                 onClick={() => submit("reviewed")}
                 disabled={reviewMutation.isPending}
                 className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 font-medium"
               >
-                ✓ 승인
+                ✓ 내용 수정 후 저장
               </button>
               <button
                 onClick={() => submit("outdated")}
                 disabled={reviewMutation.isPending}
                 className="px-4 py-2 bg-orange-100 text-orange-700 text-sm rounded hover:bg-orange-200 disabled:opacity-50 font-medium"
               >
-                불일치 표시
+                오래된 내용으로 표시
               </button>
               <button
                 onClick={() => submit("rejected")}
                 disabled={reviewMutation.isPending}
                 className="px-4 py-2 bg-gray-100 text-gray-600 text-sm rounded hover:bg-gray-200 disabled:opacity-50 font-medium"
               >
-                거부
+                KB에서 제외
               </button>
             </div>
           </div>
