@@ -111,16 +111,35 @@ func newBackfillCmd(projUC *application.ProjectUseCase) *cobra.Command {
 			for i := len(missing) - 1; i >= 0; i-- {
 				c := missing[i]
 				diff := gitDiff(c.hash)
-				prompt, response := findSession(activeTool, c.ts)
+				var prompt string
+				if activeTool == "claude-code" {
+					if active := findActiveJSONL(); active != "" {
+						prompt = extractMultiTurnConversation(active, 10)
+					}
+					if prompt == "" {
+						p, r := findClaudeSession(c.ts)
+						if p != "" {
+							prompt = "[DEV] " + p
+							if r != "" {
+								prompt += "\n\n[AI] " + r
+							}
+						}
+					}
+				} else {
+					p, r := findSession(activeTool, c.ts)
+					if p != "" {
+						prompt = "[DEV] " + p
+						if r != "" {
+							prompt += "\n\n[AI] " + r
+						}
+					}
+				}
 				if prompt == "" {
 					prompt = "[git commit] " + c.msg
 				}
-				if response == "" {
-					response = "[no AI session detected]"
-				}
 
 				committedAt := c.ts.UTC().Format(time.RFC3339)
-				_, err := projUC.CollectEvent(wsID, projID, c.hash, prompt, response, diff, c.branch, committedAt, activeTool)
+				_, err := projUC.CollectEvent(wsID, projID, c.hash, prompt, "", diff, c.branch, committedAt, activeTool)
 				msg := firstLine(c.msg)
 				if len(msg) > 50 {
 					msg = msg[:50] + "…"
@@ -516,4 +535,149 @@ func firstLine(s string) string {
 		return s[:idx]
 	}
 	return s
+}
+
+// findActiveJSONL returns the best Claude Code JSONL for the current repo.
+//
+// Priority (mirrors post-commit hook):
+//  1. .huginin/active-jsonl — pinned by huginin multiplexer
+//  2. ~/.claude/projects/<encoded-cwd>/ — project-specific directory
+//  3. "" (caller falls back to timestamp-based findClaudeSession)
+func findActiveJSONL() string {
+	// 1. multiplexer-pinned path
+	if data, err := os.ReadFile(filepath.Join(".huginin", "active-jsonl")); err == nil {
+		p := strings.TrimSpace(string(data))
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+
+	// 2. project-specific Claude Code directory
+	repoRoot, err := filepath.Abs(".")
+	if err == nil {
+		encoded := strings.ReplaceAll(repoRoot, "/", "-")
+		dir := filepath.Join(os.Getenv("HOME"), ".claude", "projects", encoded)
+		if files, err := filepath.Glob(filepath.Join(dir, "*.jsonl")); err == nil && len(files) > 0 {
+			// pick most recently modified
+			best := files[0]
+			bestMod := time.Time{}
+			for _, f := range files {
+				if info, err := os.Stat(f); err == nil && info.ModTime().After(bestMod) {
+					bestMod = info.ModTime()
+					best = f
+				}
+			}
+			return best
+		}
+	}
+	return ""
+}
+
+// extractMultiTurnConversation reads a Claude Code JSONL and returns the last
+// maxTurns user/assistant exchanges formatted as "[DEV] ...\n\n[AI] ..." so
+// claude_refiner treats it as a full conversation rather than a single turn.
+func extractMultiTurnConversation(path string, maxTurns int) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	type contentBlock struct {
+		Type string `json:"type"`
+		Text string `json:"text"`
+	}
+	type message struct {
+		Content json.RawMessage `json:"content"`
+	}
+	type entry struct {
+		Type    string  `json:"type"`
+		Message message `json:"message"`
+	}
+
+	extractText := func(raw json.RawMessage) string {
+		if raw == nil {
+			return ""
+		}
+		var s string
+		if json.Unmarshal(raw, &s) == nil {
+			return strings.TrimSpace(s)
+		}
+		var blocks []contentBlock
+		if json.Unmarshal(raw, &blocks) == nil {
+			var parts []string
+			for _, b := range blocks {
+				if b.Type == "text" && b.Text != "" {
+					parts = append(parts, strings.TrimSpace(b.Text))
+				}
+			}
+			return strings.Join(parts, " ")
+		}
+		return ""
+	}
+
+	// hasOnlyTools returns true when all blocks are tool_use/tool_result (no text).
+	hasOnlyTools := func(raw json.RawMessage) bool {
+		var blocks []contentBlock
+		if json.Unmarshal(raw, &blocks) != nil || len(blocks) == 0 {
+			return false
+		}
+		for _, b := range blocks {
+			if b.Type == "text" {
+				return false
+			}
+		}
+		return true
+	}
+
+	type turn struct {
+		tag  string // "[DEV]" or "[AI]"
+		text string
+	}
+
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 4*1024*1024), 4*1024*1024)
+	var turns []turn
+	for sc.Scan() {
+		var e entry
+		if json.Unmarshal(sc.Bytes(), &e) != nil {
+			continue
+		}
+		if e.Type != "user" && e.Type != "assistant" {
+			continue
+		}
+		if hasOnlyTools(e.Message.Content) {
+			continue
+		}
+		text := extractText(e.Message.Content)
+		if text == "" {
+			continue
+		}
+		tag := "[DEV]"
+		if e.Type == "assistant" {
+			tag = "[AI]"
+		}
+		turns = append(turns, turn{tag, text})
+	}
+
+	if len(turns) == 0 {
+		return ""
+	}
+	if len(turns) > maxTurns {
+		turns = turns[len(turns)-maxTurns:]
+	}
+
+	parts := make([]string, len(turns))
+	for i, t := range turns {
+		text := t.text
+		if len(text) > 1500 {
+			text = text[:1500]
+		}
+		parts[i] = t.tag + " " + text
+	}
+	result := strings.Join(parts, "\n\n")
+	if len(result) > 6000 {
+		result = result[:6000]
+	}
+	return result
 }

@@ -2,8 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -43,15 +41,6 @@ func newRerefinCmd(projUC *application.ProjectUseCase) *cobra.Command {
 				return commitInfo{}, false
 			}
 
-			// active-jsonl 우선 — hook과 동일한 로직
-			activeJSONL := ""
-			if data, err := os.ReadFile(filepath.Join(".huginin", "active-jsonl")); err == nil {
-				p := strings.TrimSpace(string(data))
-				if _, err := os.Stat(p); err == nil {
-					activeJSONL = p
-				}
-			}
-
 			for _, hash := range args {
 				c, ok := findCommit(hash)
 				if !ok {
@@ -60,20 +49,36 @@ func newRerefinCmd(projUC *application.ProjectUseCase) *cobra.Command {
 				}
 
 				diff := gitDiff(c.hash)
-				var prompt, response string
-				if activeJSONL != "" {
-					prompt, response = parseClaudeJSONL(activeJSONL)
+
+				// 3단계 JSONL 선택 (hook과 동일한 로직)
+				var prompt string
+				if activeTool == "claude-code" {
+					if active := findActiveJSONL(); active != "" {
+						prompt = extractMultiTurnConversation(active, 10)
+					}
+					if prompt == "" {
+						p, r := findClaudeSession(c.ts)
+						if p != "" {
+							prompt = "[DEV] " + p
+							if r != "" {
+								prompt += "\n\n[AI] " + r
+							}
+						}
+					}
 				} else {
-					prompt, response = findSession(activeTool, c.ts)
+					p, r := findSession(activeTool, c.ts)
+					if p != "" {
+						prompt = "[DEV] " + p
+						if r != "" {
+							prompt += "\n\n[AI] " + r
+						}
+					}
 				}
 				if prompt == "" {
 					prompt = "[git commit] " + c.msg
 				}
-				if response == "" {
-					response = "[no AI session detected]"
-				}
 
-				if err := projUC.RerefinEvent(wsID, c.hash, prompt, response, diff); err != nil {
+				if err := projUC.RerefinEvent(wsID, c.hash, prompt, "", diff); err != nil {
 					fmt.Printf("  ✗ %s — %v\n", c.hash[:8], err)
 				} else {
 					fmt.Printf("  ✓ %s  재분석 요청됨\n", c.hash[:8])
