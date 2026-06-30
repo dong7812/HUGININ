@@ -2,6 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -30,23 +33,39 @@ func newRerefinCmd(projUC *application.ProjectUseCase) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("git log 실패: %w", err)
 			}
-			byHash := make(map[string]commitInfo, len(commits))
-			for _, c := range commits {
-				byHash[c.hash] = c
-				if len(c.hash) >= 8 {
-					byHash[c.hash[:8]] = c
+
+			findCommit := func(hash string) (commitInfo, bool) {
+				for _, c := range commits {
+					if c.hash == hash || strings.HasPrefix(c.hash, hash) {
+						return c, true
+					}
+				}
+				return commitInfo{}, false
+			}
+
+			// active-jsonl 우선 — hook과 동일한 로직
+			activeJSONL := ""
+			if data, err := os.ReadFile(filepath.Join(".huginin", "active-jsonl")); err == nil {
+				p := strings.TrimSpace(string(data))
+				if _, err := os.Stat(p); err == nil {
+					activeJSONL = p
 				}
 			}
 
 			for _, hash := range args {
-				c, ok := byHash[hash]
+				c, ok := findCommit(hash)
 				if !ok {
 					fmt.Printf("  ✗ %s — git log에서 찾을 수 없음\n", hash)
 					continue
 				}
 
 				diff := gitDiff(c.hash)
-				prompt, response := findSession(activeTool, c.ts)
+				var prompt, response string
+				if activeJSONL != "" {
+					prompt, response = parseClaudeJSONL(activeJSONL)
+				} else {
+					prompt, response = findSession(activeTool, c.ts)
+				}
 				if prompt == "" {
 					prompt = "[git commit] " + c.msg
 				}
