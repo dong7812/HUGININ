@@ -69,46 +69,95 @@ if [ -z "$WORKSPACE_ID" ]; then
   exit 0
 fi
 
-# Claude Code 세션 로그에서 마지막 프롬프트/응답 추출 (best-effort)
-CLAUDE_LOG_DIR="$HOME/.claude/projects"
-PROMPT=""
-RESPONSE=""
-if [ -d "$CLAUDE_LOG_DIR" ]; then
-  LATEST=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -newer "$HUGININ_DIR/session.lock" 2>/dev/null | head -1 || true)
-  if [ -n "$LATEST" ]; then
-    PROMPT=$(python3 -c "
-import json, sys
-lines = [json.loads(l) for l in open('$LATEST') if l.strip()]
-for l in reversed(lines):
-    if l.get('type') == 'user':
-        c = l.get('message', {}).get('content', '')
-        if isinstance(c, str): print(c[:2000]); break
-        for x in c:
-            if isinstance(x, dict) and x.get('type') == 'text':
-                print(x['text'][:2000]); break
-        break
-" 2>/dev/null || true)
-    RESPONSE=$(python3 -c "
-import json, sys
-lines = [json.loads(l) for l in open('$LATEST') if l.strip()]
-for l in reversed(lines):
-    if l.get('type') == 'assistant':
-        c = l.get('message', {}).get('content', [])
-        for x in (c if isinstance(c, list) else []):
-            if isinstance(x, dict) and x.get('type') == 'text':
-                print(x['text'][:2000]); break
-        break
-" 2>/dev/null || true)
+# ── Claude Code 세션 로그에서 대화 추출 ──────────────────────────────────────
+# 우선순위:
+#   1. .huginin/active-jsonl — huginin multiplexer가 현재 세션에 핀한 경로
+#   2. ~/.claude/projects/ 내 30분 내 수정된 가장 최근 JSONL
+ACTIVE_JSONL=""
+
+# 1순위: huginin multiplexer가 핀한 active-jsonl (가장 정확)
+if [ -f "$HUGININ_DIR/active-jsonl" ]; then
+  CANDIDATE=$(cat "$HUGININ_DIR/active-jsonl" 2>/dev/null || true)
+  if [ -n "$CANDIDATE" ] && [ -f "$CANDIDATE" ]; then
+    ACTIVE_JSONL="$CANDIDATE"
   fi
 fi
 
-# 프롬프트가 없으면 커밋 메시지로 대체
+# 2순위: 현재 repo 경로를 인코딩해서 해당 프로젝트 전용 Claude Code 디렉토리에서 최신 JSONL
+# (Claude Code는 CWD를 '/'→'-' 인코딩해서 ~/.claude/projects/<encoded>/ 에 세션을 저장함)
+if [ -z "$ACTIVE_JSONL" ]; then
+  REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+  ENCODED=$(echo "$REPO_ROOT" | tr '/' '-')
+  PROJECT_CLAUDE_DIR="$HOME/.claude/projects/$ENCODED"
+  if [ -d "$PROJECT_CLAUDE_DIR" ]; then
+    ACTIVE_JSONL=$(ls -t "$PROJECT_CLAUDE_DIR"/*.jsonl 2>/dev/null | head -1 || true)
+  fi
+fi
+
+# 3순위: 어디서도 못 찾으면 30분 내 전체 최신 JSONL (부정확할 수 있음)
+if [ -z "$ACTIVE_JSONL" ]; then
+  CLAUDE_LOG_DIR="$HOME/.claude/projects"
+  if [ -d "$CLAUDE_LOG_DIR" ]; then
+    ACTIVE_JSONL=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -mmin -30 2>/dev/null \
+      | xargs ls -t 2>/dev/null | head -1 || true)
+  fi
+fi
+
+# 최근 10턴을 [DEV]/[AI] 대화 형식으로 추출
+PROMPT=""
+if [ -n "$ACTIVE_JSONL" ] && [ -f "$ACTIVE_JSONL" ]; then
+  PROMPT=$(python3 -c "
+import json
+
+def extract_text(content):
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        parts = []
+        for x in content:
+            if isinstance(x, dict) and x.get('type') == 'text' and x.get('text'):
+                parts.append(x['text'].strip())
+        return ' '.join(parts)
+    return ''
+
+turns = []
+with open('$ACTIVE_JSONL') as f:
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+        except Exception:
+            continue
+        t = entry.get('type', '')
+        if t not in ('user', 'assistant'):
+            continue
+        content = entry.get('message', {}).get('content', '')
+        # content가 list인 경우 text 블록만 있는지 확인 (tool_use/tool_result 제외)
+        if isinstance(content, list):
+            types = {x.get('type', '') for x in content if isinstance(x, dict)}
+            if types and 'text' not in types:
+                continue  # tool 전용 턴 제외
+        text = extract_text(content)
+        if not text:
+            continue
+        tag = '[DEV]' if t == 'user' else '[AI]'
+        turns.append((tag, text))
+
+recent = turns[-10:]
+parts = [f'{tag} {text[:1500]}' for tag, text in recent]
+print('\n\n'.join(parts)[:6000])
+" 2>/dev/null || true)
+fi
+
+# 대화를 못 읽었으면 커밋 메시지로 대체
 if [ -z "$PROMPT" ]; then
   PROMPT="[git commit] $COMMIT_MSG"
 fi
-if [ -z "$RESPONSE" ]; then
-  RESPONSE="[no AI session detected]"
-fi
+# full-conversation 모드([DEV]/[AI] 형식)에서 refiner는 prompt만 사용함.
+# 레거시 단일턴 fallback도 response를 비워두면 refiner가 prompt를 그대로 씀.
+RESPONSE=""
 
 # 비동기 업로드 (CLI 블로킹 없이)
 (huginin __collect \
