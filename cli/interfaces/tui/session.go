@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -189,10 +191,14 @@ func (m *model) dispatch(raw string) tea.Cmd {
 			tea.Println(dim.Render(`  실행 중 Ctrl+\ → CLI 전환 (다른 CLI 잠들어 있다 깨어남)`)),
 			tea.Println(dim.Render("  ──────────────────────────────────────────")),
 			tea.Println(blue.Render("  login")+"               로그인 + 워크스페이스 선택"),
+			tea.Println(blue.Render("  workspace create")+"   새 워크스페이스 생성"),
+			tea.Println(blue.Render("  workspace join")+"      초대코드로 워크스페이스 참여"),
+			tea.Println(blue.Render("  workspace select")+"    활성 워크스페이스 전환"),
+			tea.Println(blue.Render("  workspace list")+"      워크스페이스 목록"),
+			tea.Println(dim.Render("  ──────────────────────────────────────────")),
 			tea.Println(blue.Render("  setup")+"               현재 repo 연결 + hook 설치"),
 			tea.Println(blue.Render("  backfill")+"            누락 커밋 소급 수집"),
 			tea.Println(blue.Render("  import <file>")+"      문서 임포트 (ETL + 코드 검증)"),
-			tea.Println(blue.Render("  workspace list")+"      워크스페이스 목록"),
 			tea.Println(blue.Render("  logout")+"              로그아웃"),
 			tea.Println(blue.Render("  exit")+"                종료  (Ctrl+C)"),
 			tea.Println(""),
@@ -319,6 +325,9 @@ func (m model) View() string {
 // ── entry ─────────────────────────────────────────────────────────────────────
 
 func StartSession(cfg *config.Config, wsUC *application.WorkspaceUseCase, ks domain.TokenRepository) error {
+	// Ctrl+\ (SIGQUIT) is handled inside __mux as the tool-switch hotkey.
+	// Without this, the Go runtime prints a goroutine dump and exits on SIGQUIT.
+	signal.Ignore(syscall.SIGQUIT)
 	m := newModel(cfg, wsUC, ks)
 	p := tea.NewProgram(m)
 	_, err := p.Run()

@@ -54,12 +54,13 @@ type ptySession struct {
 }
 
 type Multiplexer struct {
-	sessions    map[string]*ptySession
-	active      string
-	paused      bool
-	suppressing bool // suppress PTY output briefly during context injection echo
-	exitCh      chan string
-	mu          sync.Mutex
+	sessions      map[string]*ptySession
+	active        string
+	paused        bool
+	suppressing   bool
+	suppressedBuf []byte
+	exitCh        chan string
+	mu            sync.Mutex
 
 	// stdin reader goroutine management
 	stdinCh  chan []byte
@@ -102,6 +103,16 @@ func RunMultiplexer(initial string) error {
 					pty.Setsize(s.pty, ws)
 				}
 			}
+		}
+	}()
+
+	// ponytail: SIGQUIT (Ctrl+\) may bypass raw mode on some macOS versions;
+	// treat it identically to the escKey byte so tool-switch always works.
+	sigQuit := make(chan os.Signal, 1)
+	signal.Notify(sigQuit, syscall.SIGQUIT)
+	go func() {
+		for range sigQuit {
+			m.stdinCh <- []byte{escKey}
 		}
 	}()
 
@@ -177,6 +188,7 @@ func RunMultiplexer(initial string) error {
 				continue
 			}
 			if remaining == 0 {
+				m.stopStdinReader()
 				return nil
 			}
 			m.stopStdinReader()
@@ -323,18 +335,6 @@ func trackActiveJsonl(s *ptySession) {
 	}
 }
 
-func claudeProjectDir() string {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return ""
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	encoded := strings.ReplaceAll(cwd, "/", "-")
-	return filepath.Join(home, ".claude", "projects", encoded)
-}
 
 func jsonlSnapshot(dir string) map[string]bool {
 	entries, err := os.ReadDir(dir)
@@ -369,10 +369,18 @@ func (m *Multiplexer) outputLoop(name string, s *ptySession) {
 			}
 
 			m.mu.Lock()
-			write := m.active == name && !m.paused && !m.suppressing
-			m.mu.Unlock()
-			if write {
-				os.Stdout.Write(buf[:n])
+			write := m.active == name && !m.paused
+			if write && m.suppressing {
+				m.suppressedBuf = append(m.suppressedBuf, buf[:n]...)
+				if len(m.suppressedBuf) > 64*1024 {
+					m.suppressedBuf = m.suppressedBuf[len(m.suppressedBuf)-64*1024:]
+				}
+				m.mu.Unlock()
+			} else {
+				m.mu.Unlock()
+				if write {
+					os.Stdout.Write(buf[:n])
+				}
 			}
 		}
 		if err != nil {
@@ -418,25 +426,75 @@ func (m *Multiplexer) injectContext(name, ctx string) {
 	}
 }
 
-// injectSilent writes context to the session's PTY stdin while suppressing
-// stdout output so the PTY echo never reaches the user's terminal.
+// loadingAnim writes a spinner animation to stdout until done is closed.
+// Called while suppressing=true so it has exclusive stdout access.
+func loadingAnim(done <-chan struct{}) {
+	frames := []string{"⣻", "⣽", "⣾", "⣷", "⣯", "⣟", "⡿", "⢿"}
+	i := 0
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-done:
+			return
+		case <-ticker.C:
+			fmt.Fprintf(os.Stdout, "\r\x1b[36m%s 컨텍스트 전달 중...\x1b[0m", frames[i%len(frames)])
+			i++
+		}
+	}
+}
+
+// injectSilent writes context to the session's PTY stdin while holding
+// exclusive stdout via suppressing=true. After injection it clears the screen
+// and sends SIGWINCH to the child before releasing suppression, so the child
+// redraws its full TUI from a known-blank terminal state instead of trying to
+// continue from a stale cursor position.
 func (m *Multiplexer) injectSilent(s *ptySession, ctx string) {
+	restore := disableEcho(s.pty)
+	defer restore()
+
 	m.mu.Lock()
 	m.suppressing = true
+	m.suppressedBuf = nil
 	m.mu.Unlock()
 
-	msg := fmt.Sprintf("[huginin 컨텍스트 전달]\n%s\n", ctx)
-	s.pty.Write([]byte(msg))
+	done := make(chan struct{})
+	go loadingAnim(done)
 
-	// Wait for echo to flush through the PTY before restoring output.
-	time.Sleep(300 * time.Millisecond)
+	s.pty.Write([]byte(ctx + "\n"))
+	time.Sleep(500 * time.Millisecond)
 
+	close(done)
+
+	// Still suppressing here — we have exclusive stdout.
+	// Clear to a known-blank state and re-draw the banner.
 	m.mu.Lock()
+	activeName := m.active
+	m.mu.Unlock()
+
+	clearScreen()
+	showBanner(activeName)
+
+	// Release suppression: child output starts flowing again.
+	m.mu.Lock()
+	m.suppressedBuf = nil
 	m.suppressing = false
 	m.mu.Unlock()
+
+	// Force the child to do a full redraw onto the freshly cleared screen.
+	// A brief pause lets the child finish any in-flight write before SIGWINCH.
+	if s.cmd != nil && s.cmd.Process != nil {
+		time.Sleep(30 * time.Millisecond)
+		s.cmd.Process.Signal(syscall.SIGWINCH)
+	}
 }
 
 func (m *Multiplexer) extractContext(name string) string {
+	// Prefer structured conversation data over raw TUI output.
+	if conv := extractConversationForTool(name); conv != "" {
+		return conv
+	}
+	// Fallback: raw terminal output with ANSI stripped (TUI chrome only).
 	m.mu.Lock()
 	s := m.sessions[name]
 	m.mu.Unlock()
@@ -459,8 +517,15 @@ func (m *Multiplexer) switchTo(name string) {
 	m.startCLI(name)
 	m.mu.Lock()
 	m.active = name
+	s := m.sessions[name]
 	m.mu.Unlock()
 	m.saveActiveTool(name)
+	// Sync terminal size so the new session's TUI renders at the correct width.
+	if s != nil {
+		if ws, err := pty.GetsizeFull(os.Stdout); err == nil {
+			pty.Setsize(s.pty, ws)
+		}
+	}
 }
 
 func (m *Multiplexer) pickUI() string {
@@ -536,8 +601,18 @@ func toolBinary(name string) string {
 }
 
 // clearScreen erases the terminal and moves the cursor to the top-left.
+// Also disables all mouse tracking modes the outgoing CLI may have enabled,
+// so mouse events don't leak into the incoming CLI's stdin.
 func clearScreen() {
-	os.Stdout.Write([]byte("\x1b[2J\x1b[H"))
+	os.Stdout.Write([]byte(
+		"\x1b[?1003l" + // any-event tracking off
+			"\x1b[?1002l" + // button-event tracking off
+			"\x1b[?1001l" + // highlight tracking off
+			"\x1b[?1000l" + // normal tracking off
+			"\x1b[?1006l" + // SGR extended coords off
+			"\x1b[?1015l" + // URXVT extended coords off
+			"\x1b[2J\x1b[H",
+	))
 }
 
 // showBanner prints a one-line header identifying the active CLI.
