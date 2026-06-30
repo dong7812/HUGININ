@@ -84,16 +84,19 @@ RESPONSE=""
 
 # ── Claude Code 세션 추출 ──────────────────────────────────────────────────
 if [ "$ACTIVE_TOOL" = "claude-code" ]; then
-  CLAUDE_LOG_DIR="$HOME/.claude/projects"
+  # 현재 레포에 해당하는 Claude 프로젝트 디렉터리 (multiplexer.go claudeProjectDir과 동일)
+  ENCODED=$(echo "$(pwd)" | sed 's|/|-|g')
+  PROJECT_CLAUDE_DIR="$HOME/.claude/projects/$ENCODED"
+
   # 고정된 활성 세션 파일 우선 사용 (huginin TUI가 기록)
   LATEST=""
   if [ -f "$HUGININ_DIR/active-jsonl" ]; then
     PINNED=$(cat "$HUGININ_DIR/active-jsonl" 2>/dev/null || true)
     [ -f "$PINNED" ] && LATEST="$PINNED"
   fi
-  # fallback: 24시간 내 최신 수정 파일
-  if [ -z "$LATEST" ] && [ -d "$CLAUDE_LOG_DIR" ]; then
-    LATEST=$(find "$CLAUDE_LOG_DIR" -name "*.jsonl" -mmin -1440 2>/dev/null \
+  # fallback: 현재 레포 전용 Claude 세션 파일만 검색
+  if [ -z "$LATEST" ] && [ -d "$PROJECT_CLAUDE_DIR" ]; then
+    LATEST=$(find "$PROJECT_CLAUDE_DIR" -maxdepth 1 -name "*.jsonl" -mmin -1440 2>/dev/null \
       | xargs ls -t 2>/dev/null | head -1 || true)
   fi
   if [ -n "$LATEST" ]; then
@@ -156,7 +159,6 @@ for role, text in merged:
 print('\n\n'.join(out)[-8000:])
 " "$LATEST" 2>/dev/null || true)
       RESPONSE=""
-    fi
   fi
 fi
 
