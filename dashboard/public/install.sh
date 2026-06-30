@@ -4,11 +4,17 @@ set -euo pipefail
 BASE_URL="https://huginin.com/cli"
 BINARY="huginin"
 
-# Homebrew prefix 우선 (Apple Silicon Mac)
-if [ -d "/opt/homebrew/bin" ]; then
+# 이미 설치된 위치 우선 재사용 — 없으면 쓰기 가능한 곳 선택
+EXISTING=$(command -v huginin 2>/dev/null || true)
+if [ -n "$EXISTING" ]; then
+  INSTALL_DIR=$(dirname "$EXISTING")
+elif [ -w "/opt/homebrew/bin" ]; then
   INSTALL_DIR="/opt/homebrew/bin"
-else
+elif [ -w "/usr/local/bin" ]; then
   INSTALL_DIR="/usr/local/bin"
+else
+  INSTALL_DIR="$HOME/.local/bin"
+  mkdir -p "$INSTALL_DIR"
 fi
 
 # 언인스톨 모드
@@ -60,12 +66,20 @@ tar -xzf "$TMP/$TARBALL" -C "$TMP"
 chmod +x "$TMP/$BINARY"
 
 # 기존 바이너리 제거 후 설치 (Gatekeeper 캐시 초기화)
-if [ -w "$INSTALL_DIR" ]; then
+if [ -w "$INSTALL_DIR" ] && { [ ! -f "$INSTALL_DIR/$BINARY" ] || [ -w "$INSTALL_DIR/$BINARY" ]; }; then
   rm -f "$INSTALL_DIR/$BINARY"
   mv "$TMP/$BINARY" "$INSTALL_DIR/$BINARY"
-else
+elif sudo -n true 2>/dev/null; then
   sudo rm -f "$INSTALL_DIR/$BINARY"
   sudo mv "$TMP/$BINARY" "$INSTALL_DIR/$BINARY"
+else
+  # sudo TTY 없음 — ~/.local/bin으로 fallback
+  INSTALL_DIR="$HOME/.local/bin"
+  mkdir -p "$INSTALL_DIR"
+  rm -f "$INSTALL_DIR/$BINARY"
+  mv "$TMP/$BINARY" "$INSTALL_DIR/$BINARY"
+  echo "[huginin] ~/.local/bin에 설치됨. PATH에 없으면 추가하세요:"
+  echo "  echo 'export PATH=\"\$HOME/.local/bin:\$PATH\"' >> ~/.zshrc && source ~/.zshrc"
 fi
 
 # macOS Gatekeeper 격리 속성 제거
