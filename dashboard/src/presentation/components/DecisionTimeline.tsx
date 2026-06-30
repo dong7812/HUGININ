@@ -678,9 +678,7 @@ function TimelineEntry({ item, workspaceId, graphMeta, isLast }: {
               {DECISION_TYPE_LABEL[item.decisionType]}
             </span>
           )}
-          {item.rejectedAlternatives && (
-            <span className="text-[10px] text-red-500 bg-red-50 px-1.5 py-0.5 rounded font-mono">× 기각됨</span>
-          )}
+
           {item.branch && (
             <span className="flex items-center gap-1 text-[10px] font-mono" style={{ color: laneColor }}>
               <GitBranch size={9} />{item.branch}
